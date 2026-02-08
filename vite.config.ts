@@ -65,6 +65,14 @@ export default defineConfig({
                     'https://new.oaifree.com/share/*/continue',
                 ],
                 'icon': 'https://chat.openai.com/favicon.ico',
+                'grant': [
+                    'GM_getValue',
+                    'GM_setValue',
+                    'GM_deleteValue',
+                    'GM_registerMenuCommand',
+                    'GM.registerMenuCommand',
+                    'unsafeWindow',
+                ],
                 'run-at': 'document-end',
             },
             build: {
