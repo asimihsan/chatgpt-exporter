@@ -367,7 +367,6 @@ type ApiFileDownload = {
     error_message: string | null
 }
 
-// eslint-disable-next-line no-restricted-syntax
 const enum ChatGPTCookie {
     AgeVerification = 'oai-av-seen',
     AllowNonessential = 'oai-allow-ne',

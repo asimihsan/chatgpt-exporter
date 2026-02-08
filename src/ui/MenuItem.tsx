@@ -21,7 +21,7 @@ export const MenuItem: FC<MenuItemProps> = ({ text, successText, disabled = fals
     const handleClick = typeof onClick === 'function'
         ? async (e: Event) => {
             e.preventDefault()
-            if (loading) return
+            if (loading || disabled) return
 
             try {
                 setLoading(true)
@@ -48,11 +48,11 @@ export const MenuItem: FC<MenuItemProps> = ({ text, successText, disabled = fals
             bg-menu hover:bg-gray-500/10
             transition-colors duration-200
             text-menu text-sm
-            cursor-pointer
+            ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
             border border-menu ${className}`}
             onClick={handleClick}
             onTouchStart={handleClick}
-            disabled={disabled}
+            aria-disabled={disabled}
             title={title}
         >
             {loading

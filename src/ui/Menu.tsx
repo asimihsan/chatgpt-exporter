@@ -102,7 +102,6 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                 </HoverCard.Trigger>
                 <Portal
                     container={isMobile ? container : document.body}
-                    forceMount={open || jsonOpen || settingOpen || exportOpen}
                 >
                     <HoverCard.Content
                         className={`
@@ -213,9 +212,9 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                                 width="16"
                                 height="8"
                                 style={{
-                                    'fill': 'var(--ce-menu-primary)',
-                                    'stroke': 'var(--ce-border-light)',
-                                    'stoke-width': '2px',
+                                    fill: 'var(--ce-menu-primary)',
+                                    stroke: 'var(--ce-border-light)',
+                                    strokeWidth: '2px',
                                 }}
                             />
                         )}

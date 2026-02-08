@@ -1,3 +1,5 @@
+import type { JSX } from 'preact'
+
 // source: fontawesome: file-code
 export function FileCode() {
     return <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" className="w-4 h-4" fill="currentColor">{/* <!--! Font Awesome Pro 6.2.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --> */}<path d="M64 0C28.7 0 0 28.7 0 64V448c0 35.3 28.7 64 64 64H320c35.3 0 64-28.7 64-64V160H256c-17.7 0-32-14.3-32-32V0H64zM256 0V128H384L256 0zM153 289l-31 31 31 31c9.4 9.4 9.4 24.6 0 33.9s-24.6 9.4-33.9 0L71 337c-9.4-9.4-9.4-24.6 0-33.9l48-48c9.4-9.4 24.6-9.4 33.9 0s9.4 24.6 0 33.9zM265 255l48 48c9.4 9.4 9.4 24.6 0 33.9l-48 48c-9.4 9.4-24.6 9.4-33.9 0s-9.4-24.6 0-33.9l31-31-31-31c-9.4-9.4-9.4-24.6 0-33.9s24.6-9.4 33.9 0z" /></svg>
@@ -76,7 +78,7 @@ export function IconZip() {
 }
 
 // source: mui
-export function IconLoading({ className, style }: { className?: string; style?: React.CSSProperties }) {
+export function IconLoading({ className, style }: { className?: string; style?: JSX.CSSProperties }) {
     return (
         <span style={{ animation: '1.4s linear 0s infinite normal none running rotate' }}>
             <svg
@@ -120,7 +122,7 @@ export function IconCheckBoxChecked({ className }: { className?: string }) {
     )
 }
 
-export function IconTrash({ className, style }: { className?: string; style?: React.CSSProperties }) {
+export function IconTrash({ className, style }: { className?: string; style?: JSX.CSSProperties }) {
     return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} style={style} fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
@@ -130,7 +132,7 @@ export function IconTrash({ className, style }: { className?: string; style?: Re
     )
 }
 
-export function IconUpload({ className, style }: { className?: string; style?: React.CSSProperties }) {
+export function IconUpload({ className, style }: { className?: string; style?: JSX.CSSProperties }) {
     return (
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" className={className} style={style} fill="none" stroke-linecap="round" stroke-linejoin="round">
             <path stroke="none" d="M0 0h24v24H0z" fill="none"></path>
