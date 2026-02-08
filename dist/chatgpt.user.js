@@ -7668,9 +7668,8 @@ node2.message?.author.role !== "system" && node2.message?.content.content_type !
     static map = new Map();
     static supported = true;
     static get(key2) {
-      const item = this.map.get(key2);
-      if (!item) return null;
-      return item;
+      if (!this.map.has(key2)) return null;
+      return this.map.get(key2);
     }
     static set(key2, value) {
       this.map.set(key2, value);

@@ -92,4 +92,26 @@ describe('settings service', () => {
         const reset = resetSettings()
         expect(reset).toEqual(DEFAULT_EXPORTER_SETTINGS)
     })
+
+    it('normalizes single-key shortcut updates and persists them', () => {
+        const withInvalidShortcut = setSetting('copyTextShortcut', 'ctrl+shift+9')
+        expect(withInvalidShortcut.copyTextShortcut).toBe(DEFAULT_EXPORTER_SETTINGS.copyTextShortcut)
+
+        const withDisabledShortcut = setSetting('enableCopyTextShortcut', false)
+        expect(withDisabledShortcut.enableCopyTextShortcut).toBe(false)
+
+        const reloaded = reloadSettingsFromStorage()
+        expect(reloaded.copyTextShortcut).toBe(DEFAULT_EXPORTER_SETTINGS.copyTextShortcut)
+        expect(reloaded.enableCopyTextShortcut).toBe(false)
+    })
+
+    it('keeps disabled shortcut state even when shortcut combo sanitizes to default', () => {
+        const updated = saveSettings({
+            enableCopyTextShortcut: false,
+            copyTextShortcut: 'Ctrl+E',
+        })
+
+        expect(updated.enableCopyTextShortcut).toBe(false)
+        expect(updated.copyTextShortcut).toBe(DEFAULT_EXPORTER_SETTINGS.copyTextShortcut)
+    })
 })

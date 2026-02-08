@@ -53,10 +53,24 @@ describe('export copy shortcut helpers', () => {
         expect(matchesExportCopyShortcut(buildKeyEvent({ key: 'm', ctrlKey: true, altKey: false }), false, shortcut)).toBe(false)
     })
 
+    it('supports normalized custom Alt combos on mac platform', () => {
+        const shortcut = normalizeCopyTextShortcut('mod+shift+alt+m')
+        expect(matchesExportCopyShortcut(buildKeyEvent({ key: 'm', metaKey: true, altKey: true }), true, shortcut)).toBe(true)
+        expect(matchesExportCopyShortcut(buildKeyEvent({ key: 'm', metaKey: true, ctrlKey: true, altKey: true }), true, shortcut)).toBe(false)
+    })
+
     it('normalizes invalid combos back to default shortcut', () => {
         expect(normalizeCopyTextShortcut('Ctrl+E')).toBe(DEFAULT_COPY_TEXT_SHORTCUT)
         expect(normalizeCopyTextShortcut('Ctrl+Shift+9')).toBe(DEFAULT_COPY_TEXT_SHORTCUT)
         expect(normalizeCopyTextShortcut(777)).toBe(DEFAULT_COPY_TEXT_SHORTCUT)
+    })
+
+    it('returns provided fallback for invalid shortcut values', () => {
+        expect(normalizeCopyTextShortcut('Ctrl+Shift+9', 'Mod+Shift+M')).toBe('Mod+Shift+M')
+    })
+
+    it('rejects matching when configured shortcut is invalid', () => {
+        expect(matchesExportCopyShortcut(buildKeyEvent({ ctrlKey: true }), false, 'Shift+E')).toBe(false)
     })
 
     it('treats targets with editable ancestors as editable', () => {
@@ -85,6 +99,11 @@ describe('export copy shortcut helpers', () => {
         const activeElement = { closest: () => ({ tagName: 'textarea' }) } as unknown as Element
 
         expect(isEditableContext(target, activeElement)).toBe(true)
+    })
+
+    it('treats editable event target as editable context when no active element is available', () => {
+        const target = { closest: () => ({ tagName: 'input' }) } as unknown as EventTarget
+        expect(isEditableContext(target, null)).toBe(true)
     })
 
     it('treats non-editable target and active element as non-editable context', () => {

@@ -80,9 +80,8 @@ export class MemoryStorage {
     static supported = true
 
     static get<T>(key: string): T | null {
-        const item = this.map.get(key)
-        if (!item) return null
-        return item
+        if (!this.map.has(key)) return null
+        return this.map.get(key) as T
     }
 
     static set<T>(key: string, value: T): void {
