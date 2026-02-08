@@ -33,7 +33,7 @@ outputs = ["dist/chatgpt.user.js"]
 
 [tasks.lint]
 alias = "l"
-description = "Run ESLint"
+description = "Run strict type-aware ESLint"
 depends = ["install"]
 run = "bun run lint"
 sources = ["src/**/*", "eslint.config.js", "package.json", "tsconfig.json"]

@@ -27,7 +27,7 @@ jobs:
 
       - run: bun install
 
-      - name: Lint
+      - name: Lint (strict)
         run: bun run lint
 
       - name: Test

@@ -30,8 +30,8 @@
     "check": "npm run lint && npm run test",
     "deps:update": "bun update --latest",
     "deps:check": "bun outdated",
-    "lint": "eslint .",
-    "lint:type-aware": "eslint . --config eslint.type-aware.config.js",
+    "lint": "eslint . --config eslint.type-aware.config.js --max-warnings=0",
+    "lint:type-aware": "eslint . --config eslint.type-aware.config.js --max-warnings=0",
     "lint:fix": "eslint . --fix",
     "prepare": "husky"
   },
