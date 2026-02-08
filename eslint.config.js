@@ -19,13 +19,30 @@ export default [
         languageOptions: {
             ecmaVersion: 'latest',
             sourceType: 'module',
+        },
+    },
+    {
+        files: ['src/**/*.{js,jsx,ts,tsx}'],
+        languageOptions: {
             globals: {
                 ...globals.browser,
-                ...globals.node,
             },
         },
         rules: {
             'no-alert': 'off',
+        },
+    },
+    {
+        files: [
+            'eslint.config.js',
+            'vite.config.ts',
+            '**/*.config.{js,ts,mjs,cjs}',
+            'scripts/**/*.{js,ts,mjs,cjs}',
+        ],
+        languageOptions: {
+            globals: {
+                ...globals.node,
+            },
         },
     },
     {
