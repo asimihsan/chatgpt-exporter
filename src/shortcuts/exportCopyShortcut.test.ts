@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { isEditableContext, isEditableTarget, isMacPlatform, matchesExportCopyShortcut } from './exportCopyShortcutHelpers'
+import {
+    DEFAULT_COPY_TEXT_SHORTCUT,
+    isEditableContext,
+    isEditableTarget,
+    isMacPlatform,
+    matchesExportCopyShortcut,
+    normalizeCopyTextShortcut,
+} from './exportCopyShortcutHelpers'
 
 function buildKeyEvent(overrides: Partial<{
     key: string
@@ -37,6 +44,19 @@ describe('export copy shortcut helpers', () => {
         expect(matchesExportCopyShortcut(buildKeyEvent({ shiftKey: false, ctrlKey: true }), false)).toBe(false)
         expect(matchesExportCopyShortcut(buildKeyEvent({ key: 'x', ctrlKey: true }), false)).toBe(false)
         expect(matchesExportCopyShortcut(buildKeyEvent({ ctrlKey: true, altKey: true }), false)).toBe(false)
+    })
+
+    it('supports normalized custom shortcut combos with optional Alt', () => {
+        const shortcut = normalizeCopyTextShortcut('mod+shift+alt+m')
+        expect(shortcut).toBe('Mod+Shift+Alt+M')
+        expect(matchesExportCopyShortcut(buildKeyEvent({ key: 'm', ctrlKey: true, altKey: true }), false, shortcut)).toBe(true)
+        expect(matchesExportCopyShortcut(buildKeyEvent({ key: 'm', ctrlKey: true, altKey: false }), false, shortcut)).toBe(false)
+    })
+
+    it('normalizes invalid combos back to default shortcut', () => {
+        expect(normalizeCopyTextShortcut('Ctrl+E')).toBe(DEFAULT_COPY_TEXT_SHORTCUT)
+        expect(normalizeCopyTextShortcut('Ctrl+Shift+9')).toBe(DEFAULT_COPY_TEXT_SHORTCUT)
+        expect(normalizeCopyTextShortcut(777)).toBe(DEFAULT_COPY_TEXT_SHORTCUT)
     })
 
     it('treats targets with editable ancestors as editable', () => {

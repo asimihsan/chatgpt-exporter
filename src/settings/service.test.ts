@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import {
+    KEY_COPY_TEXT_SHORTCUT,
+    KEY_COPY_TEXT_SHORTCUT_ENABLED,
     KEY_EXPORT_ALL_LIMIT,
     KEY_FILENAME_FORMAT,
     KEY_META_ENABLED,
@@ -28,6 +30,8 @@ const SETTING_KEYS = [
     KEY_META_ENABLED,
     KEY_META_LIST,
     KEY_EXPORT_ALL_LIMIT,
+    KEY_COPY_TEXT_SHORTCUT_ENABLED,
+    KEY_COPY_TEXT_SHORTCUT,
 ]
 
 function clearSettingsStorage(): void {
@@ -47,6 +51,8 @@ describe('settings service', () => {
         ScriptStorage.set(KEY_TIMESTAMP_ENABLED, 'nope')
         ScriptStorage.set(KEY_META_LIST, [{ name: 'ok', value: '{title}' }, { value: '{source}' }])
         ScriptStorage.set(KEY_EXPORT_ALL_LIMIT, 55)
+        ScriptStorage.set(KEY_COPY_TEXT_SHORTCUT_ENABLED, 'nope')
+        ScriptStorage.set(KEY_COPY_TEXT_SHORTCUT, 'Ctrl+?')
 
         const settings = reloadSettingsFromStorage()
 
@@ -54,6 +60,8 @@ describe('settings service', () => {
         expect(settings.enableTimestamp).toBe(DEFAULT_EXPORTER_SETTINGS.enableTimestamp)
         expect(settings.exportMetaList).toEqual([{ name: 'ok', value: '{title}' }])
         expect(settings.exportAllLimit).toBe(100)
+        expect(settings.enableCopyTextShortcut).toBe(DEFAULT_EXPORTER_SETTINGS.enableCopyTextShortcut)
+        expect(settings.copyTextShortcut).toBe(DEFAULT_EXPORTER_SETTINGS.copyTextShortcut)
     })
 
     it('persists updates and normalizes range-based values', () => {
@@ -62,12 +70,16 @@ describe('settings service', () => {
             exportAllLimit: 20301,
             enableTimestamp: true,
             timeStamp24H: true,
+            enableCopyTextShortcut: false,
+            copyTextShortcut: 'ctrl + shift + alt + m',
         })
 
         expect(updated.format).toBe('Conversation-{title}')
         expect(updated.exportAllLimit).toBe(20000)
         expect(updated.enableTimestamp).toBe(true)
         expect(updated.timeStamp24H).toBe(true)
+        expect(updated.enableCopyTextShortcut).toBe(false)
+        expect(updated.copyTextShortcut).toBe('Mod+Shift+Alt+M')
 
         const persisted = getSettings()
         expect(persisted).toEqual(updated)

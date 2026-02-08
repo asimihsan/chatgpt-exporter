@@ -3039,6 +3039,8 @@ depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : de
   const KEY_META_ENABLED = "exporter:enable_meta";
   const KEY_META_LIST = "exporter:meta_list";
   const KEY_EXPORT_ALL_LIMIT = "exporter:export_all_limit";
+  const KEY_COPY_TEXT_SHORTCUT_ENABLED = "exporter:enable_copy_text_shortcut";
+  const KEY_COPY_TEXT_SHORTCUT = "exporter:copy_text_shortcut";
   const KEY_OAI_LOCALE = "oai/apps/locale";
   const KEY_OAI_HISTORY_DISABLED = "oai/apps/historyDisabled";
   var _GM = (() => typeof GM != "undefined" ? GM : void 0)();
@@ -19161,6 +19163,19 @@ case "tether_browsing_display": {
     });
   }
   const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable], [role="textbox"]';
+  const MODIFIER_ORDER = ["Mod", "Shift", "Alt"];
+  const MODIFIER_ALIASES = {
+    mod: "Mod",
+    meta: "Mod",
+    cmd: "Mod",
+    command: "Mod",
+    ctrl: "Mod",
+    control: "Mod",
+    shift: "Shift",
+    alt: "Alt",
+    option: "Alt"
+  };
+  const DEFAULT_COPY_TEXT_SHORTCUT$1 = "Mod+Shift+E";
   function isMacPlatform(platform2) {
     if (!platform2) return false;
     return /mac|iphone|ipad|ipod/i.test(platform2);
@@ -19175,10 +19190,42 @@ case "tether_browsing_display": {
     }
     return false;
   }
-  function matchesExportCopyShortcut(event, isMac) {
-    if (event.altKey) return false;
-    if (!event.shiftKey) return false;
-    if (event.key.toLowerCase() !== "e") return false;
+  function parseShortcut(shortcut) {
+    if (typeof shortcut !== "string") return null;
+    const rawParts = shortcut.split("+").map((part) => part.trim()).filter(Boolean);
+    if (rawParts.length < 2) return null;
+    const key2 = rawParts[rawParts.length - 1].toUpperCase();
+    if (!/^[A-Z]$/.test(key2)) return null;
+    const modifiers = new Set();
+    for (const part of rawParts.slice(0, -1)) {
+      const mapped = MODIFIER_ALIASES[part.toLowerCase()];
+      if (!mapped) return null;
+      modifiers.add(mapped);
+    }
+    if (!modifiers.has("Mod") || !modifiers.has("Shift")) return null;
+    return { key: key2, modifiers };
+  }
+  function formatShortcut(parsed) {
+    const orderedModifiers = MODIFIER_ORDER.filter((modifier) => parsed.modifiers.has(modifier));
+    return [...orderedModifiers, parsed.key].join("+");
+  }
+  function normalizeCopyTextShortcut(value, fallback = DEFAULT_COPY_TEXT_SHORTCUT$1) {
+    const parsed = parseShortcut(value);
+    if (!parsed) return fallback;
+    return formatShortcut(parsed);
+  }
+  function matchesExportCopyShortcut(event, isMac, configuredShortcut = DEFAULT_COPY_TEXT_SHORTCUT$1) {
+    const parsed = parseShortcut(configuredShortcut);
+    if (!parsed) return false;
+    const requiresAlt = parsed.modifiers.has("Alt");
+    const requiresShift = parsed.modifiers.has("Shift");
+    const requiresMod = parsed.modifiers.has("Mod");
+    if (event.altKey !== requiresAlt) return false;
+    if (event.shiftKey !== requiresShift) return false;
+    if (event.key.toUpperCase() !== parsed.key) return false;
+    if (!requiresMod) {
+      return !(event.metaKey || event.ctrlKey);
+    }
     if (isMac) {
       return event.metaKey && !event.ctrlKey;
     }
@@ -19187,40 +19234,9 @@ case "tether_browsing_display": {
   function isEditableContext(target, activeElement) {
     return isEditableTarget(target) || isEditableTarget(activeElement);
   }
-  const COPY_TEXT_SHORTCUT_SUCCESS_EVENT = "ce:copy-text-success";
-  let shortcutRegistered = false;
-  async function handleShortcutKeydown(event, isMac) {
-    if (event.repeat) {
-      return;
-    }
-    if (event.isComposing) {
-      return;
-    }
-    if (!matchesExportCopyShortcut(event, isMac)) {
-      return;
-    }
-    if (isEditableContext(event.target, document.activeElement)) {
-      return;
-    }
-    event.preventDefault();
-    event.stopPropagation();
-    const success = await exportToText();
-    if (success) {
-      window.dispatchEvent(new CustomEvent(COPY_TEXT_SHORTCUT_SUCCESS_EVENT));
-    }
-  }
-  function registerExportCopyShortcut() {
-    if (shortcutRegistered) return;
-    const isMac = isMacPlatform(window.navigator.platform);
-    document.addEventListener("keydown", (event) => {
-      void handleShortcutKeydown(event, isMac).catch((error2) => {
-        console.error("Copy shortcut failed:", error2);
-      });
-    });
-    shortcutRegistered = true;
-  }
   const DEFAULT_FILENAME_FORMAT = "ChatGPT-{title}";
   const DEFAULT_EXPORT_ALL_LIMIT = 1e3;
+  const DEFAULT_COPY_TEXT_SHORTCUT = "Mod+Shift+E";
   const DEFAULT_EXPORT_META_LIST = [
     { name: "title", value: "{title}" },
     { name: "source", value: "{source}" }
@@ -19233,7 +19249,9 @@ case "tether_browsing_display": {
     enableTimestampMarkdown: false,
     enableMeta: false,
     exportMetaList: DEFAULT_EXPORT_META_LIST,
-    exportAllLimit: DEFAULT_EXPORT_ALL_LIMIT
+    exportAllLimit: DEFAULT_EXPORT_ALL_LIMIT,
+    enableCopyTextShortcut: true,
+    copyTextShortcut: DEFAULT_COPY_TEXT_SHORTCUT
   };
   const listeners = new Set();
   function cloneExportMetaList(exportMetaList) {
@@ -19258,6 +19276,9 @@ case "tether_browsing_display": {
     const clamped = Math.min(2e4, Math.max(100, value));
     return Math.round(clamped / 100) * 100;
   }
+  function sanitizeCopyTextShortcut(value) {
+    return normalizeCopyTextShortcut(value, DEFAULT_EXPORTER_SETTINGS.copyTextShortcut);
+  }
   function sanitizeExportMetaList(value) {
     if (!Array.isArray(value)) {
       return cloneExportMetaList(DEFAULT_EXPORT_META_LIST);
@@ -19281,7 +19302,9 @@ case "tether_browsing_display": {
       enableTimestampMarkdown: sanitizeBoolean(input.enableTimestampMarkdown, DEFAULT_EXPORTER_SETTINGS.enableTimestampMarkdown),
       enableMeta: sanitizeBoolean(input.enableMeta, DEFAULT_EXPORTER_SETTINGS.enableMeta),
       exportMetaList: sanitizeExportMetaList(input.exportMetaList),
-      exportAllLimit: sanitizeExportAllLimit(input.exportAllLimit)
+      exportAllLimit: sanitizeExportAllLimit(input.exportAllLimit),
+      enableCopyTextShortcut: sanitizeBoolean(input.enableCopyTextShortcut, DEFAULT_EXPORTER_SETTINGS.enableCopyTextShortcut),
+      copyTextShortcut: sanitizeCopyTextShortcut(input.copyTextShortcut)
     };
   }
   function readStoredSettings() {
@@ -19293,7 +19316,9 @@ case "tether_browsing_display": {
       enableTimestampMarkdown: ScriptStorage.get(KEY_TIMESTAMP_MARKDOWN),
       enableMeta: ScriptStorage.get(KEY_META_ENABLED),
       exportMetaList: ScriptStorage.get(KEY_META_LIST),
-      exportAllLimit: ScriptStorage.get(KEY_EXPORT_ALL_LIMIT)
+      exportAllLimit: ScriptStorage.get(KEY_EXPORT_ALL_LIMIT),
+      enableCopyTextShortcut: ScriptStorage.get(KEY_COPY_TEXT_SHORTCUT_ENABLED),
+      copyTextShortcut: ScriptStorage.get(KEY_COPY_TEXT_SHORTCUT)
     });
   }
   function writeStoredSettings(settings) {
@@ -19305,6 +19330,8 @@ case "tether_browsing_display": {
     ScriptStorage.set(KEY_META_ENABLED, settings.enableMeta);
     ScriptStorage.set(KEY_META_LIST, settings.exportMetaList);
     ScriptStorage.set(KEY_EXPORT_ALL_LIMIT, settings.exportAllLimit);
+    ScriptStorage.set(KEY_COPY_TEXT_SHORTCUT_ENABLED, settings.enableCopyTextShortcut);
+    ScriptStorage.set(KEY_COPY_TEXT_SHORTCUT, settings.copyTextShortcut);
   }
   function notifyListeners(settings) {
     const snapshot = cloneSettings(settings);
@@ -19358,6 +19385,63 @@ case "tether_browsing_display": {
     } else {
       document.body.removeAttribute("data-time-format");
     }
+  }
+  const COPY_TEXT_SHORTCUT_SUCCESS_EVENT = "ce:copy-text-success";
+  let shortcutRegistered = false;
+  let settingsSubscribed = false;
+  let activeShortcutSettings = {
+    enabled: true,
+    shortcut: DEFAULT_COPY_TEXT_SHORTCUT$1
+  };
+  function refreshShortcutSettings() {
+    const settings = getSettings();
+    activeShortcutSettings = {
+      enabled: settings.enableCopyTextShortcut,
+      shortcut: settings.copyTextShortcut
+    };
+  }
+  async function handleShortcutKeydown(event, isMac) {
+    if (event.repeat) {
+      return;
+    }
+    if (event.isComposing) {
+      return;
+    }
+    if (!activeShortcutSettings.enabled) {
+      return;
+    }
+    if (!matchesExportCopyShortcut(event, isMac, activeShortcutSettings.shortcut)) {
+      return;
+    }
+    if (isEditableContext(event.target, document.activeElement)) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    const success = await exportToText();
+    if (success) {
+      window.dispatchEvent(new CustomEvent(COPY_TEXT_SHORTCUT_SUCCESS_EVENT));
+    }
+  }
+  function registerExportCopyShortcut() {
+    if (shortcutRegistered) return;
+    refreshShortcutSettings();
+    if (!settingsSubscribed) {
+      subscribeSettings((nextSettings) => {
+        activeShortcutSettings = {
+          enabled: nextSettings.enableCopyTextShortcut,
+          shortcut: nextSettings.copyTextShortcut
+        };
+      });
+      settingsSubscribed = true;
+    }
+    const isMac = isMacPlatform(window.navigator.platform);
+    document.addEventListener("keydown", (event) => {
+      void handleShortcutKeydown(event, isMac).catch((error2) => {
+        console.error("Copy shortcut failed:", error2);
+      });
+    });
+    shortcutRegistered = true;
   }
   function t$1(key2, fallback) {
     const value = instance.t(key2);

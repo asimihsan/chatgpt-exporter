@@ -1,4 +1,6 @@
 import {
+    KEY_COPY_TEXT_SHORTCUT,
+    KEY_COPY_TEXT_SHORTCUT_ENABLED,
     KEY_EXPORT_ALL_LIMIT,
     KEY_FILENAME_FORMAT,
     KEY_LANGUAGE,
@@ -9,6 +11,7 @@ import {
     KEY_TIMESTAMP_HTML,
     KEY_TIMESTAMP_MARKDOWN,
 } from '../constants'
+import { normalizeCopyTextShortcut } from '../shortcuts/exportCopyShortcutHelpers'
 import { ScriptStorage } from '../utils/storage'
 import {
     DEFAULT_EXPORT_ALL_LIMIT,
@@ -49,6 +52,10 @@ function sanitizeExportAllLimit(value: unknown): number {
     return Math.round(clamped / 100) * 100
 }
 
+function sanitizeCopyTextShortcut(value: unknown): string {
+    return normalizeCopyTextShortcut(value, DEFAULT_EXPORTER_SETTINGS.copyTextShortcut)
+}
+
 function sanitizeExportMetaList(value: unknown): ExportMeta[] {
     if (!Array.isArray(value)) {
         return cloneExportMetaList(DEFAULT_EXPORT_META_LIST)
@@ -82,6 +89,8 @@ function sanitizeSettings(input: SettingsInput): ExporterSettings {
         enableMeta: sanitizeBoolean(input.enableMeta, DEFAULT_EXPORTER_SETTINGS.enableMeta),
         exportMetaList: sanitizeExportMetaList(input.exportMetaList),
         exportAllLimit: sanitizeExportAllLimit(input.exportAllLimit),
+        enableCopyTextShortcut: sanitizeBoolean(input.enableCopyTextShortcut, DEFAULT_EXPORTER_SETTINGS.enableCopyTextShortcut),
+        copyTextShortcut: sanitizeCopyTextShortcut(input.copyTextShortcut),
     }
 }
 
@@ -95,6 +104,8 @@ function readStoredSettings(): ExporterSettings {
         enableMeta: ScriptStorage.get<boolean>(KEY_META_ENABLED),
         exportMetaList: ScriptStorage.get<ExportMeta[]>(KEY_META_LIST),
         exportAllLimit: ScriptStorage.get<number>(KEY_EXPORT_ALL_LIMIT),
+        enableCopyTextShortcut: ScriptStorage.get<boolean>(KEY_COPY_TEXT_SHORTCUT_ENABLED),
+        copyTextShortcut: ScriptStorage.get<string>(KEY_COPY_TEXT_SHORTCUT),
     })
 }
 
@@ -107,6 +118,8 @@ function writeStoredSettings(settings: ExporterSettings): void {
     ScriptStorage.set(KEY_META_ENABLED, settings.enableMeta)
     ScriptStorage.set(KEY_META_LIST, settings.exportMetaList)
     ScriptStorage.set(KEY_EXPORT_ALL_LIMIT, settings.exportAllLimit)
+    ScriptStorage.set(KEY_COPY_TEXT_SHORTCUT_ENABLED, settings.enableCopyTextShortcut)
+    ScriptStorage.set(KEY_COPY_TEXT_SHORTCUT, settings.copyTextShortcut)
 }
 
 function notifyListeners(settings: ExporterSettings): void {
