@@ -61,7 +61,18 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
 
     const width = useWindowResize(() => window.innerWidth)
     const isMobile = width < 768
-    const Portal = isMobile ? 'div' : HoverCard.Portal
+    const hasOverlayOpen = jsonOpen || settingOpen || exportOpen
+    const isMenuOpen = open || hasOverlayOpen
+
+    const contentClassName = `
+        grid grid-cols-2
+        bg-menu
+        border border-menu
+        transition-opacity duration-200 shadow-md
+        ${isMobile
+            ? 'gap-x-1 px-1.5 pt-2 rounded animate-slideUp'
+            : 'gap-x-1 px-1.5 py-2 pb-0 rounded-md animate-fadeIn'}
+    `
 
     if (disabled) {
         return (
@@ -73,6 +84,118 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
             />
         )
     }
+
+    const menuContent = (
+        <HoverCard.Content
+            className={contentClassName}
+            style={{
+                width: isMobile ? 316 : 268,
+                left: -6,
+                bottom: 0,
+            }}
+            sideOffset={isMobile ? 0 : 8}
+            side={isMobile ? 'bottom' : 'right'}
+            align="start"
+            alignOffset={isMobile ? 0 : -64}
+            collisionPadding={isMobile ? 0 : 8}
+        >
+            <SettingDialog
+                open={settingOpen}
+                onOpenChange={setSettingOpen}
+            >
+                <div className="row-full">
+                    <MenuItem text={t('Setting')} icon={IconSetting} />
+                </div>
+            </SettingDialog>
+
+            <MenuItem
+                text={t('Copy Text')}
+                successText={t('Copied!')}
+                icon={IconCopy}
+                className="row-full"
+                onClick={onClickText}
+            />
+            <MenuItem
+                text={t('Screenshot')}
+                icon={IconCamera}
+                className="row-half"
+                onClick={onClickPng}
+            />
+            <MenuItem
+                text={t('Markdown')}
+                icon={IconMarkdown}
+                className="row-half"
+                onClick={onClickMarkdown}
+            />
+            <MenuItem
+                text={t('HTML')}
+                icon={FileCode}
+                className="row-half"
+                onClick={onClickHtml}
+            />
+            <Dialog.Root
+                open={jsonOpen}
+                onOpenChange={setJsonOpen}
+            >
+                <Dialog.Trigger asChild>
+                    <MenuItem
+                        text={t('JSON')}
+                        icon={IconJSON}
+                        className="row-half"
+                        onClick={onClickJSON}
+                    />
+                </Dialog.Trigger>
+                <Dialog.Portal>
+                    <Dialog.Overlay className="DialogOverlay" />
+                    <Dialog.Content className="DialogContent" style={{ width: '320px' }}>
+                        <Dialog.Title className="DialogTitle">{t('JSON')}</Dialog.Title>
+                        <MenuItem
+                            text={t('OpenAI Official Format')}
+                            icon={IconCopy}
+                            className="row-full"
+                            onClick={onClickOfficialJSON}
+                        />
+                        <MenuItem
+                            text="JSONL (TavernAI, SillyTavern)"
+                            icon={IconCopy}
+                            className="row-full"
+                            onClick={onClickTavern}
+                        />
+                        <MenuItem
+                            text="Ooba (text-generation-webui)"
+                            icon={IconCopy}
+                            className="row-full"
+                            onClick={onClickOoba}
+                        />
+                    </Dialog.Content>
+                </Dialog.Portal>
+            </Dialog.Root>
+            <ExportDialog
+                format={format}
+                open={exportOpen}
+                onOpenChange={setExportOpen}
+            >
+                <div className="row-full">
+                    <MenuItem
+                        text={t('Export All')}
+                        icon={IconZip}
+                    />
+                </div>
+            </ExportDialog>
+
+            {!isMobile && (
+                <HoverCard.Arrow
+                    width="16"
+                    height="8"
+                    style={{
+                        fill: 'var(--ce-menu-primary)',
+                        stroke: 'var(--ce-border-light)',
+                        strokeWidth: '2px',
+                    }}
+                />
+            )}
+        </HoverCard.Content>
+    )
 
     return (
         <>
@@ -86,7 +209,7 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
             <HoverCard.Root
                 openDelay={0}
                 closeDelay={300}
-                open={open}
+                open={isMenuOpen}
                 onOpenChange={setOpen}
             >
                 <HoverCard.Trigger>
@@ -100,126 +223,12 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                         }}
                     />
                 </HoverCard.Trigger>
-                <Portal
+                <HoverCard.Portal
                     container={isMobile ? container : document.body}
+                    forceMount={isMenuOpen ? true : undefined}
                 >
-                    <HoverCard.Content
-                        className={`
-                        grid grid-cols-2
-                        bg-menu
-                        border border-menu
-                        transition-opacity duration-200 shadow-md
-                        ${isMobile
-                            ? 'gap-x-1 px-1.5 pt-2 rounded animate-slideUp'
-                            : 'gap-x-1 px-1.5 py-2 pb-0 rounded-md animate-fadeIn'}`}
-                        style={{
-                            width: isMobile ? 316 : 268,
-                            left: -6,
-                            bottom: 0,
-                        }}
-                        sideOffset={isMobile ? 0 : 8}
-                        side={isMobile ? 'bottom' : 'right'}
-                        align="start"
-                        alignOffset={isMobile ? 0 : -64}
-                        collisionPadding={isMobile ? 0 : 8}
-                    >
-                        <SettingDialog
-                            open={settingOpen}
-                            onOpenChange={setSettingOpen}
-                        >
-                            <div className="row-full">
-                                <MenuItem text={t('Setting')} icon={IconSetting} />
-                            </div>
-                        </SettingDialog>
-
-                        <MenuItem
-                            text={t('Copy Text')}
-                            successText={t('Copied!')}
-                            icon={IconCopy}
-                            className="row-full"
-                            onClick={onClickText}
-                        />
-                        <MenuItem
-                            text={t('Screenshot')}
-                            icon={IconCamera}
-                            className="row-half"
-                            onClick={onClickPng}
-                        />
-                        <MenuItem
-                            text={t('Markdown')}
-                            icon={IconMarkdown}
-                            className="row-half"
-                            onClick={onClickMarkdown}
-                        />
-                        <MenuItem
-                            text={t('HTML')}
-                            icon={FileCode}
-                            className="row-half"
-                            onClick={onClickHtml}
-                        />
-                        <Dialog.Root
-                            open={jsonOpen}
-                            onOpenChange={setJsonOpen}
-                        >
-                            <Dialog.Trigger asChild>
-                                <MenuItem
-                                    text={t('JSON')}
-                                    icon={IconJSON}
-                                    className="row-half"
-                                    onClick={onClickJSON}
-                                />
-                            </Dialog.Trigger>
-                            <Dialog.Portal>
-                                <Dialog.Overlay className="DialogOverlay" />
-                                <Dialog.Content className="DialogContent" style={{ width: '320px' }}>
-                                    <Dialog.Title className="DialogTitle">{t('JSON')}</Dialog.Title>
-                                    <MenuItem
-                                        text={t('OpenAI Official Format')}
-                                        icon={IconCopy}
-                                        className="row-full"
-                                        onClick={onClickOfficialJSON}
-                                    />
-                                    <MenuItem
-                                        text="JSONL (TavernAI, SillyTavern)"
-                                        icon={IconCopy}
-                                        className="row-full"
-                                        onClick={onClickTavern}
-                                    />
-                                    <MenuItem
-                                        text="Ooba (text-generation-webui)"
-                                        icon={IconCopy}
-                                        className="row-full"
-                                        onClick={onClickOoba}
-                                    />
-                                </Dialog.Content>
-                            </Dialog.Portal>
-                        </Dialog.Root>
-                        <ExportDialog
-                            format={format}
-                            open={exportOpen}
-                            onOpenChange={setExportOpen}
-                        >
-                            <div className="row-full">
-                                <MenuItem
-                                    text={t('Export All')}
-                                    icon={IconZip}
-                                />
-                            </div>
-                        </ExportDialog>
-
-                        {!isMobile && (
-                            <HoverCard.Arrow
-                                width="16"
-                                height="8"
-                                style={{
-                                    fill: 'var(--ce-menu-primary)',
-                                    stroke: 'var(--ce-border-light)',
-                                    strokeWidth: '2px',
-                                }}
-                            />
-                        )}
-                    </HoverCard.Content>
-                </Portal>
+                    {menuContent}
+                </HoverCard.Portal>
             </HoverCard.Root>
             <Divider />
         </>

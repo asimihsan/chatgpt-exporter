@@ -26394,7 +26394,15 @@ u$5(Close, { asChild: true, children: u$5("button", { className: "IconButton Clo
     const onClickOoba = q$1(() => exportToOoba(format), [format]);
     const width = useWindowResize(() => window.innerWidth);
     const isMobile = width < 768;
-    const Portal$22 = isMobile ? "div" : Portal;
+    const hasOverlayOpen = jsonOpen || settingOpen || exportOpen;
+    const isMenuOpen = open || hasOverlayOpen;
+    const contentClassName = `
+        grid grid-cols-2
+        bg-menu
+        border border-menu
+        transition-opacity duration-200 shadow-md
+        ${isMobile ? "gap-x-1 px-1.5 pt-2 rounded animate-slideUp" : "gap-x-1 px-1.5 py-2 pb-0 rounded-md animate-fadeIn"}
+    `;
     if (disabled) {
       return u$5(
         MenuItem,
@@ -26406,6 +26414,147 @@ u$5(Close, { asChild: true, children: u$5("button", { className: "IconButton Clo
         }
       );
     }
+    const menuContent = u$5(
+      Content2,
+      {
+        className: contentClassName,
+        style: {
+          width: isMobile ? 316 : 268,
+          left: -6,
+          bottom: 0
+        },
+        sideOffset: isMobile ? 0 : 8,
+        side: isMobile ? "bottom" : "right",
+        align: "start",
+        alignOffset: isMobile ? 0 : -64,
+        collisionPadding: isMobile ? 0 : 8,
+        children: [
+u$5(
+            SettingDialog,
+            {
+              open: settingOpen,
+              onOpenChange: setSettingOpen,
+              children: u$5("div", { className: "row-full", children: u$5(MenuItem, { text: t2("Setting"), icon: IconSetting }) })
+            }
+          ),
+u$5(
+            MenuItem,
+            {
+              text: t2("Copy Text"),
+              successText: t2("Copied!"),
+              icon: IconCopy,
+              className: "row-full",
+              onClick: onClickText
+            }
+          ),
+u$5(
+            MenuItem,
+            {
+              text: t2("Screenshot"),
+              icon: IconCamera,
+              className: "row-half",
+              onClick: onClickPng
+            }
+          ),
+u$5(
+            MenuItem,
+            {
+              text: t2("Markdown"),
+              icon: IconMarkdown,
+              className: "row-half",
+              onClick: onClickMarkdown
+            }
+          ),
+u$5(
+            MenuItem,
+            {
+              text: t2("HTML"),
+              icon: FileCode,
+              className: "row-half",
+              onClick: onClickHtml
+            }
+          ),
+u$5(
+            Root$1,
+            {
+              open: jsonOpen,
+              onOpenChange: setJsonOpen,
+              children: [
+u$5(Trigger$1, { asChild: true, children: u$5(
+                  MenuItem,
+                  {
+                    text: t2("JSON"),
+                    icon: IconJSON,
+                    className: "row-half",
+                    onClick: onClickJSON
+                  }
+                ) }),
+u$5(Portal$1, { children: [
+u$5(Overlay, { className: "DialogOverlay" }),
+u$5(Content$1, { className: "DialogContent", style: { width: "320px" }, children: [
+u$5(Title, { className: "DialogTitle", children: t2("JSON") }),
+u$5(
+                      MenuItem,
+                      {
+                        text: t2("OpenAI Official Format"),
+                        icon: IconCopy,
+                        className: "row-full",
+                        onClick: onClickOfficialJSON
+                      }
+                    ),
+u$5(
+                      MenuItem,
+                      {
+                        text: "JSONL (TavernAI, SillyTavern)",
+                        icon: IconCopy,
+                        className: "row-full",
+                        onClick: onClickTavern
+                      }
+                    ),
+u$5(
+                      MenuItem,
+                      {
+                        text: "Ooba (text-generation-webui)",
+                        icon: IconCopy,
+                        className: "row-full",
+                        onClick: onClickOoba
+                      }
+                    )
+                  ] })
+                ] })
+              ]
+            }
+          ),
+u$5(
+            ExportDialog,
+            {
+              format,
+              open: exportOpen,
+              onOpenChange: setExportOpen,
+              children: u$5("div", { className: "row-full", children: u$5(
+                MenuItem,
+                {
+                  text: t2("Export All"),
+                  icon: IconZip
+                }
+              ) })
+            }
+          ),
+          !isMobile && u$5(
+            Arrow2,
+            {
+              width: "16",
+              height: "8",
+              style: {
+                fill: "var(--ce-menu-primary)",
+                stroke: "var(--ce-border-light)",
+                strokeWidth: "2px"
+              }
+            }
+          )
+        ]
+      }
+    );
     return u$5(k$3, { children: [
       isMobile && open && u$5(
         "div",
@@ -26419,7 +26568,7 @@ u$5(
         {
           openDelay: 0,
           closeDelay: 300,
-          open,
+          open: isMenuOpen,
           onOpenChange: setOpen,
           children: [
 u$5(Trigger, { children: u$5(
@@ -26435,155 +26584,11 @@ u$5(Trigger, { children: u$5(
               }
             ) }),
 u$5(
-              Portal$22,
+              Portal,
               {
                 container: isMobile ? container : document.body,
-                children: u$5(
-                  Content2,
-                  {
-                    className: `
-                        grid grid-cols-2
-                        bg-menu
-                        border border-menu
-                        transition-opacity duration-200 shadow-md
-                        ${isMobile ? "gap-x-1 px-1.5 pt-2 rounded animate-slideUp" : "gap-x-1 px-1.5 py-2 pb-0 rounded-md animate-fadeIn"}`,
-                    style: {
-                      width: isMobile ? 316 : 268,
-                      left: -6,
-                      bottom: 0
-                    },
-                    sideOffset: isMobile ? 0 : 8,
-                    side: isMobile ? "bottom" : "right",
-                    align: "start",
-                    alignOffset: isMobile ? 0 : -64,
-                    collisionPadding: isMobile ? 0 : 8,
-                    children: [
-u$5(
-                        SettingDialog,
-                        {
-                          open: settingOpen,
-                          onOpenChange: setSettingOpen,
-                          children: u$5("div", { className: "row-full", children: u$5(MenuItem, { text: t2("Setting"), icon: IconSetting }) })
-                        }
-                      ),
-u$5(
-                        MenuItem,
-                        {
-                          text: t2("Copy Text"),
-                          successText: t2("Copied!"),
-                          icon: IconCopy,
-                          className: "row-full",
-                          onClick: onClickText
-                        }
-                      ),
-u$5(
-                        MenuItem,
-                        {
-                          text: t2("Screenshot"),
-                          icon: IconCamera,
-                          className: "row-half",
-                          onClick: onClickPng
-                        }
-                      ),
-u$5(
-                        MenuItem,
-                        {
-                          text: t2("Markdown"),
-                          icon: IconMarkdown,
-                          className: "row-half",
-                          onClick: onClickMarkdown
-                        }
-                      ),
-u$5(
-                        MenuItem,
-                        {
-                          text: t2("HTML"),
-                          icon: FileCode,
-                          className: "row-half",
-                          onClick: onClickHtml
-                        }
-                      ),
-u$5(
-                        Root$1,
-                        {
-                          open: jsonOpen,
-                          onOpenChange: setJsonOpen,
-                          children: [
-u$5(Trigger$1, { asChild: true, children: u$5(
-                              MenuItem,
-                              {
-                                text: t2("JSON"),
-                                icon: IconJSON,
-                                className: "row-half",
-                                onClick: onClickJSON
-                              }
-                            ) }),
-u$5(Portal$1, { children: [
-u$5(Overlay, { className: "DialogOverlay" }),
-u$5(Content$1, { className: "DialogContent", style: { width: "320px" }, children: [
-u$5(Title, { className: "DialogTitle", children: t2("JSON") }),
-u$5(
-                                  MenuItem,
-                                  {
-                                    text: t2("OpenAI Official Format"),
-                                    icon: IconCopy,
-                                    className: "row-full",
-                                    onClick: onClickOfficialJSON
-                                  }
-                                ),
-u$5(
-                                  MenuItem,
-                                  {
-                                    text: "JSONL (TavernAI, SillyTavern)",
-                                    icon: IconCopy,
-                                    className: "row-full",
-                                    onClick: onClickTavern
-                                  }
-                                ),
-u$5(
-                                  MenuItem,
-                                  {
-                                    text: "Ooba (text-generation-webui)",
-                                    icon: IconCopy,
-                                    className: "row-full",
-                                    onClick: onClickOoba
-                                  }
-                                )
-                              ] })
-                            ] })
-                          ]
-                        }
-                      ),
-u$5(
-                        ExportDialog,
-                        {
-                          format,
-                          open: exportOpen,
-                          onOpenChange: setExportOpen,
-                          children: u$5("div", { className: "row-full", children: u$5(
-                            MenuItem,
-                            {
-                              text: t2("Export All"),
-                              icon: IconZip
-                            }
-                          ) })
-                        }
-                      ),
-                      !isMobile && u$5(
-                        Arrow2,
-                        {
-                          width: "16",
-                          height: "8",
-                          style: {
-                            fill: "var(--ce-menu-primary)",
-                            stroke: "var(--ce-border-light)",
-                            strokeWidth: "2px"
-                          }
-                        }
-                      )
-                    ]
-                  }
-                )
+                forceMount: isMenuOpen ? true : void 0,
+                children: menuContent
               }
             )
           ]
@@ -26618,49 +26623,51 @@ u$5(Divider, {})
           nav.append(container);
         }
       };
-      sentinel.on("nav", injectNavMenu);
-      setInterval(() => {
-        injectionMap.forEach((container, nav) => {
-          if (!nav.isConnected) {
-            container.remove();
-            injectionMap.delete(nav);
-          }
+      setTimeout(() => {
+        sentinel.on("nav", injectNavMenu);
+        setInterval(() => {
+          injectionMap.forEach((container, nav) => {
+            if (!nav.isConnected) {
+              container.remove();
+              injectionMap.delete(nav);
+            }
+          });
+          const navList = Array.from(document.querySelectorAll("nav")).filter((nav) => !injectionMap.has(nav));
+          navList.forEach(injectNavMenu);
+        }, 300);
+        if (isSharePage()) {
+          sentinel.on(`div[role="presentation"] > .w-full > div >.flex.w-full`, (target) => {
+            target.prepend(getMenuContainer());
+          });
+        }
+        let chatId = "";
+        sentinel.on('[role="presentation"]', async () => {
+          const currentChatId = getChatIdFromUrl();
+          if (!currentChatId || currentChatId === chatId) return;
+          chatId = currentChatId;
+          const rawConversation = await fetchConversation(chatId, false);
+          const { conversationNodes } = processConversation(rawConversation);
+          const threadContents = Array.from(document.querySelectorAll('main [data-testid^="conversation-turn-"] [data-message-id]'));
+          if (threadContents.length === 0) return;
+          threadContents.forEach((thread, index2) => {
+            const createTime = conversationNodes[index2]?.message?.create_time;
+            if (!createTime) return;
+            const date = new Date(createTime * 1e3);
+            const timestamp2 = document.createElement("time");
+            timestamp2.className = "w-full text-gray-500 dark:text-gray-400 text-sm text-right";
+            timestamp2.dateTime = date.toISOString();
+            timestamp2.title = date.toLocaleString();
+            const hour12 = document.createElement("span");
+            hour12.setAttribute("data-time-format", "12");
+            hour12.textContent = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
+            const hour24 = document.createElement("span");
+            hour24.setAttribute("data-time-format", "24");
+            hour24.textContent = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
+            timestamp2.append(hour12, hour24);
+            thread.append(timestamp2);
+          });
         });
-        const navList = Array.from(document.querySelectorAll("nav")).filter((nav) => !injectionMap.has(nav));
-        navList.forEach(injectNavMenu);
-      }, 300);
-      if (isSharePage()) {
-        sentinel.on(`div[role="presentation"] > .w-full > div >.flex.w-full`, (target) => {
-          target.prepend(getMenuContainer());
-        });
-      }
-      let chatId = "";
-      sentinel.on('[role="presentation"]', async () => {
-        const currentChatId = getChatIdFromUrl();
-        if (!currentChatId || currentChatId === chatId) return;
-        chatId = currentChatId;
-        const rawConversation = await fetchConversation(chatId, false);
-        const { conversationNodes } = processConversation(rawConversation);
-        const threadContents = Array.from(document.querySelectorAll('main [data-testid^="conversation-turn-"] [data-message-id]'));
-        if (threadContents.length === 0) return;
-        threadContents.forEach((thread, index2) => {
-          const createTime = conversationNodes[index2]?.message?.create_time;
-          if (!createTime) return;
-          const date = new Date(createTime * 1e3);
-          const timestamp2 = document.createElement("time");
-          timestamp2.className = "w-full text-gray-500 dark:text-gray-400 text-sm text-right";
-          timestamp2.dateTime = date.toISOString();
-          timestamp2.title = date.toLocaleString();
-          const hour12 = document.createElement("span");
-          hour12.setAttribute("data-time-format", "12");
-          hour12.textContent = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
-          const hour24 = document.createElement("span");
-          hour24.setAttribute("data-time-format", "24");
-          hour24.textContent = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
-          timestamp2.append(hour12, hour24);
-          thread.append(timestamp2);
-        });
-      });
+      }, 1200);
     });
   }
   function getMenuContainer() {
