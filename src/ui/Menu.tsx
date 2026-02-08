@@ -63,8 +63,8 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
         border ce-border-menu
         transition-opacity duration-200 shadow-md
         ${isMobile
-            ? 'gap-x-1 px-1.5 pt-2 rounded animate-slideUp'
-            : 'gap-x-1 px-1.5 py-2 pb-0 rounded-md animate-fadeIn'}
+            ? 'gap-x-1 px-1.5 pt-2 rounded ce-animate-slide-up'
+            : 'gap-x-1 px-1.5 py-2 pb-0 rounded-md ce-animate-fade-in'}
     `
 
     if (disabled) {
@@ -192,7 +192,7 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
         <>
             {isMobile && open && (
                 <div
-                    className="dropdown-backdrop animate-fadeIn"
+                    className="dropdown-backdrop ce-animate-fade-in"
                     onClick={() => setOpen(false)}
                 ></div>
             )}

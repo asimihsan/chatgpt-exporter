@@ -1,9 +1,9 @@
-.animate-fadeIn  {
-    animation: fadeIn .3s;
+.ce-animate-fade-in  {
+    animation: ceFadeIn .3s;
 }
 
-.animate-slideUp  {
-    animation: slideUp .3s;
+.ce-animate-slide-up  {
+    animation: ceSlideUp .3s;
 }
 
 .bg-blue-600 {
@@ -176,4 +176,3 @@
 .toggle-switch-label:hover {
     color: rgb(71 85 105);
 }
-

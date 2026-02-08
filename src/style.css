@@ -55,10 +55,14 @@ html {
     opacity: 1 !important;
     background-color: var(--ce-menu-primary) !important;
     backdrop-filter: none !important;
+    filter: none !important;
+    mix-blend-mode: normal !important;
 }
 
 .ce-menu-item {
     height: 46px;
+    background-color: var(--ce-menu-primary) !important;
+    color: var(--ce-text-primary) !important;
 }
 
 .ce-menu-item[disabled] {
@@ -96,11 +100,11 @@ html {
     left: 0;
     right: 0;
     background-color: rgba(0,0,0,.5);
-    animation-name: pointerFadeIn;
+    animation-name: cePointerFadeIn;
     animation-duration: .3s;
 }
 
-@keyframes fadeIn {
+@keyframes ceFadeIn {
     from {
         opacity: 0;
     }
@@ -109,7 +113,7 @@ html {
     }
 }
 
-@keyframes slideUp {
+@keyframes ceSlideUp {
     from {
         transform: translateY(100%);
     }
@@ -118,7 +122,7 @@ html {
     }
 }
 
-@keyframes pointerFadeIn {
+@keyframes cePointerFadeIn {
     from {
         opacity: 0;
         pointer-events: none;
