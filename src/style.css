@@ -65,7 +65,11 @@ html {
     color: var(--ce-text-primary) !important;
 }
 
-.ce-menu-item[disabled] {
+.ce-menu-item[aria-disabled="false"]:hover {
+    background-color: var(--ce-menu-secondary) !important;
+}
+
+.ce-menu-item[aria-disabled="true"] {
     filter: brightness(0.5);
 }
 

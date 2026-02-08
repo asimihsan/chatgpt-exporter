@@ -45,7 +45,7 @@ export const MenuItem: FC<MenuItemProps> = ({ text, successText, disabled = fals
             className={`
             ce-menu-item
             flex flex-shrink-0 py-3 px-3 items-center gap-3 rounded-lg mb-2
-            ce-bg-menu hover:bg-gray-500/10
+            ce-bg-menu
             transition-colors duration-200
             ce-text-menu text-sm
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
