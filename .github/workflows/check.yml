@@ -30,10 +30,5 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-cache-
 
-      - run: bun install --frozen-lockfile
-
-      - name: Lint (strict)
-        run: bun run lint
-
-      - name: Test
-        run: bun run test
+      - name: CI
+        run: mise run ci

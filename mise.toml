@@ -13,7 +13,7 @@ package_manager = "bun"
 [tasks.install]
 alias = "i"
 description = "Install project dependencies with Bun"
-run = "bun install"
+run = "bun install --frozen-lockfile"
 sources = ["package.json", "bun.lock", "mise.toml"]
 outputs = ["node_modules/.bin"]
 
@@ -91,10 +91,21 @@ description = "Run typecheck and unit tests"
 depends = ["typecheck", "test-unit"]
 run = "echo test checks complete"
 
+[tasks.audit]
+description = "Audit dependencies for known vulnerabilities (low+)"
+depends = ["install"]
+run = "bun audit --audit-level=low"
+sources = ["package.json", "bun.lock", "mise.toml", "mise.lock"]
+
+[tasks.ci]
+description = "Run lint, tests, and security audit"
+depends = ["lint", "test", "audit"]
+run = "echo ci checks complete"
+
 [tasks.check]
 alias = "c"
-description = "Run lint and tests"
-depends = ["lint", "test"]
+description = "Run full CI checks"
+depends = ["ci"]
 run = "echo all checks complete"
 
 [tasks.deps-check]
