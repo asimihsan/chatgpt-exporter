@@ -57,6 +57,7 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
     const isMobile = width < 768
     const hasOverlayOpen = jsonOpen || exportOpen
     const isMenuOpen = open || hasOverlayOpen
+    const desktopMenuWidth = 228
 
     useEffect(() => {
         if (!open) return
@@ -86,15 +87,34 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
         }
     }, [open])
 
+    useEffect(() => {
+        if (!isMenuOpen || !menuRef.current) return
+
+        const rafId = window.requestAnimationFrame(() => {
+            const wrapper = menuRef.current?.closest('[data-radix-popper-content-wrapper]') as HTMLElement | null
+            if (!wrapper) return
+
+            wrapper.style.zIndex = '2147483000'
+            wrapper.style.opacity = '1'
+            wrapper.style.filter = 'none'
+            wrapper.style.backdropFilter = 'none'
+            wrapper.style.mixBlendMode = 'normal'
+            wrapper.style.minWidth = '0'
+        })
+
+        return () => {
+            window.cancelAnimationFrame(rafId)
+        }
+    }, [isMenuOpen])
+
     const contentClassName = `
         ce-menu-content
-        grid grid-cols-2
         ce-bg-menu
         border ce-border-menu
         transition-opacity duration-200 shadow-md
         ${isMobile
-            ? 'gap-x-1 px-1.5 pt-2 rounded ce-animate-slide-up'
-            : 'gap-x-1 px-1.5 py-2 pb-0 rounded-md ce-animate-fade-in'}
+            ? 'ce-animate-slide-up'
+            : 'ce-animate-fade-in'}
     `
 
     const onToggleMenu = useCallback(() => {
@@ -117,9 +137,15 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
         <HoverCard.Content
             className={contentClassName}
             style={{
-                width: isMobile ? 316 : 268,
+                width: isMobile ? 312 : desktopMenuWidth,
+                minWidth: isMobile ? 312 : desktopMenuWidth,
+                maxWidth: isMobile ? 312 : desktopMenuWidth,
                 left: -6,
                 bottom: 0,
+                backgroundColor: 'var(--ce-menu-primary)',
+                opacity: 1,
+                position: 'relative',
+                zIndex: 2147483000,
             }}
             sideOffset={isMobile ? 0 : 8}
             side={isMobile ? 'bottom' : 'right'}
@@ -131,7 +157,6 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                 <MenuItem
                     text={t('Setting')}
                     icon={IconSetting}
-                    className="ce-row-full"
                     onClick={onClickSetting}
                 />
 
@@ -139,25 +164,21 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                     text={t('Copy Text')}
                     successText={t('Copied!')}
                     icon={IconCopy}
-                    className="ce-row-full"
                     onClick={onClickText}
                 />
                 <MenuItem
                     text={t('Screenshot')}
                     icon={IconCamera}
-                    className="ce-row-half"
                     onClick={onClickPng}
                 />
                 <MenuItem
                     text={t('Markdown')}
                     icon={IconMarkdown}
-                    className="ce-row-half"
                     onClick={onClickMarkdown}
                 />
                 <MenuItem
                     text={t('HTML')}
                     icon={FileCode}
-                    className="ce-row-half"
                     onClick={onClickHtml}
                 />
                 <Dialog.Root
@@ -168,7 +189,6 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                         <MenuItem
                             text={t('JSON')}
                             icon={IconJSON}
-                            className="ce-row-half"
                             onClick={onClickJSON}
                         />
                     </Dialog.Trigger>
@@ -179,19 +199,16 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                             <MenuItem
                                 text={t('OpenAI Official Format')}
                                 icon={IconCopy}
-                                className="ce-row-full"
                                 onClick={onClickOfficialJSON}
                             />
                             <MenuItem
                                 text="JSONL (TavernAI, SillyTavern)"
                                 icon={IconCopy}
-                                className="ce-row-full"
                                 onClick={onClickTavern}
                             />
                             <MenuItem
                                 text="Ooba (text-generation-webui)"
                                 icon={IconCopy}
-                                className="ce-row-full"
                                 onClick={onClickOoba}
                             />
                         </Dialog.Content>
@@ -202,7 +219,7 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                     open={exportOpen}
                     onOpenChange={setExportOpen}
                 >
-                    <div className="ce-row-full">
+                    <div>
                         <MenuItem
                             text={t('Export All')}
                             icon={IconZip}
