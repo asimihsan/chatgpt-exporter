@@ -1,3 +1,4 @@
+/* Utility fallback layer for Tailwind-like classes until a dedicated Tailwind build step is introduced. */
 .ce-animate-fade-in  {
     animation: ceFadeIn .3s;
 }
