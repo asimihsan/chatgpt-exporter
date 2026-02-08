@@ -80,6 +80,11 @@ html {
     background-color: var(--ce-menu-secondary) !important;
 }
 
+.ce-menu-trigger-success {
+    background-color: color-mix(in srgb, var(--ce-menu-secondary) 82%, #1f9f54 18%) !important;
+    border-color: color-mix(in srgb, var(--ce-border-light) 50%, #1f9f54 50%) !important;
+}
+
 .ce-menu-item[aria-disabled="true"] {
     filter: brightness(0.5);
 }

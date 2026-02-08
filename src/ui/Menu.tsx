@@ -9,6 +9,7 @@ import { exportToMarkdown } from '../exporter/markdown'
 import { exportToText } from '../exporter/text'
 import { useWindowResize } from '../hooks/useWindowResize'
 import { getHistoryDisabled } from '../page'
+import { COPY_TEXT_SHORTCUT_SUCCESS_EVENT } from '../shortcuts/exportCopyShortcut'
 import { openSettingsPanel } from '../settings/panel'
 import { Divider } from './Divider'
 import { ExportDialog } from './ExportDialog'
@@ -26,8 +27,10 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
     const [open, setOpen] = useState(false)
     const [jsonOpen, setJsonOpen] = useState(false)
     const [exportOpen, setExportOpen] = useState(false)
+    const [shortcutCopied, setShortcutCopied] = useState(false)
     const triggerRef = useRef<HTMLDivElement | null>(null)
     const menuRef = useRef<HTMLDivElement | null>(null)
+    const copiedTimerRef = useRef<number | undefined>(undefined)
 
     const {
         format,
@@ -86,6 +89,29 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
             document.removeEventListener('keydown', onKeyDown)
         }
     }, [open])
+
+    useEffect(() => {
+        const onShortcutCopied = () => {
+            if (copiedTimerRef.current !== undefined) {
+                window.clearTimeout(copiedTimerRef.current)
+            }
+
+            setShortcutCopied(true)
+            copiedTimerRef.current = window.setTimeout(() => {
+                setShortcutCopied(false)
+                copiedTimerRef.current = undefined
+            }, 1600)
+        }
+
+        window.addEventListener(COPY_TEXT_SHORTCUT_SUCCESS_EVENT, onShortcutCopied)
+
+        return () => {
+            window.removeEventListener(COPY_TEXT_SHORTCUT_SUCCESS_EVENT, onShortcutCopied)
+            if (copiedTimerRef.current !== undefined) {
+                window.clearTimeout(copiedTimerRef.current)
+            }
+        }
+    }, [])
 
     useEffect(() => {
         if (!isMenuOpen || !menuRef.current) return
@@ -257,8 +283,8 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                 <HoverCard.Trigger>
                     <div ref={triggerRef}>
                         <MenuItem
-                            className="mt-1"
-                            text={t('ExportHelper')}
+                            className={`mt-1 ${shortcutCopied ? 'ce-menu-trigger-success' : ''}`}
+                            text={shortcutCopied ? t('Copied!') : t('ExportHelper')}
                             icon={IconArrowRightFromBracket}
                             onClick={onToggleMenu}
                         />
