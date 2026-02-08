@@ -2,6 +2,7 @@ import { render } from 'preact'
 import sentinel from 'sentinel-js'
 import { fetchConversation, processConversation } from './api'
 import { getChatIdFromUrl, isSharePage } from './page'
+import { registerExportCopyShortcut } from './shortcuts/exportCopyShortcut'
 import { registerSettingsMenuCommand } from './settings/menuCommand'
 import { Menu } from './ui/Menu'
 import { onloadSafe } from './utils/utils'
@@ -14,6 +15,7 @@ main()
 function main() {
     onloadSafe(() => {
         registerSettingsMenuCommand()
+        registerExportCopyShortcut()
 
         const styleEl = document.createElement('style')
         styleEl.id = 'sentinel-css'
