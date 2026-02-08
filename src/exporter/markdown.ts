@@ -8,6 +8,7 @@ import { fromMarkdown, toMarkdown } from '../utils/markdown'
 import { ScriptStorage } from '../utils/storage'
 import { standardizeLineBreaks } from '../utils/text'
 import { dateStr, timestamp, unixTimestampToISOString } from '../utils/utils'
+import { normalizeReferenceText, replaceReferenceTokens, shouldSkipMessage, stripUiTokens } from './shared'
 import type { ApiConversationWithId, Citation, ConversationNodeMessage, ConversationResult } from '../api'
 import type { ExportMeta } from '../ui/SettingContext'
 
@@ -94,17 +95,8 @@ function conversationToMarkdown(conversation: ConversationResult, metaList?: Exp
     const timeStamp24H = ScriptStorage.get<boolean>(KEY_TIMESTAMP_24H) ?? false
 
     const content = conversationNodes.map(({ message }) => {
-        if (!message || !message.content) return null
-
-        // ChatGPT is talking to tool
-        if (message.recipient !== 'all') return null
-
-        // Skip "thinking" content (hidden reasoning steps from thinking models)
-        if (message.content.content_type === 'thoughts') return null
-        if (message.content.content_type === 'reasoning_recap') return null
-
-        // Skip messages marked as visually hidden (e.g., internal system prompts)
-        if (message.metadata?.is_visually_hidden_from_conversation) return null
+        if (!message?.content) return null
+        if (shouldSkipMessage(message)) return null
 
         // Skip tool's intermediate message.
         if (message.author.role === 'tool') {
@@ -245,17 +237,10 @@ function transformContentReferences(
     // (e.g., "citeturn0search2turn1search8" before "citeturn0search2")
     const sortedRefs = [...contentRefs].sort((a, b) => (b.matched_text?.length || 0) - (a.matched_text?.length || 0))
 
-    // Normalize unicode variants (non-breaking spaces, non-breaking hyphens) to regular ASCII
-    const normalize = (s: string) => s
-        .replaceAll(/[\u00A0\u202F\u2007\u2060]/gu, ' ')
-        .replaceAll(/[\u2010-\u2015\u2212]/gu, '-')
-
-    let output = normalize(input)
+    let output = normalizeReferenceText(input)
 
     for (const ref of sortedRefs) {
         if (!ref.matched_text) continue
-
-        const matchedText = normalize(ref.matched_text)
 
         switch (ref.type) {
             case 'sources_footnote':
@@ -271,16 +256,16 @@ function transformContentReferences(
                     for (const sw of item.supporting_websites || []) {
                         links.push(`[${sw.attribution || sw.title}](${sw.url})`)
                     }
-                    output = output.replaceAll(matchedText, `(${links.join(', ')})`)
+                    output = replaceReferenceTokens(output, ref.matched_text, `(${links.join(', ')})`)
                 }
                 else {
-                    output = output.replaceAll(matchedText, ref.alt || '')
+                    output = replaceReferenceTokens(output, ref.matched_text, ref.alt || '')
                 }
                 break
             }
             default:
                 // Use ref.alt which contains display text or pre-formatted markdown link
-                output = output.replaceAll(matchedText, ref.alt || '')
+                output = replaceReferenceTokens(output, ref.matched_text, ref.alt || '')
         }
     }
 
@@ -297,9 +282,9 @@ function transformContent(
 ) {
     switch (content.content_type) {
         case 'text':
-            return postProcess(content.parts?.join('\n') || '')
+            return postProcess(stripUiTokens(content.parts?.join('\n') || ''))
         case 'code':
-            return `Code:\n\`\`\`\n${content.text}\n\`\`\`` || ''
+            return `Code:\n\`\`\`\n${stripUiTokens(content.text)}\n\`\`\``
         case 'execution_output':
             if (metadata?.aggregate_result?.messages) {
                 return metadata.aggregate_result.messages
@@ -307,9 +292,9 @@ function transformContent(
                     .map(msg => `![image](${msg.image_url})`)
                     .join('\n')
             }
-            return postProcess(`Result:\n\`\`\`\n${content.text}\n\`\`\`` || '')
+            return postProcess(`Result:\n\`\`\`\n${stripUiTokens(content.text)}\n\`\`\``)
         case 'tether_quote':
-            return postProcess(`> ${content.title || content.text || ''}`)
+            return postProcess(`> ${stripUiTokens(content.title || content.text || '')}`)
         case 'tether_browsing_code':
             return postProcess('') // TODO: implement
         case 'tether_browsing_display': {
@@ -321,9 +306,9 @@ function transformContent(
         }
         case 'multimodal_text': {
             return content.parts?.map((part) => {
-                if (typeof part === 'string') return postProcess(part)
+                if (typeof part === 'string') return postProcess(stripUiTokens(part))
                 if (part.content_type === 'image_asset_pointer') return `![image](${part.asset_pointer})`
-                if (part.content_type === 'audio_transcription') return `[audio] ${part.text}`
+                if (part.content_type === 'audio_transcription') return `[audio] ${stripUiTokens(part.text)}`
                 if (part.content_type === 'audio_asset_pointer') return null
                 if (part.content_type === 'real_time_user_audio_video_asset_pointer') return null
                 return postProcess('[Unsupported multimodal content]')

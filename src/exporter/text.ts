@@ -4,6 +4,7 @@ import { checkIfConversationStarted } from '../page'
 import { copyToClipboard } from '../utils/clipboard'
 import { flatMap, fromMarkdown, toMarkdown } from '../utils/markdown'
 import { standardizeLineBreaks } from '../utils/text'
+import { normalizeReferenceText, replaceReferenceTokens, shouldSkipMessage, stripUiTokens } from './shared'
 import type { ConversationNodeMessage } from '../api'
 import type { Emphasis, Strong } from 'mdast'
 
@@ -32,10 +33,8 @@ export async function exportToText() {
 const LatexRegex = /(\s\$\$.+\$\$\s|\s\$.+\$\s|\\\[.+\\\]|\\\(.+\\\))|(^\$$[\S\s]+^\$$)|(^\$\$[\S\s]+^\$\$$)/gm
 
 function transformMessage(message?: ConversationNodeMessage) {
-    if (!message || !message.content) return null
-
-    // ChatGPT is talking to tool
-    if (message.recipient !== 'all') return null
+    if (!message?.content) return null
+    if (shouldSkipMessage(message)) return null
 
     // Skip tool's intermediate message.
     if (message.author.role === 'tool') {
@@ -94,9 +93,9 @@ function transformContent(
 ) {
     switch (content.content_type) {
         case 'text':
-            return content.parts?.join('\n') || ''
+            return stripUiTokens(content.parts?.join('\n') || '')
         case 'code':
-            return content.text || ''
+            return stripUiTokens(content.text || '')
         case 'execution_output':
             if (metadata?.aggregate_result?.messages) {
                 return metadata.aggregate_result.messages
@@ -104,9 +103,9 @@ function transformContent(
                     .map(() => '[image]')
                     .join('\n')
             }
-            return content.text || ''
+            return stripUiTokens(content.text || '')
         case 'tether_quote':
-            return `> ${content.title || content.text || ''}`
+            return `> ${stripUiTokens(content.title || content.text || '')}`
         case 'tether_browsing_code':
             return '' // TODO: implement
         case 'tether_browsing_display': {
@@ -118,10 +117,10 @@ function transformContent(
         }
         case 'multimodal_text': {
             return content.parts?.map((part) => {
-                if (typeof part === 'string') return part
+                if (typeof part === 'string') return stripUiTokens(part)
                 // We show `[image]` for multimodal as the base64 string is too long. This is bad for sharing pure text.
                 if (part.content_type === 'image_asset_pointer') return '[image]'
-                if (part.content_type === 'audio_transcription') return `[audio] ${part.text}`
+                if (part.content_type === 'audio_transcription') return `[audio] ${stripUiTokens(part.text)}`
                 if (part.content_type === 'audio_asset_pointer') return null
                 if (part.content_type === 'real_time_user_audio_video_asset_pointer') return null
                 return '[Unsupported multimodal content]'
@@ -175,24 +174,17 @@ function transformContentReferences(
 
     const sortedRefs = [...contentRefs].sort((a, b) => (b.matched_text?.length || 0) - (a.matched_text?.length || 0))
 
-    // Normalize unicode variants (non-breaking spaces, non-breaking hyphens) to regular ASCII
-    const normalize = (s: string) => s
-        .replaceAll(/[\u00A0\u202F\u2007\u2060]/gu, ' ')
-        .replaceAll(/[\u2010-\u2015\u2212]/gu, '-')
-
-    let output = normalize(input)
+    let output = normalizeReferenceText(input)
 
     for (const ref of sortedRefs) {
         if (!ref.matched_text) continue
-
-        const matchedText = normalize(ref.matched_text)
 
         switch (ref.type) {
             case 'sources_footnote':
                 break
             default:
                 // Use ref.alt which contains display text (links won't render in plain text)
-                output = output.replaceAll(matchedText, ref.alt || '')
+                output = replaceReferenceTokens(output, ref.matched_text, ref.alt || '')
         }
     }
     return output
