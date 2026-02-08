@@ -1,17 +1,19 @@
 import { describe, expect, it } from 'vitest'
-import { isEditableTarget, isMacPlatform, matchesExportCopyShortcut } from './exportCopyShortcutHelpers'
+import { isEditableContext, isEditableTarget, isMacPlatform, matchesExportCopyShortcut } from './exportCopyShortcutHelpers'
 
 function buildKeyEvent(overrides: Partial<{
     key: string
     shiftKey: boolean
     metaKey: boolean
     ctrlKey: boolean
+    altKey: boolean
 }> = {}) {
     return {
         key: 'e',
         shiftKey: true,
         metaKey: false,
         ctrlKey: false,
+        altKey: false,
         ...overrides,
     }
 }
@@ -34,6 +36,7 @@ describe('export copy shortcut helpers', () => {
     it('rejects partial or mismatched key combinations', () => {
         expect(matchesExportCopyShortcut(buildKeyEvent({ shiftKey: false, ctrlKey: true }), false)).toBe(false)
         expect(matchesExportCopyShortcut(buildKeyEvent({ key: 'x', ctrlKey: true }), false)).toBe(false)
+        expect(matchesExportCopyShortcut(buildKeyEvent({ ctrlKey: true, altKey: true }), false)).toBe(false)
     })
 
     it('treats targets with editable ancestors as editable', () => {
@@ -55,5 +58,19 @@ describe('export copy shortcut helpers', () => {
     it('treats missing/invalid targets as non-editable', () => {
         expect(isEditableTarget(null)).toBe(false)
         expect(isEditableTarget({} as EventTarget)).toBe(false)
+    })
+
+    it('treats active editable element as editable context even when event target is not editable', () => {
+        const target = { closest: () => null } as unknown as EventTarget
+        const activeElement = { closest: () => ({ tagName: 'textarea' }) } as unknown as Element
+
+        expect(isEditableContext(target, activeElement)).toBe(true)
+    })
+
+    it('treats non-editable target and active element as non-editable context', () => {
+        const target = { closest: () => null } as unknown as EventTarget
+        const activeElement = { closest: () => null } as unknown as Element
+
+        expect(isEditableContext(target, activeElement)).toBe(false)
     })
 })

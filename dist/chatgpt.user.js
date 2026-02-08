@@ -19176,6 +19176,7 @@ case "tether_browsing_display": {
     return false;
   }
   function matchesExportCopyShortcut(event, isMac) {
+    if (event.altKey) return false;
     if (!event.shiftKey) return false;
     if (event.key.toLowerCase() !== "e") return false;
     if (isMac) {
@@ -19183,12 +19184,24 @@ case "tether_browsing_display": {
     }
     return event.ctrlKey && !event.metaKey;
   }
+  function isEditableContext(target, activeElement) {
+    return isEditableTarget(target) || isEditableTarget(activeElement);
+  }
   const COPY_TEXT_SHORTCUT_SUCCESS_EVENT = "ce:copy-text-success";
   let shortcutRegistered = false;
   async function handleShortcutKeydown(event, isMac) {
-    if (event.repeat || event.isComposing) return;
-    if (!matchesExportCopyShortcut(event, isMac)) return;
-    if (isEditableTarget(event.target)) return;
+    if (event.repeat) {
+      return;
+    }
+    if (event.isComposing) {
+      return;
+    }
+    if (!matchesExportCopyShortcut(event, isMac)) {
+      return;
+    }
+    if (isEditableContext(event.target, document.activeElement)) {
+      return;
+    }
     event.preventDefault();
     event.stopPropagation();
     const success = await exportToText();

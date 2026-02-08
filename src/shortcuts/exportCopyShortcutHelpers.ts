@@ -5,6 +5,7 @@ export interface ShortcutKeyEvent {
     shiftKey: boolean
     metaKey: boolean
     ctrlKey: boolean
+    altKey: boolean
 }
 
 export function isMacPlatform(platform?: string): boolean {
@@ -27,6 +28,7 @@ export function isEditableTarget(target: EventTarget | null): boolean {
 }
 
 export function matchesExportCopyShortcut(event: ShortcutKeyEvent, isMac: boolean): boolean {
+    if (event.altKey) return false
     if (!event.shiftKey) return false
     if (event.key.toLowerCase() !== 'e') return false
 
@@ -35,4 +37,8 @@ export function matchesExportCopyShortcut(event: ShortcutKeyEvent, isMac: boolea
     }
 
     return event.ctrlKey && !event.metaKey
+}
+
+export function isEditableContext(target: EventTarget | null, activeElement: Element | null): boolean {
+    return isEditableTarget(target) || isEditableTarget(activeElement)
 }
