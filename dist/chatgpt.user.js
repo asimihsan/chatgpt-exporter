@@ -48,7 +48,7 @@
 (function (JSZip, html2canvas) {
   'use strict';
 
-  const n$1=new Set;const importCSS = async t=>{n$1.has(t)||n$1.add(t);};
+  const n$1=new Set;const importCSS = async t=>{n$1.has(t)||(n$1.add(t),(d=>{const e=document.createElement("style");e.textContent=d,document.head.append(e),setInterval(()=>{e.isConnected||document.head.append(e);},300);})(t));};
 
   var n, l$1, u$2, i$1, o$1, r$1, e$1, f$2, c$1, s$1, a$1, h$1, p$2 = {}, v$1 = [], y$1 = /acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i, d$1 = Array.isArray;
   function w$2(n2, l2) {
