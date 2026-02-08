@@ -26346,13 +26346,13 @@ u$1(Content$1, { className: "DialogContent", children: open && u$1(DialogContent
       "div",
       {
         className: `
-            menu-item
+            ce-menu-item
             flex flex-shrink-0 py-3 px-3 items-center gap-3 rounded-lg mb-2
-            bg-menu hover:bg-gray-500/10
+            ce-bg-menu hover:bg-gray-500/10
             transition-colors duration-200
-            text-menu text-sm
+            ce-text-menu text-sm
             ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
-            border border-menu ${className}`,
+            border ce-border-menu ${className}`,
         onClick: handleClick,
         onTouchStart: handleClick,
         "aria-disabled": disabled,
@@ -26364,7 +26364,7 @@ u$1(Content$1, { className: "DialogContent", children: open && u$1(DialogContent
       }
     );
   };
-  const styleCss = 'span[data-time-format] {\n    display: none;\n}\n\nbody[data-time-format="12"] span[data-time-format="12"] {\n    display: inline;\n}\n\nbody[data-time-format="24"] span[data-time-format="24"] {\n    display: inline;\n}\n\n.Select {\n    padding: 0 0 0 0.5rem;\n    width: 7.5rem;\n    border-radius: 4px;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\n.dark .Select {\n    background-color: #2f2f2f;\n    color: #fff;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\nhtml {\n    --ce-text-primary: var(--text-primary, #0d0d0d);\n    --ce-menu-primary: var(--sidebar-surface-primary, #f9f9f9);\n    --ce-menu-secondary: var(--sidebar-surface-secondary, #ececec);\n    --ce-border-light: var(--border-light, rgba(0, 0, 0, .1));\n}\n\n.dark {\n    --ce-text-primary: var(--text-primary, #ececec);\n    --ce-menu-primary: var(--sidebar-surface-primary, #171717);\n    --ce-menu-secondary: var(--sidebar-surface-secondary, #212121);\n}\n\n.text-menu {\n    color: var(--ce-text-primary);\n}\n\n.bg-menu {\n    background-color: var(--ce-menu-primary);\n}\n\n.border-menu {\n    border-color: var(--ce-border-light);\n}\n\n.menu-item {\n    height: 46px;\n}\n\n.menu-item[disabled] {\n    filter: brightness(0.5);\n}\n\n.inputFieldSet {\n    display: block;\n    border-width: 2px;\n    border-style: groove;\n}\n\n.inputFieldSet legend {\n    margin-left: 4px;\n}\n\n.inputFieldSet input {\n    background-color: transparent;\n    box-shadow: none!important;\n}\n\n.row-half {\n    grid-column: auto / span 1;\n}\n\n.row-full {\n    grid-column: auto / span 2;\n}\n\n.dropdown-backdrop {\n    display: block;\n    position: fixed;\n    top: 0;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    background-color: rgba(0,0,0,.5);\n    animation-name: pointerFadeIn;\n    animation-duration: .3s;\n}\n\n@keyframes fadeIn {\n    from {\n        opacity: 0;\n    }\n    to {\n        opacity: 1;\n    }\n}\n\n@keyframes slideUp {\n    from {\n        transform: translateY(100%);\n    }\n    to {\n        transform: translateY(0);\n    }\n}\n\n@keyframes pointerFadeIn {\n    from {\n        opacity: 0;\n        pointer-events: none;\n    }\n    to {\n        opacity: 1;\n        pointer-events: auto;\n    }\n}\n\n@keyframes rotate {\n    from {\n        transform: rotate(0deg);\n    }\n    to {\n        transform: rotate(360deg);\n    }\n}\n\n@keyframes circularDash {\n    0% {\n        stroke-dasharray: 1px, 200px;\n        stroke-dashoffset: 0;\n    }\n    50% {\n        stroke-dasharray: 100px, 200px;\n        stroke-dashoffset: -15px;\n    }\n    100% {\n        stroke-dasharray: 100px, 200px;\n        stroke-dashoffset: -125px;\n    }\n}\n';
+  const styleCss = 'span[data-time-format] {\n    display: none;\n}\n\nbody[data-time-format="12"] span[data-time-format="12"] {\n    display: inline;\n}\n\nbody[data-time-format="24"] span[data-time-format="24"] {\n    display: inline;\n}\n\n.Select {\n    padding: 0 0 0 0.5rem;\n    width: 7.5rem;\n    border-radius: 4px;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\n.dark .Select {\n    background-color: #2f2f2f;\n    color: #fff;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\nhtml {\n    --ce-text-primary: var(--text-primary, #0d0d0d);\n    --ce-menu-primary: #f7f7f8;\n    --ce-menu-secondary: #ececf1;\n    --ce-border-light: rgba(0, 0, 0, .14);\n}\n\n.dark {\n    --ce-text-primary: var(--text-primary, #ececec);\n    --ce-menu-primary: #202123;\n    --ce-menu-secondary: #2d2f34;\n    --ce-border-light: rgba(255, 255, 255, .16);\n}\n\n.ce-text-menu {\n    color: var(--ce-text-primary);\n}\n\n.ce-bg-menu {\n    background-color: var(--ce-menu-primary);\n}\n\n.ce-border-menu {\n    border-color: var(--ce-border-light);\n}\n\n.ce-menu-content,\n.ce-menu-content[data-state="open"],\n.ce-menu-content[data-state="closed"] {\n    opacity: 1 !important;\n    background-color: var(--ce-menu-primary) !important;\n    backdrop-filter: none !important;\n}\n\n.ce-menu-item {\n    height: 46px;\n}\n\n.ce-menu-item[disabled] {\n    filter: brightness(0.5);\n}\n\n.inputFieldSet {\n    display: block;\n    border-width: 2px;\n    border-style: groove;\n}\n\n.inputFieldSet legend {\n    margin-left: 4px;\n}\n\n.inputFieldSet input {\n    background-color: transparent;\n    box-shadow: none!important;\n}\n\n.ce-row-half {\n    grid-column: auto / span 1;\n}\n\n.ce-row-full {\n    grid-column: auto / span 2;\n}\n\n.dropdown-backdrop {\n    display: block;\n    position: fixed;\n    top: 0;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    background-color: rgba(0,0,0,.5);\n    animation-name: pointerFadeIn;\n    animation-duration: .3s;\n}\n\n@keyframes fadeIn {\n    from {\n        opacity: 0;\n    }\n    to {\n        opacity: 1;\n    }\n}\n\n@keyframes slideUp {\n    from {\n        transform: translateY(100%);\n    }\n    to {\n        transform: translateY(0);\n    }\n}\n\n@keyframes pointerFadeIn {\n    from {\n        opacity: 0;\n        pointer-events: none;\n    }\n    to {\n        opacity: 1;\n        pointer-events: auto;\n    }\n}\n\n@keyframes rotate {\n    from {\n        transform: rotate(0deg);\n    }\n    to {\n        transform: rotate(360deg);\n    }\n}\n\n@keyframes circularDash {\n    0% {\n        stroke-dasharray: 1px, 200px;\n        stroke-dashoffset: 0;\n    }\n    50% {\n        stroke-dasharray: 100px, 200px;\n        stroke-dashoffset: -15px;\n    }\n    100% {\n        stroke-dasharray: 100px, 200px;\n        stroke-dashoffset: -125px;\n    }\n}\n';
   importCSS(styleCss);
   const DialogCss = '.DialogOverlay {\n    background-color: rgba(0, 0, 0, 0.44);\n    position: fixed;\n    inset: 0;\n    z-index: 1000;\n    animation: fadeIn 150ms cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.DialogContent {\n    background-color: #f3f3f3;\n    border-radius: 6px;\n    box-shadow: hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px;\n    position: fixed;\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%, -50%);\n    width: 90vw;\n    max-width: 560px;\n    max-height: 85vh;\n    overflow-x: hidden;\n    overflow-y: auto;\n    padding: 16px 24px;\n    z-index: 1001;\n    outline: none;\n    animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.dark .DialogContent {\n    background-color: #2a2a2a;\n    border-color: #40414f;\n    border-width: 1px;\n}\n\n.DialogContent input[type="checkbox"] {\n    border: none;\n    outline: none;\n    box-shadow: none;\n}\n\n.DialogTitle {\n    margin: 0 0 16px 0;\n    font-weight: 500;\n    color: #1a1523;\n    font-size: 20px;\n}\n\n.dark .DialogTitle {\n    color: #fff;\n}\n\n.Button {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 4px;\n    padding: 0 15px;\n    font-size: 15px;\n    line-height: 1;\n    height: 35px;\n}\n.Button.green {\n    background-color: #ddf3e4;\n    color: #18794e;\n}\n.Button.red {\n    background-color: #f9d9d9;\n    color: #a71d2a;\n}\n.Button.green:hover {\n    background-color: #ccebd7;\n}\n.Button:disabled {\n    opacity: 0.5;\n    color: #6f6e77;\n    background-color: #e0e0e0;\n    cursor: not-allowed;\n}\n.Button:disabled:hover {\n    background-color: #e0e0e0;\n}\n\n.IconButton {\n    font-family: inherit;\n    border-radius: 100%;\n    height: 25px;\n    width: 25px;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    color: #6f6e77;\n}\n.IconButton:hover {\n    background-color: rgba(0, 0, 0, 0.06);\n}\n\n.CloseButton {\n    position: absolute;\n    top: 10px;\n    right: 10px;\n}\n\n.Fieldset {\n    display: flex;\n    gap: 20px;\n    align-items: center;\n    margin-bottom: 15px;\n}\n\n.Label {\n    font-size: 15px;\n    color: #1a1523;\n    min-width: 90px;\n    text-align: right;\n}\n\n.dark .Label {\n    color: #fff;\n}\n\n.Input {\n    width: 100%;\n    flex: 1;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 4px;\n    padding: 0 10px;\n    font-size: 15px;\n    line-height: 1;\n    color: #000;\n    background-color: #fafafa;\n    box-shadow: 0 0 0 1px #6f6e77;\n    height: 35px;\n    outline: none;\n}\n\n.dark .Input {\n    background-color: #2f2f2f;\n    color: #fff;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\n.Description {\n    font-size: 13px;\n    color: #5a5865;\n    text-align: right;\n    margin-bottom: 4px;\n}\n\n.dark .Description {\n    color: #bcbcbc;\n}\n\n.SelectToolbar {\n    display: flex;\n    align-items: center;\n    padding: 12px 16px;\n    border-radius: 4px 4px 0 0;\n    border: 1px solid #6f6e77;\n    border-bottom: none;\n}\n\n.SelectList {\n    position: relative;\n    width: 100%;\n    height: 270px;\n    padding: 12px 16px;\n    overflow-x: hidden;\n    overflow-y: auto;\n    border: 1px solid #6f6e77;\n    border-radius: 0 0 4px 4px;\n    white-space: nowrap;\n}\n\n.SelectItem {\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n\n.SelectItem label, .SelectItem input {\n    cursor: pointer;\n}\n\n.SelectItem span {\n    vertical-align: middle;\n}\n\n@keyframes contentShow {\n    from {\n        opacity: 0;\n        transform: translate(-50%, -48%) scale(0.96);\n    }\n    to {\n        opacity: 1;\n        transform: translate(-50%, -50%) scale(1);\n    }\n}\n';
   importCSS(DialogCss);
@@ -26400,9 +26400,10 @@ u$1(Content$1, { className: "DialogContent", children: open && u$1(DialogContent
     const hasOverlayOpen = jsonOpen || exportOpen;
     const isMenuOpen = open || hasOverlayOpen;
     const contentClassName = `
+        ce-menu-content
         grid grid-cols-2
-        bg-menu
-        border border-menu
+        ce-bg-menu
+        border ce-border-menu
         transition-opacity duration-200 shadow-md
         ${isMobile ? "gap-x-1 px-1.5 pt-2 rounded animate-slideUp" : "gap-x-1 px-1.5 py-2 pb-0 rounded-md animate-fadeIn"}
     `;
@@ -26437,7 +26438,7 @@ u$1(
             {
               text: t2("Setting"),
               icon: IconSetting,
-              className: "row-full",
+              className: "ce-row-full",
               onClick: onClickSetting
             }
           ),
@@ -26447,7 +26448,7 @@ u$1(
               text: t2("Copy Text"),
               successText: t2("Copied!"),
               icon: IconCopy,
-              className: "row-full",
+              className: "ce-row-full",
               onClick: onClickText
             }
           ),
@@ -26456,7 +26457,7 @@ u$1(
             {
               text: t2("Screenshot"),
               icon: IconCamera,
-              className: "row-half",
+              className: "ce-row-half",
               onClick: onClickPng
             }
           ),
@@ -26465,7 +26466,7 @@ u$1(
             {
               text: t2("Markdown"),
               icon: IconMarkdown,
-              className: "row-half",
+              className: "ce-row-half",
               onClick: onClickMarkdown
             }
           ),
@@ -26474,7 +26475,7 @@ u$1(
             {
               text: t2("HTML"),
               icon: FileCode,
-              className: "row-half",
+              className: "ce-row-half",
               onClick: onClickHtml
             }
           ),
@@ -26489,7 +26490,7 @@ u$1(Trigger$1, { asChild: true, children: u$1(
                   {
                     text: t2("JSON"),
                     icon: IconJSON,
-                    className: "row-half",
+                    className: "ce-row-half",
                     onClick: onClickJSON
                   }
                 ) }),
@@ -26502,7 +26503,7 @@ u$1(
                       {
                         text: t2("OpenAI Official Format"),
                         icon: IconCopy,
-                        className: "row-full",
+                        className: "ce-row-full",
                         onClick: onClickOfficialJSON
                       }
                     ),
@@ -26511,7 +26512,7 @@ u$1(
                       {
                         text: "JSONL (TavernAI, SillyTavern)",
                         icon: IconCopy,
-                        className: "row-full",
+                        className: "ce-row-full",
                         onClick: onClickTavern
                       }
                     ),
@@ -26520,7 +26521,7 @@ u$1(
                       {
                         text: "Ooba (text-generation-webui)",
                         icon: IconCopy,
-                        className: "row-full",
+                        className: "ce-row-full",
                         onClick: onClickOoba
                       }
                     )
@@ -26535,7 +26536,7 @@ u$1(
               format,
               open: exportOpen,
               onOpenChange: setExportOpen,
-              children: u$1("div", { className: "row-full", children: u$1(
+              children: u$1("div", { className: "ce-row-full", children: u$1(
                 MenuItem,
                 {
                   text: t2("Export All"),

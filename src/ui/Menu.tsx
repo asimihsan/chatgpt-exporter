@@ -57,9 +57,10 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
     const isMenuOpen = open || hasOverlayOpen
 
     const contentClassName = `
+        ce-menu-content
         grid grid-cols-2
-        bg-menu
-        border border-menu
+        ce-bg-menu
+        border ce-border-menu
         transition-opacity duration-200 shadow-md
         ${isMobile
             ? 'gap-x-1 px-1.5 pt-2 rounded animate-slideUp'
@@ -94,7 +95,7 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
             <MenuItem
                 text={t('Setting')}
                 icon={IconSetting}
-                className="row-full"
+                className="ce-row-full"
                 onClick={onClickSetting}
             />
 
@@ -102,25 +103,25 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                 text={t('Copy Text')}
                 successText={t('Copied!')}
                 icon={IconCopy}
-                className="row-full"
+                className="ce-row-full"
                 onClick={onClickText}
             />
             <MenuItem
                 text={t('Screenshot')}
                 icon={IconCamera}
-                className="row-half"
+                className="ce-row-half"
                 onClick={onClickPng}
             />
             <MenuItem
                 text={t('Markdown')}
                 icon={IconMarkdown}
-                className="row-half"
+                className="ce-row-half"
                 onClick={onClickMarkdown}
             />
             <MenuItem
                 text={t('HTML')}
                 icon={FileCode}
-                className="row-half"
+                className="ce-row-half"
                 onClick={onClickHtml}
             />
             <Dialog.Root
@@ -131,7 +132,7 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                     <MenuItem
                         text={t('JSON')}
                         icon={IconJSON}
-                        className="row-half"
+                        className="ce-row-half"
                         onClick={onClickJSON}
                     />
                 </Dialog.Trigger>
@@ -142,19 +143,19 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                         <MenuItem
                             text={t('OpenAI Official Format')}
                             icon={IconCopy}
-                            className="row-full"
+                            className="ce-row-full"
                             onClick={onClickOfficialJSON}
                         />
                         <MenuItem
                             text="JSONL (TavernAI, SillyTavern)"
                             icon={IconCopy}
-                            className="row-full"
+                            className="ce-row-full"
                             onClick={onClickTavern}
                         />
                         <MenuItem
                             text="Ooba (text-generation-webui)"
                             icon={IconCopy}
-                            className="row-full"
+                            className="ce-row-full"
                             onClick={onClickOoba}
                         />
                     </Dialog.Content>
@@ -165,7 +166,7 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                 open={exportOpen}
                 onOpenChange={setExportOpen}
             >
-                <div className="row-full">
+                <div className="ce-row-full">
                     <MenuItem
                         text={t('Export All')}
                         icon={IconZip}
