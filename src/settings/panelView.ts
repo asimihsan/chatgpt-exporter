@@ -14,8 +14,11 @@ export interface PanelElements {
     enableTimestampHTMLInput: HTMLInputElement
     enableTimestampMarkdownInput: HTMLInputElement
     enableMetaInput: HTMLInputElement
+    enableCopyTextShortcutInput: HTMLInputElement
+    copyTextShortcutInput: HTMLInputElement
     timestampOptions: HTMLDivElement
     metaOptions: HTMLDivElement
+    shortcutOptions: HTMLDivElement
     metaList: HTMLDivElement
     addMetaButton: HTMLButtonElement
 }
@@ -87,6 +90,23 @@ function createPanelTemplate(): string {
         <div class="ce-subgroup" data-ce-role="meta-options">
           <div class="ce-meta-list" data-ce-role="meta-list"></div>
           <button type="button" class="ce-secondary-btn" data-ce-role="meta-add">+ ${t('Add', 'Add')}</button>
+        </div>
+      </section>
+
+      <section class="ce-group">
+        <label class="ce-row ce-toggle-row">
+          <span>${t('Enable Copy Text Shortcut', 'Enable Copy Text Shortcut')}</span>
+          <input type="checkbox" data-ce-role="enable-copy-text-shortcut" />
+        </label>
+
+        <div class="ce-subgroup" data-ce-role="shortcut-options">
+          <label class="ce-row">
+            <span>${t('Copy Text Shortcut', 'Copy Text Shortcut')}</span>
+            <input type="text" data-ce-role="copy-text-shortcut" placeholder="Mod+Shift+E" />
+          </label>
+          <p class="ce-help">
+            ${t('Shortcut Conflict Help', 'Some browser and extension shortcuts override page shortcuts. If this combo does not trigger, choose a different one.')}
+          </p>
         </div>
       </section>
     </div>
@@ -219,6 +239,13 @@ function createPanelStyle(): string {
   gap: 8px;
 }
 
+.ce-help {
+  margin: 0;
+  color: #555;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .ce-meta-list {
   display: flex;
   flex-direction: column;
@@ -323,8 +350,11 @@ function getPanelElements(shadow: ShadowRoot): PanelElements {
         enableTimestampHTMLInput: query<HTMLInputElement>('[data-ce-role="timestamp-html"]'),
         enableTimestampMarkdownInput: query<HTMLInputElement>('[data-ce-role="timestamp-markdown"]'),
         enableMetaInput: query<HTMLInputElement>('[data-ce-role="enable-meta"]'),
+        enableCopyTextShortcutInput: query<HTMLInputElement>('[data-ce-role="enable-copy-text-shortcut"]'),
+        copyTextShortcutInput: query<HTMLInputElement>('[data-ce-role="copy-text-shortcut"]'),
         timestampOptions: query<HTMLDivElement>('[data-ce-role="timestamp-options"]'),
         metaOptions: query<HTMLDivElement>('[data-ce-role="meta-options"]'),
+        shortcutOptions: query<HTMLDivElement>('[data-ce-role="shortcut-options"]'),
         metaList: query<HTMLDivElement>('[data-ce-role="meta-list"]'),
         addMetaButton: query<HTMLButtonElement>('[data-ce-role="meta-add"]'),
     }

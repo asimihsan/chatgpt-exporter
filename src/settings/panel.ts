@@ -1,4 +1,5 @@
 import i18n from '../i18n'
+import { normalizeCopyTextShortcut } from '../shortcuts/exportCopyShortcutHelpers'
 import {
     DEFAULT_EXPORTER_SETTINGS,
     DEFAULT_EXPORT_META_LIST,
@@ -92,6 +93,7 @@ function renderMetaList(elements: PanelElements, state: PanelState): void {
 function syncDependentSections(elements: PanelElements, state: PanelState): void {
     elements.timestampOptions.hidden = !state.settings.enableTimestamp
     elements.metaOptions.hidden = !state.settings.enableMeta
+    elements.shortcutOptions.hidden = !state.settings.enableCopyTextShortcut
 }
 
 function applyStateToForm(elements: PanelElements, state: PanelState): void {
@@ -103,6 +105,8 @@ function applyStateToForm(elements: PanelElements, state: PanelState): void {
     elements.enableTimestampHTMLInput.checked = state.settings.enableTimestampHTML
     elements.enableTimestampMarkdownInput.checked = state.settings.enableTimestampMarkdown
     elements.enableMetaInput.checked = state.settings.enableMeta
+    elements.enableCopyTextShortcutInput.checked = state.settings.enableCopyTextShortcut
+    elements.copyTextShortcutInput.value = state.settings.copyTextShortcut
 
     renderMetaList(elements, state)
     syncDependentSections(elements, state)
@@ -114,6 +118,10 @@ function normalizeExportAllLimit(rawValue: string): number {
 
     const clamped = Math.min(20000, Math.max(100, parsed))
     return Math.round(clamped / 100) * 100
+}
+
+function normalizeShortcut(rawValue: string): string {
+    return normalizeCopyTextShortcut(rawValue, DEFAULT_EXPORTER_SETTINGS.copyTextShortcut)
 }
 
 function wirePanelEvents(elements: PanelElements, state: PanelState): void {
@@ -153,6 +161,17 @@ function wirePanelEvents(elements: PanelElements, state: PanelState): void {
         syncDependentSections(elements, state)
     })
 
+    elements.enableCopyTextShortcutInput.addEventListener('change', () => {
+        state.settings.enableCopyTextShortcut = elements.enableCopyTextShortcutInput.checked
+        syncDependentSections(elements, state)
+    })
+
+    elements.copyTextShortcutInput.addEventListener('change', () => {
+        const normalized = normalizeShortcut(elements.copyTextShortcutInput.value)
+        state.settings.copyTextShortcut = normalized
+        elements.copyTextShortcutInput.value = normalized
+    })
+
     elements.addMetaButton.addEventListener('click', () => {
         state.settings.exportMetaList = [...state.settings.exportMetaList, { name: '', value: '' }]
         renderMetaList(elements, state)
@@ -167,6 +186,8 @@ function wirePanelEvents(elements: PanelElements, state: PanelState): void {
     })
 
     elements.saveButton.addEventListener('click', () => {
+        state.settings.copyTextShortcut = normalizeShortcut(elements.copyTextShortcutInput.value)
+        elements.copyTextShortcutInput.value = state.settings.copyTextShortcut
         saveSettings(state.settings)
         setStoredLanguage(state.language)
         void i18n.changeLanguage(state.language)

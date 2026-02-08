@@ -19508,6 +19508,23 @@ case "tether_browsing_display": {
           <button type="button" class="ce-secondary-btn" data-ce-role="meta-add">+ ${t$1("Add", "Add")}</button>
         </div>
       </section>
+
+      <section class="ce-group">
+        <label class="ce-row ce-toggle-row">
+          <span>${t$1("Enable Copy Text Shortcut", "Enable Copy Text Shortcut")}</span>
+          <input type="checkbox" data-ce-role="enable-copy-text-shortcut" />
+        </label>
+
+        <div class="ce-subgroup" data-ce-role="shortcut-options">
+          <label class="ce-row">
+            <span>${t$1("Copy Text Shortcut", "Copy Text Shortcut")}</span>
+            <input type="text" data-ce-role="copy-text-shortcut" placeholder="Mod+Shift+E" />
+          </label>
+          <p class="ce-help">
+            ${t$1("Shortcut Conflict Help", "Some browser and extension shortcuts override page shortcuts. If this combo does not trigger, choose a different one.")}
+          </p>
+        </div>
+      </section>
     </div>
 
     <footer class="ce-footer">
@@ -19637,6 +19654,13 @@ case "tether_browsing_display": {
   gap: 8px;
 }
 
+.ce-help {
+  margin: 0;
+  color: #555;
+  font-size: 12px;
+  line-height: 1.4;
+}
+
 .ce-meta-list {
   display: flex;
   flex-direction: column;
@@ -19739,8 +19763,11 @@ case "tether_browsing_display": {
       enableTimestampHTMLInput: query2('[data-ce-role="timestamp-html"]'),
       enableTimestampMarkdownInput: query2('[data-ce-role="timestamp-markdown"]'),
       enableMetaInput: query2('[data-ce-role="enable-meta"]'),
+      enableCopyTextShortcutInput: query2('[data-ce-role="enable-copy-text-shortcut"]'),
+      copyTextShortcutInput: query2('[data-ce-role="copy-text-shortcut"]'),
       timestampOptions: query2('[data-ce-role="timestamp-options"]'),
       metaOptions: query2('[data-ce-role="meta-options"]'),
+      shortcutOptions: query2('[data-ce-role="shortcut-options"]'),
       metaList: query2('[data-ce-role="meta-list"]'),
       addMetaButton: query2('[data-ce-role="meta-add"]')
     };
@@ -19811,6 +19838,7 @@ case "tether_browsing_display": {
   function syncDependentSections(elements, state) {
     elements.timestampOptions.hidden = !state.settings.enableTimestamp;
     elements.metaOptions.hidden = !state.settings.enableMeta;
+    elements.shortcutOptions.hidden = !state.settings.enableCopyTextShortcut;
   }
   function applyStateToForm(elements, state) {
     elements.languageSelect.value = state.language;
@@ -19821,6 +19849,8 @@ case "tether_browsing_display": {
     elements.enableTimestampHTMLInput.checked = state.settings.enableTimestampHTML;
     elements.enableTimestampMarkdownInput.checked = state.settings.enableTimestampMarkdown;
     elements.enableMetaInput.checked = state.settings.enableMeta;
+    elements.enableCopyTextShortcutInput.checked = state.settings.enableCopyTextShortcut;
+    elements.copyTextShortcutInput.value = state.settings.copyTextShortcut;
     renderMetaList(elements, state);
     syncDependentSections(elements, state);
   }
@@ -19829,6 +19859,9 @@ case "tether_browsing_display": {
     if (!Number.isFinite(parsed)) return DEFAULT_EXPORTER_SETTINGS.exportAllLimit;
     const clamped = Math.min(2e4, Math.max(100, parsed));
     return Math.round(clamped / 100) * 100;
+  }
+  function normalizeShortcut(rawValue) {
+    return normalizeCopyTextShortcut(rawValue, DEFAULT_EXPORTER_SETTINGS.copyTextShortcut);
   }
   function wirePanelEvents(elements, state) {
     elements.languageSelect.addEventListener("change", () => {
@@ -19859,6 +19892,15 @@ case "tether_browsing_display": {
       state.settings.enableMeta = elements.enableMetaInput.checked;
       syncDependentSections(elements, state);
     });
+    elements.enableCopyTextShortcutInput.addEventListener("change", () => {
+      state.settings.enableCopyTextShortcut = elements.enableCopyTextShortcutInput.checked;
+      syncDependentSections(elements, state);
+    });
+    elements.copyTextShortcutInput.addEventListener("change", () => {
+      const normalized = normalizeShortcut(elements.copyTextShortcutInput.value);
+      state.settings.copyTextShortcut = normalized;
+      elements.copyTextShortcutInput.value = normalized;
+    });
     elements.addMetaButton.addEventListener("click", () => {
       state.settings.exportMetaList = [...state.settings.exportMetaList, { name: "", value: "" }];
       renderMetaList(elements, state);
@@ -19871,6 +19913,8 @@ case "tether_browsing_display": {
       applyStateToForm(elements, state);
     });
     elements.saveButton.addEventListener("click", () => {
+      state.settings.copyTextShortcut = normalizeShortcut(elements.copyTextShortcutInput.value);
+      elements.copyTextShortcutInput.value = state.settings.copyTextShortcut;
       saveSettings(state.settings);
       setStoredLanguage(state.language);
       void instance.changeLanguage(state.language);
