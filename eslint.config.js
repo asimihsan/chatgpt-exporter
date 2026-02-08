@@ -59,8 +59,13 @@ export default [
             '@typescript-eslint': tsPlugin,
         },
         rules: {
+            // Baseline TypeScript lint rules that do not require type-aware parser settings.
+            ...tsPlugin.configs.recommended.rules,
             'no-undef': 'off',
             'no-unused-vars': 'off',
+            // Existing codebase currently relies on these patterns; tighten in a dedicated cleanup pass.
+            '@typescript-eslint/no-explicit-any': 'off',
+            '@typescript-eslint/no-empty-object-type': 'off',
             '@typescript-eslint/consistent-type-imports': ['error', { prefer: 'type-imports' }],
             '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_', varsIgnorePattern: '^_' }],
         },
