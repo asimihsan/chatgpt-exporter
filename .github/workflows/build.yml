@@ -14,26 +14,27 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Install pnpm
-        uses: pnpm/action-setup@v4
-
       - name: Use Node.js v20
         uses: actions/setup-node@v4
         with:
           node-version: '20'
           registry-url: https://registry.npmjs.org/
-          cache: pnpm
 
-      - run: pnpm install
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - run: bun install
 
       - name: Lint
-        run: pnpm run lint
+        run: bun run lint
 
       - name: Test
-        run: pnpm run test
+        run: bun run test
 
       - name: Build
-        run: pnpm run build
+        run: bun run build
 
       - name: Git commit
         id: commit

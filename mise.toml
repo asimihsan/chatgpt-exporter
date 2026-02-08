@@ -1,0 +1,77 @@
+min_version = "2024.9.5"
+
+[tools]
+bun = "latest"
+node = "lts"
+
+[env]
+_.path = ["{{config_root}}/node_modules/.bin"]
+
+[settings.npm]
+package_manager = "bun"
+
+[tasks.install]
+alias = "i"
+description = "Install project dependencies with Bun"
+run = "bun install"
+sources = ["package.json", "bun.lock", "mise.toml"]
+outputs = ["node_modules/.bin"]
+
+[tasks.dev]
+alias = "d"
+description = "Start local development server"
+depends = ["install"]
+run = "bun run dev"
+
+[tasks.build]
+alias = "b"
+description = "Build userscript bundle (non-minified)"
+depends = ["install"]
+run = "bun run build"
+sources = ["src/**/*", "index.html", "vite.config.ts", "package.json", "tsconfig.json"]
+outputs = ["dist/chatgpt.user.js"]
+
+[tasks.lint]
+alias = "l"
+description = "Run ESLint"
+depends = ["install"]
+run = "bun run lint"
+sources = ["src/**/*", "eslint.config.js", "package.json", "tsconfig.json"]
+
+[tasks.typecheck]
+alias = "tc"
+description = "Run TypeScript static type checks"
+depends = ["install"]
+run = "bun run typecheck"
+sources = ["src/**/*", "tsconfig.json", "package.json"]
+
+[tasks.test-unit]
+alias = "tu"
+description = "Run unit tests"
+depends = ["install"]
+run = "bun run test:unit"
+sources = ["src/**/*", "package.json", "tsconfig.json", "vite.config.ts"]
+
+[tasks.test]
+alias = "t"
+description = "Run typecheck and unit tests"
+depends = ["typecheck", "test-unit"]
+run = "echo test checks complete"
+
+[tasks.check]
+alias = "c"
+description = "Run lint and tests"
+depends = ["lint", "test"]
+run = "echo all checks complete"
+
+[tasks.deps-check]
+alias = "dc"
+description = "Show outdated dependencies"
+depends = ["install"]
+run = "bun run deps:check"
+
+[tasks.deps-update]
+alias = "du"
+description = "Update dependencies to latest versions"
+depends = ["install"]
+run = "bun run deps:update"
