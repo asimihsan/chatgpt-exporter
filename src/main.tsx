@@ -2,6 +2,7 @@ import { render } from 'preact'
 import sentinel from 'sentinel-js'
 import { fetchConversation, processConversation } from './api'
 import { getChatIdFromUrl, isSharePage } from './page'
+import { registerSettingsMenuCommand } from './settings/menuCommand'
 import { Menu } from './ui/Menu'
 import { onloadSafe } from './utils/utils'
 
@@ -12,6 +13,8 @@ main()
 
 function main() {
     onloadSafe(() => {
+        registerSettingsMenuCommand()
+
         const styleEl = document.createElement('style')
         styleEl.id = 'sentinel-css'
         document.head.append(styleEl)

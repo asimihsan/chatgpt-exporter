@@ -1,6 +1,6 @@
 import * as Dialog from '@radix-ui/react-dialog'
 import * as HoverCard from '@radix-ui/react-hover-card'
-import { useCallback, useEffect, useMemo, useState } from 'preact/hooks'
+import { useCallback, useMemo, useState } from 'preact/hooks'
 import { useTranslation } from 'react-i18next'
 import { exportToHtml } from '../exporter/html'
 import { exportToPng } from '../exporter/image'
@@ -9,12 +9,12 @@ import { exportToMarkdown } from '../exporter/markdown'
 import { exportToText } from '../exporter/text'
 import { useWindowResize } from '../hooks/useWindowResize'
 import { getHistoryDisabled } from '../page'
+import { openSettingsPanel } from '../settings/panel'
 import { Divider } from './Divider'
 import { ExportDialog } from './ExportDialog'
 import { FileCode, IconArrowRightFromBracket, IconCamera, IconCopy, IconJSON, IconMarkdown, IconSetting, IconZip } from './Icons'
 import { MenuItem } from './MenuItem'
 import { SettingProvider, useSettingContext } from './SettingContext'
-import { SettingDialog } from './SettingDialog'
 
 import '../style.css'
 import './Dialog.css'
@@ -26,24 +26,12 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
     const [open, setOpen] = useState(false)
     const [jsonOpen, setJsonOpen] = useState(false)
     const [exportOpen, setExportOpen] = useState(false)
-    const [settingOpen, setSettingOpen] = useState(false)
 
     const {
         format,
-        enableTimestamp,
-        timeStamp24H,
         enableMeta,
         exportMetaList,
     } = useSettingContext()
-
-    useEffect(() => {
-        if (enableTimestamp) {
-            document.body.setAttribute('data-time-format', timeStamp24H ? '24' : '12')
-        }
-        else {
-            document.body.removeAttribute('data-time-format')
-        }
-    }, [enableTimestamp, timeStamp24H])
 
     const metaList = useMemo(() => enableMeta ? exportMetaList : [], [enableMeta, exportMetaList])
 
@@ -59,14 +47,13 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
     const onClickTavern = useCallback(() => exportToTavern(format), [format])
     const onClickOoba = useCallback(() => exportToOoba(format), [format])
     const onClickSetting = useCallback(() => {
-        console.debug('[chatgpt-exporter] settings open requested')
-        setSettingOpen(true)
+        openSettingsPanel()
         return true
     }, [])
 
     const width = useWindowResize(() => window.innerWidth)
     const isMobile = width < 768
-    const hasOverlayOpen = jsonOpen || settingOpen || exportOpen
+    const hasOverlayOpen = jsonOpen || exportOpen
     const isMenuOpen = open || hasOverlayOpen
 
     const contentClassName = `
@@ -185,14 +172,6 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                     />
                 </div>
             </ExportDialog>
-
-            <SettingDialog
-                open={settingOpen}
-                onOpenChange={(value) => {
-                    console.debug('[chatgpt-exporter] settings dialog open change:', value)
-                    setSettingOpen(value)
-                }}
-            />
 
             {!isMobile && (
                 <HoverCard.Arrow
