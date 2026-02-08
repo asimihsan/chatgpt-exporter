@@ -2,6 +2,8 @@ import js from '@eslint/js'
 import tsPlugin from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
 import globals from 'globals'
+import importPlugin from 'eslint-plugin-import'
+import regexpPlugin from 'eslint-plugin-regexp'
 import reactHooks from 'eslint-plugin-react-hooks'
 
 export default [
@@ -28,8 +30,22 @@ export default [
                 ...globals.browser,
             },
         },
+        plugins: {
+            import: importPlugin,
+            regexp: regexpPlugin,
+        },
         rules: {
             'no-alert': 'off',
+            // Phase L5 promoted set: high-signal import hygiene checks.
+            'import/no-duplicates': 'error',
+            'import/no-self-import': 'error',
+            'import/no-useless-path-segments': 'error',
+            // Phase L5 promoted set: high-signal regex safety checks.
+            'regexp/no-dupe-characters-character-class': 'error',
+            'regexp/no-empty-character-class': 'error',
+            'regexp/no-invalid-regexp': 'error',
+            'regexp/no-super-linear-backtracking': 'error',
+            'regexp/no-useless-flag': 'error',
         },
     },
     {
