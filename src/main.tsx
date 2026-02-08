@@ -67,7 +67,7 @@ function main() {
 
             /** Insert timestamp to the bottom right of each message */
             let chatId = ''
-            sentinel.on('[role="presentation"]', async () => {
+            const addMessageTimestamps = async () => {
                 const currentChatId = getChatIdFromUrl()
                 if (!currentChatId || currentChatId === chatId) return
                 chatId = currentChatId
@@ -97,6 +97,12 @@ function main() {
                     hour24.textContent = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
                     timestamp.append(hour12, hour24)
                     thread.append(timestamp)
+                })
+            }
+
+            sentinel.on('[role="presentation"]', () => {
+                void addMessageTimestamps().catch((error) => {
+                    console.error('Failed to add message timestamps:', error)
                 })
             })
         }, 1200)

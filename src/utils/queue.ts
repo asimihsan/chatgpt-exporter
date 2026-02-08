@@ -41,7 +41,7 @@ export class RequestQueue<T> {
     start() {
         if (this.status === 'IDLE') {
             this.total = this.queue.length
-            this.process()
+            void this.process()
         }
     }
 
@@ -96,7 +96,7 @@ export class RequestQueue<T> {
         }
 
         await sleep(this.backoff)
-        this.process()
+        void this.process()
     }
 
     private progress(name: string, status: 'processing' | 'retrying') {

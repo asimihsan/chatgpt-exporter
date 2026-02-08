@@ -192,7 +192,7 @@ const DialogContent: FC<DialogContentProps> = ({ format }) => {
         const off = requestQueue.on('done', (results) => {
             setProcessing(false)
             const callback = exportAllOptions.find(o => o.label === exportType)?.callback
-            if (callback) callback(format, results, metaList)
+            if (callback) void callback(format, results, metaList)
         })
         return () => off()
     }, [requestQueue, exportAllOptions, exportType, format, metaList])
@@ -237,7 +237,7 @@ const DialogContent: FC<DialogContentProps> = ({ format }) => {
 
         const results = localConversations.filter(c => selected.some(s => s.id === c.id))
         const callback = exportAllOptions.find(o => o.label === exportType)?.callback
-        if (callback) callback(format, results, metaList)
+        if (callback) void callback(format, results, metaList)
     }, [
         disabled,
         selected,

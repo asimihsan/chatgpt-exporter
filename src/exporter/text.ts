@@ -25,7 +25,7 @@ export async function exportToText() {
         .filter(Boolean)
         .join('\n\n')
 
-    copyToClipboard(standardizeLineBreaks(text))
+    await copyToClipboard(standardizeLineBreaks(text))
 
     return true
 }

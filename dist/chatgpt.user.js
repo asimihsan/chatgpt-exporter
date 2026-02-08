@@ -7838,7 +7838,7 @@ node2.message?.author.role !== "system" && node2.message?.content.content_type !
     const browserLanguage = getNavigatorLanguage();
     return standardizeLanguage(storedLanguage) ?? standardizeLanguage(oaiLanguage) ?? standardizeLanguage(browserLanguage) ?? EN_US.code;
   }
-  instance.use(initReactI18next).init({
+  void instance.use(initReactI18next).init({
     fallbackLng: EN_US.code,
     lng: getDefaultLanguage(),
     debug: false,
@@ -7846,13 +7846,15 @@ node2.message?.author.role !== "system" && node2.message?.content.content_type !
     interpolation: {
       escapeValue: false
 }
+  }).catch((error2) => {
+    console.error("Failed to initialize translations:", error2);
   });
   instance.on("languageChanged", (lng) => {
     ScriptStorage.set(KEY_LANGUAGE, lng);
   });
-  function copyToClipboard(text2) {
+  async function copyToClipboard(text2) {
     try {
-      navigator.clipboard.writeText(text2);
+      await navigator.clipboard.writeText(text2);
     } catch {
       const textarea = document.createElement("textarea");
       textarea.value = text2;
@@ -19034,7 +19036,7 @@ self2.previous !== null ||
     const rawConversation = await fetchConversation(chatId, false);
     const { conversationNodes } = processConversation(rawConversation);
     const text2 = conversationNodes.map(({ message }) => transformMessage(message)).filter(Boolean).join("\n\n");
-    copyToClipboard(standardizeLineBreaks(text2));
+    await copyToClipboard(standardizeLineBreaks(text2));
     return true;
   }
   const LatexRegex$1 = /(\s\$\$.+\$\$\s|\s\$.+\$\s|\\\[.+\\\]|\\\(.+\\\))|(^\$$[\S\s]+^\$$)|(^\$\$[\S\s]+^\$\$$)/gm;
@@ -19183,19 +19185,24 @@ case "tether_browsing_display": {
   }
   const COPY_TEXT_SHORTCUT_SUCCESS_EVENT = "ce:copy-text-success";
   let shortcutRegistered = false;
+  async function handleShortcutKeydown(event, isMac) {
+    if (event.repeat || event.isComposing) return;
+    if (!matchesExportCopyShortcut(event, isMac)) return;
+    if (isEditableTarget(event.target)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const success = await exportToText();
+    if (success) {
+      window.dispatchEvent(new CustomEvent(COPY_TEXT_SHORTCUT_SUCCESS_EVENT));
+    }
+  }
   function registerExportCopyShortcut() {
     if (shortcutRegistered) return;
     const isMac = isMacPlatform(window.navigator.platform);
-    document.addEventListener("keydown", async (event) => {
-      if (event.repeat || event.isComposing) return;
-      if (!matchesExportCopyShortcut(event, isMac)) return;
-      if (isEditableTarget(event.target)) return;
-      event.preventDefault();
-      event.stopPropagation();
-      const success = await exportToText();
-      if (success) {
-        window.dispatchEvent(new CustomEvent(COPY_TEXT_SHORTCUT_SUCCESS_EVENT));
-      }
+    document.addEventListener("keydown", (event) => {
+      void handleShortcutKeydown(event, isMac).catch((error2) => {
+        console.error("Copy shortcut failed:", error2);
+      });
     });
     shortcutRegistered = true;
   }
@@ -25807,7 +25814,7 @@ case "tether_browsing_display": {
     start() {
       if (this.status === "IDLE") {
         this.total = this.queue.length;
-        this.process();
+        void this.process();
       }
     }
     stop() {
@@ -25851,7 +25858,7 @@ case "tether_browsing_display": {
         this.queue.unshift(requestObject);
       }
       await sleep(this.backoff);
-      this.process();
+      void this.process();
     }
     progress(name, status) {
       this.eventEmitter.emit("progress", {
@@ -26214,7 +26221,7 @@ u$1("ul", { className: "SelectList", children: [
       const off = requestQueue.on("done", (results) => {
         setProcessing(false);
         const callback = exportAllOptions.find((o2) => o2.label === exportType)?.callback;
-        if (callback) callback(format, results, metaList);
+        if (callback) void callback(format, results, metaList);
       });
       return () => off();
     }, [requestQueue, exportAllOptions, exportType, format, metaList]);
@@ -26251,7 +26258,7 @@ u$1("ul", { className: "SelectList", children: [
       if (disabled) return;
       const results = localConversations.filter((c2) => selected.some((s2) => s2.id === c2.id));
       const callback = exportAllOptions.find((o2) => o2.label === exportType)?.callback;
-      if (callback) callback(format, results, metaList);
+      if (callback) void callback(format, results, metaList);
     }, [
       disabled,
       selected,
@@ -26367,9 +26374,10 @@ u$1(Content$1, { className: "DialogContent", children: open && u$1(DialogContent
   const MenuItem = ({ text: text2, successText, disabled = false, title: title2, icon: Icon, onClick, className }) => {
     const [loading, setLoading] = d(false);
     const [succeed, setSucceed] = d(false);
-    const handleClick = typeof onClick === "function" ? async (e2) => {
+    const handleClickAsync = async (e2) => {
       e2.preventDefault();
       if (loading || disabled) return;
+      if (!onClick) return;
       try {
         setLoading(true);
         const result = await onClick();
@@ -26382,6 +26390,9 @@ u$1(Content$1, { className: "DialogContent", children: open && u$1(DialogContent
       } finally {
         setLoading(false);
       }
+    };
+    const handleClick = typeof onClick === "function" ? (e2) => {
+      void handleClickAsync(e2);
     } : void 0;
     return u$1(
       "div",
@@ -26746,7 +26757,7 @@ u$1(Divider, {})
           });
         }
         let chatId = "";
-        sentinel.on('[role="presentation"]', async () => {
+        const addMessageTimestamps = async () => {
           const currentChatId = getChatIdFromUrl();
           if (!currentChatId || currentChatId === chatId) return;
           chatId = currentChatId;
@@ -26770,6 +26781,11 @@ u$1(Divider, {})
             hour24.textContent = date.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit", hour12: false });
             timestamp2.append(hour12, hour24);
             thread.append(timestamp2);
+          });
+        };
+        sentinel.on('[role="presentation"]', () => {
+          void addMessageTimestamps().catch((error2) => {
+            console.error("Failed to add message timestamps:", error2);
           });
         });
       }, 1200);

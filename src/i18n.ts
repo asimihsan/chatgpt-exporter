@@ -174,7 +174,7 @@ function getDefaultLanguage() {
         ?? EN_US.code
 }
 
-i18n
+void i18n
     .use(initReactI18next)
     .init({
         fallbackLng: EN_US.code,
@@ -184,6 +184,9 @@ i18n
         interpolation: {
             escapeValue: false, // not needed for react as it escapes by default
         },
+    })
+    .catch((error) => {
+        console.error('Failed to initialize translations:', error)
     })
 
 i18n.on('languageChanged', (lng) => {
