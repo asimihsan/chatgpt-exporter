@@ -58,6 +58,11 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
     const onClickOfficialJSON = useCallback(() => exportToJson(format), [format])
     const onClickTavern = useCallback(() => exportToTavern(format), [format])
     const onClickOoba = useCallback(() => exportToOoba(format), [format])
+    const onClickSetting = useCallback(() => {
+        console.debug('[chatgpt-exporter] settings open requested')
+        setSettingOpen(true)
+        return true
+    }, [])
 
     const width = useWindowResize(() => window.innerWidth)
     const isMobile = width < 768
@@ -99,14 +104,12 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
             alignOffset={isMobile ? 0 : -64}
             collisionPadding={isMobile ? 0 : 8}
         >
-            <SettingDialog
-                open={settingOpen}
-                onOpenChange={setSettingOpen}
-            >
-                <div className="row-full">
-                    <MenuItem text={t('Setting')} icon={IconSetting} />
-                </div>
-            </SettingDialog>
+            <MenuItem
+                text={t('Setting')}
+                icon={IconSetting}
+                className="row-full"
+                onClick={onClickSetting}
+            />
 
             <MenuItem
                 text={t('Copy Text')}
@@ -182,6 +185,14 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                     />
                 </div>
             </ExportDialog>
+
+            <SettingDialog
+                open={settingOpen}
+                onOpenChange={(value) => {
+                    console.debug('[chatgpt-exporter] settings dialog open change:', value)
+                    setSettingOpen(value)
+                }}
+            />
 
             {!isMobile && (
                 <HoverCard.Arrow

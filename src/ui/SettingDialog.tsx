@@ -24,7 +24,6 @@ interface SettingDialogProps {
 export const SettingDialog: FC<SettingDialogProps> = ({
     open,
     onOpenChange,
-    children,
 }) => {
     const {
         format, setFormat,
@@ -54,9 +53,6 @@ export const SettingDialog: FC<SettingDialogProps> = ({
             open={open}
             onOpenChange={onOpenChange}
         >
-            <Dialog.Trigger asChild>
-                {children}
-            </Dialog.Trigger>
             <Dialog.Portal>
                 <Dialog.Overlay className="DialogOverlay" />
                 <Dialog.Content className="DialogContent">

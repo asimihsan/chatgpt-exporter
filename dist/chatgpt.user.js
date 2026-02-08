@@ -26108,8 +26108,7 @@ u$5(
   }
   const SettingDialog = ({
     open,
-    onOpenChange,
-    children
+    onOpenChange
   }) => {
     const {
       format,
@@ -26145,9 +26144,7 @@ u$5(
       {
         open,
         onOpenChange,
-        children: [
-u$5(Trigger$1, { asChild: true, children }),
-u$5(Portal$1, { children: [
+        children: u$5(Portal$1, { children: [
 u$5(Overlay, { className: "DialogOverlay" }),
 u$5(Content$1, { className: "DialogContent", children: [
 u$5(Title, { className: "DialogTitle", children: t2("Exporter Settings") }),
@@ -26155,203 +26152,202 @@ u$5("dl", { className: "space-y-6", children: [
 u$5("div", { className: "relative flex bg-white dark:bg-white/5 rounded p-4", children: u$5("div", { children: [
 u$5("dt", { className: "text-md font-medium text-gray-800 dark:text-white", children: `${t2("Language")} 🌐` }),
 u$5("dd", { children: u$5(
-                    "select",
-                    {
-                      className: "Select mt-3",
-                      value: i18n.language,
-                      onChange: (e2) => i18n.changeLanguage(e2.currentTarget.value),
-                      children: LOCALES.map(({ name, code: code2 }) => u$5("option", { value: code2, children: name }, code2))
-                    }
-                  ) })
-                ] }) }),
+                  "select",
+                  {
+                    className: "Select mt-3",
+                    value: i18n.language,
+                    onChange: (e2) => i18n.changeLanguage(e2.currentTarget.value),
+                    children: LOCALES.map(({ name, code: code2 }) => u$5("option", { value: code2, children: name }, code2))
+                  }
+                ) })
+              ] }) }),
 u$5("div", { className: "relative flex bg-white dark:bg-white/5 rounded p-4", children: u$5("div", { children: [
 u$5("dt", { className: "text-md font-medium text-gray-800 dark:text-white", children: t2("File Name") }),
 u$5("dd", { children: [
 u$5("p", { className: "text-sm text-gray-700 dark:text-gray-300", children: [
-                      t2("Available variables"),
-                      ":",
-                      " ",
+                    t2("Available variables"),
+                    ":",
+                    " ",
 u$5(Variable, { name: "{title}", title: title2 }),
-                      ",",
-                      " ",
+                    ",",
+                    " ",
 u$5(Variable, { name: "{date}", title: date }),
-                      ",",
-                      " ",
+                    ",",
+                    " ",
 u$5(Variable, { name: "{timestamp}", title: timestamp$1 }),
-                      ",",
-                      " ",
+                    ",",
+                    " ",
 u$5(Variable, { name: "{chat_id}", title: chatId }),
-                      ",",
-                      " ",
+                    ",",
+                    " ",
 u$5(Variable, { name: "{create_time}", title: unixTimestampToISOString(createTime) }),
-                      ",",
-                      " ",
+                    ",",
+                    " ",
 u$5(Variable, { name: "{update_time}", title: unixTimestampToISOString(updateTime) })
-                    ] }),
+                  ] }),
 u$5("input", { className: "Input mt-4", id: "filename", value: format, onChange: (e2) => setFormat(e2.currentTarget.value) }),
 u$5("p", { className: "mt-1 text-sm text-gray-700 dark:text-gray-300", children: [
-                      t2("Preview"),
-                      ":",
-                      " ",
+                    t2("Preview"),
+                    ":",
+                    " ",
 u$5("span", { className: "select-all", style: { "text-decoration": "underline", "text-underline-offset": 4 }, children: preview })
-                    ] })
                   ] })
-                ] }) }),
+                ] })
+              ] }) }),
 u$5("div", { className: "relative flex bg-white dark:bg-white/5 rounded p-4", children: u$5("div", { children: [
 u$5("dt", { className: "text-md font-medium text-gray-800 dark:text-white", children: [
-                    t2("Export All Limit"),
-                    " "
-                  ] }),
+                  t2("Export All Limit"),
+                  " "
+                ] }),
 u$5("dd", { className: "text-sm text-gray-700 dark:text-gray-300 mt-2", children: [
-                    t2("Export All Limit Description"),
-                    " ",
+                  t2("Export All Limit Description"),
+                  " ",
 u$5("div", { className: "flex items-center gap-4 mt-3", children: [
 u$5(
-                        "input",
-                        {
-                          type: "range",
-                          min: "100",
-                          max: "20000",
-                          step: "100",
-                          value: exportAllLimit,
-                          onChange: (e2) => setExportAllLimit(
-                            Number.parseInt(
-                              e2.currentTarget.value,
-                              10
-                            )
-                          ),
-                          className: "flex-grow h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700",
-                          id: "exportAllLimitSlider"
-                        }
-                      ),
+                      "input",
+                      {
+                        type: "range",
+                        min: "100",
+                        max: "20000",
+                        step: "100",
+                        value: exportAllLimit,
+                        onChange: (e2) => setExportAllLimit(
+                          Number.parseInt(
+                            e2.currentTarget.value,
+                            10
+                          )
+                        ),
+                        className: "flex-grow h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700",
+                        id: "exportAllLimitSlider"
+                      }
+                    ),
 u$5("span", { className: "font-medium text-gray-900 dark:text-gray-300 w-12 text-right", children: exportAllLimit })
-                    ] })
                   ] })
-                ] }) }),
+                ] })
+              ] }) }),
 u$5("div", { className: "relative flex bg-white dark:bg-white/5 rounded p-4", children: [
 u$5("div", { children: [
 u$5("dt", { className: "text-md font-medium text-gray-800 dark:text-white", children: t2("Conversation Timestamp") }),
 u$5("dd", { className: "text-sm text-gray-700 dark:text-gray-300", children: [
-                      t2("Conversation Timestamp Description"),
-                      enableTimestamp && u$5(k$3, { children: [
+                    t2("Conversation Timestamp Description"),
+                    enableTimestamp && u$5(k$3, { children: [
 u$5("div", { className: "mt-2", children: u$5(
-                          Toggle,
-                          {
-                            label: t2("Use 24-hour format"),
-                            checked: timeStamp24H,
-                            onCheckedUpdate: setTimeStamp24H
-                          }
-                        ) }),
+                        Toggle,
+                        {
+                          label: t2("Use 24-hour format"),
+                          checked: timeStamp24H,
+                          onCheckedUpdate: setTimeStamp24H
+                        }
+                      ) }),
 u$5("div", { className: "mt-2", children: u$5(
-                          Toggle,
-                          {
-                            label: t2("Enable on HTML"),
-                            checked: enableTimestampHTML,
-                            onCheckedUpdate: setEnableTimestampHTML
-                          }
-                        ) }),
+                        Toggle,
+                        {
+                          label: t2("Enable on HTML"),
+                          checked: enableTimestampHTML,
+                          onCheckedUpdate: setEnableTimestampHTML
+                        }
+                      ) }),
 u$5("div", { className: "mt-2", children: u$5(
-                          Toggle,
-                          {
-                            label: t2("Enable on Markdown"),
-                            checked: enableTimestampMarkdown,
-                            onCheckedUpdate: setEnableTimestampMarkdown
-                          }
-                        ) })
-                      ] })
+                        Toggle,
+                        {
+                          label: t2("Enable on Markdown"),
+                          checked: enableTimestampMarkdown,
+                          onCheckedUpdate: setEnableTimestampMarkdown
+                        }
+                      ) })
                     ] })
-                  ] }),
-u$5("div", { className: "absolute right-4", children: u$5(Toggle, { label: "", checked: enableTimestamp, onCheckedUpdate: setEnableTimestamp }) })
+                  ] })
                 ] }),
+u$5("div", { className: "absolute right-4", children: u$5(Toggle, { label: "", checked: enableTimestamp, onCheckedUpdate: setEnableTimestamp }) })
+              ] }),
 u$5("div", { className: "relative flex bg-white dark:bg-white/5 rounded p-4", children: [
 u$5("div", { children: [
 u$5("dt", { className: "text-md font-medium text-gray-800 dark:text-white", children: t2("Export Metadata") }),
 u$5("dd", { className: "text-sm text-gray-700 dark:text-gray-300", children: [
-                      t2("Export Metadata Description"),
-                      enableMeta && u$5(k$3, { children: [
+                    t2("Export Metadata Description"),
+                    enableMeta && u$5(k$3, { children: [
 u$5("p", { className: "mt-2 text-sm text-gray-700 dark:text-gray-300", children: [
-                          t2("Available variables"),
-                          ":",
-                          " ",
+                        t2("Available variables"),
+                        ":",
+                        " ",
 u$5(Variable, { name: "{title}", title: title2 }),
-                          ",",
-                          " ",
+                        ",",
+                        " ",
 u$5(Variable, { name: "{date}", title: date }),
-                          ",",
-                          " ",
+                        ",",
+                        " ",
 u$5(Variable, { name: "{timestamp}", title: timestamp$1 }),
-                          ",",
-                          " ",
+                        ",",
+                        " ",
 u$5(Variable, { name: "{source}", title: source }),
-                          ",",
-                          " ",
+                        ",",
+                        " ",
 u$5(Variable, { name: "{model}", title: "ChatGPT-3.5" }),
-                          ",",
-                          " ",
+                        ",",
+                        " ",
 u$5(Variable, { name: "{model_name}", title: "text-davinci-002-render-sha" }),
-                          ",",
-                          " ",
+                        ",",
+                        " ",
 u$5(Variable, { name: "{create_time}", title: "2023-04-10T21:45:35.027Z" }),
-                          ",",
-                          " ",
+                        ",",
+                        " ",
 u$5(Variable, { name: "{update_time}", title: "2023-04-10T21:45:35.027Z" })
-                        ] }),
-                        exportMetaList.map((meta, i2) => u$5("div", { className: "flex items-center mt-2", children: [
+                      ] }),
+                      exportMetaList.map((meta, i2) => u$5("div", { className: "flex items-center mt-2", children: [
 u$5(
-                            "input",
-                            {
-                              className: "Input",
-                              value: meta.name,
-                              onChange: (e2) => {
-                                const list2 = [...exportMetaList];
-                                list2[i2] = { ...list2[i2], name: e2.currentTarget.value };
-                                setExportMetaList(list2);
-                              }
+                          "input",
+                          {
+                            className: "Input",
+                            value: meta.name,
+                            onChange: (e2) => {
+                              const list2 = [...exportMetaList];
+                              list2[i2] = { ...list2[i2], name: e2.currentTarget.value };
+                              setExportMetaList(list2);
                             }
-                          ),
+                          }
+                        ),
 u$5("span", { className: "mx-2", children: "→" }),
 u$5(
-                            "input",
-                            {
-                              className: "Input",
-                              value: meta.value,
-                              onChange: (e2) => {
-                                const list2 = [...exportMetaList];
-                                list2[i2] = { ...list2[i2], value: e2.currentTarget.value };
-                                setExportMetaList(list2);
-                              }
+                          "input",
+                          {
+                            className: "Input",
+                            value: meta.value,
+                            onChange: (e2) => {
+                              const list2 = [...exportMetaList];
+                              list2[i2] = { ...list2[i2], value: e2.currentTarget.value };
+                              setExportMetaList(list2);
                             }
-                          ),
+                          }
+                        ),
 u$5(
-                            "button",
-                            {
-                              className: "ml-2 rounded-full p-1 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition ease-in-out duration-150",
-                              "aria-label": "Remove",
-                              onClick: () => setExportMetaList(exportMetaList.filter((_24, j2) => j2 !== i2)),
-                              children: u$5(IconTrash, { className: "w-4 h-4" })
-                            }
-                          )
-                        ] }, i2)),
-u$5("div", { className: "flex justify-center items-center mt-2 pr-8", children: u$5(
                           "button",
                           {
-                            className: "w-full border border-[#6f6e77] dark:border-gray-[#86858d] rounded-md py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition ease-in-out duration-150",
-                            "aria-label": "Add",
-                            onClick: () => setExportMetaList([...exportMetaList, { name: "", value: "" }]),
-                            children: "+"
+                            className: "ml-2 rounded-full p-1 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition ease-in-out duration-150",
+                            "aria-label": "Remove",
+                            onClick: () => setExportMetaList(exportMetaList.filter((_24, j2) => j2 !== i2)),
+                            children: u$5(IconTrash, { className: "w-4 h-4" })
                           }
-                        ) })
-                      ] })
+                        )
+                      ] }, i2)),
+u$5("div", { className: "flex justify-center items-center mt-2 pr-8", children: u$5(
+                        "button",
+                        {
+                          className: "w-full border border-[#6f6e77] dark:border-gray-[#86858d] rounded-md py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition ease-in-out duration-150",
+                          "aria-label": "Add",
+                          onClick: () => setExportMetaList([...exportMetaList, { name: "", value: "" }]),
+                          children: "+"
+                        }
+                      ) })
                     ] })
-                  ] }),
+                  ] })
+                ] }),
 u$5("div", { className: "absolute right-4", children: u$5(Toggle, { label: "", checked: enableMeta, onCheckedUpdate: setEnableMeta }) })
-                ] })
-              ] }),
+              ] })
+            ] }),
 u$5("div", { className: "flex mt-6", style: { justifyContent: "flex-end" }, children: u$5(Close, { asChild: true, children: u$5("button", { className: "Button green font-bold", children: t2("Save") }) }) }),
 u$5(Close, { asChild: true, children: u$5("button", { className: "IconButton CloseButton", "aria-label": "Close", children: u$5(IconCross, {}) }) })
-            ] })
           ] })
-        ]
+        ] })
       }
     );
   };
@@ -26392,6 +26388,11 @@ u$5(Close, { asChild: true, children: u$5("button", { className: "IconButton Clo
     const onClickOfficialJSON = q$1(() => exportToJson(format), [format]);
     const onClickTavern = q$1(() => exportToTavern(format), [format]);
     const onClickOoba = q$1(() => exportToOoba(format), [format]);
+    const onClickSetting = q$1(() => {
+      console.debug("[chatgpt-exporter] settings open requested");
+      setSettingOpen(true);
+      return true;
+    }, []);
     const width = useWindowResize(() => window.innerWidth);
     const isMobile = width < 768;
     const hasOverlayOpen = jsonOpen || settingOpen || exportOpen;
@@ -26430,11 +26431,12 @@ u$5(Close, { asChild: true, children: u$5("button", { className: "IconButton Clo
         collisionPadding: isMobile ? 0 : 8,
         children: [
 u$5(
-            SettingDialog,
+            MenuItem,
             {
-              open: settingOpen,
-              onOpenChange: setSettingOpen,
-              children: u$5("div", { className: "row-full", children: u$5(MenuItem, { text: t2("Setting"), icon: IconSetting }) })
+              text: t2("Setting"),
+              icon: IconSetting,
+              className: "row-full",
+              onClick: onClickSetting
             }
           ),
 u$5(
@@ -26538,6 +26540,16 @@ u$5(
                   icon: IconZip
                 }
               ) })
+            }
+          ),
+u$5(
+            SettingDialog,
+            {
+              open: settingOpen,
+              onOpenChange: (value) => {
+                console.debug("[chatgpt-exporter] settings dialog open change:", value);
+                setSettingOpen(value);
+              }
             }
           ),
           !isMobile && u$5(
