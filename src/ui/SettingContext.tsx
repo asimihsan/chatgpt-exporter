@@ -1,109 +1,131 @@
 import { createContext, useContext } from 'preact/compat'
-import { useCallback } from 'preact/hooks'
+import { useCallback, useEffect, useMemo, useState } from 'preact/hooks'
 import {
-    KEY_EXPORT_ALL_LIMIT,
-    KEY_FILENAME_FORMAT,
-    KEY_META_ENABLED,
-    KEY_META_LIST,
-    KEY_TIMESTAMP_24H,
-    KEY_TIMESTAMP_ENABLED,
-    KEY_TIMESTAMP_HTML,
-    KEY_TIMESTAMP_MARKDOWN,
-} from '../constants'
-import { useGMStorage } from '../hooks/useGMStorage'
+    applyTimestampFormatPreference,
+    getSettings,
+    resetSettings,
+    saveSettings,
+    subscribeSettings,
+} from '../settings/service'
+import {
+    DEFAULT_EXPORTER_SETTINGS,
+    DEFAULT_EXPORT_META_LIST,
+} from '../settings/types'
 import type { FC } from 'preact/compat'
+import type { ExportMeta, ExporterSettings } from '../settings/types'
 
-const defaultFormat = 'ChatGPT-{title}'
-const defaultExportAllLimit = 1000
-
-export interface ExportMeta {
-    name: string
-    value: string
+interface SettingContextValue extends ExporterSettings {
+    setFormat: (value: string) => void
+    setEnableTimestamp: (value: boolean) => void
+    setTimeStamp24H: (value: boolean) => void
+    setEnableTimestampHTML: (value: boolean) => void
+    setEnableTimestampMarkdown: (value: boolean) => void
+    setEnableMeta: (value: boolean) => void
+    setExportMetaList: (value: ExportMeta[]) => void
+    setExportAllLimit: (value: number) => void
+    resetDefault: () => void
 }
 
-const defaultExportMetaList: ExportMeta[] = [
-    { name: 'title', value: '{title}' },
-    { name: 'source', value: '{source}' },
-]
-
-const SettingContext = createContext({
-    format: defaultFormat,
-    setFormat: (_: string) => {},
-
-    enableTimestamp: false,
-    setEnableTimestamp: (_: boolean) => {},
-    timeStamp24H: false,
-    setTimeStamp24H: (_: boolean) => {},
-    enableTimestampHTML: false,
-    setEnableTimestampHTML: (_: boolean) => {},
-    enableTimestampMarkdown: false,
-    setEnableTimestampMarkdown: (_: boolean) => {},
-
-    enableMeta: false,
-    setEnableMeta: (_: boolean) => {},
-    exportMetaList: defaultExportMetaList,
-    setExportMetaList: (_: ExportMeta[]) => {},
-    exportAllLimit: defaultExportAllLimit,
-    setExportAllLimit: (_: number) => {},
+const defaultContextValue: SettingContextValue = {
+    ...DEFAULT_EXPORTER_SETTINGS,
+    exportMetaList: [...DEFAULT_EXPORT_META_LIST],
+    setFormat: () => {},
+    setEnableTimestamp: () => {},
+    setTimeStamp24H: () => {},
+    setEnableTimestampHTML: () => {},
+    setEnableTimestampMarkdown: () => {},
+    setEnableMeta: () => {},
+    setExportMetaList: () => {},
+    setExportAllLimit: () => {},
     resetDefault: () => {},
-})
+}
+
+const SettingContext = createContext<SettingContextValue>(defaultContextValue)
 
 export const SettingProvider: FC = ({ children }) => {
-    const [format, setFormat] = useGMStorage(KEY_FILENAME_FORMAT, defaultFormat)
+    const [settings, setSettings] = useState<ExporterSettings>(() => getSettings())
 
-    const [enableTimestamp, setEnableTimestamp] = useGMStorage(KEY_TIMESTAMP_ENABLED, false)
-    const [timeStamp24H, setTimeStamp24H] = useGMStorage(KEY_TIMESTAMP_24H, false)
-    const [enableTimestampHTML, setEnableTimestampHTML] = useGMStorage(KEY_TIMESTAMP_HTML, false)
-    const [enableTimestampMarkdown, setEnableTimestampMarkdown] = useGMStorage(KEY_TIMESTAMP_MARKDOWN, false)
+    useEffect(() => {
+        const unsubscribe = subscribeSettings((nextSettings) => {
+            setSettings(nextSettings)
+        })
 
-    const [enableMeta, setEnableMeta] = useGMStorage(KEY_META_ENABLED, false)
+        return () => {
+            unsubscribe()
+        }
+    }, [])
 
-    const [exportMetaList, setExportMetaList] = useGMStorage(KEY_META_LIST, defaultExportMetaList)
-    const [exportAllLimit, setExportAllLimit] = useGMStorage(KEY_EXPORT_ALL_LIMIT, defaultExportAllLimit)
+    useEffect(() => {
+        applyTimestampFormatPreference(settings)
+    }, [settings])
+
+    const setFormat = useCallback((value: string) => {
+        saveSettings({ format: value })
+    }, [])
+
+    const setEnableTimestamp = useCallback((value: boolean) => {
+        saveSettings({ enableTimestamp: value })
+    }, [])
+
+    const setTimeStamp24H = useCallback((value: boolean) => {
+        saveSettings({ timeStamp24H: value })
+    }, [])
+
+    const setEnableTimestampHTML = useCallback((value: boolean) => {
+        saveSettings({ enableTimestampHTML: value })
+    }, [])
+
+    const setEnableTimestampMarkdown = useCallback((value: boolean) => {
+        saveSettings({ enableTimestampMarkdown: value })
+    }, [])
+
+    const setEnableMeta = useCallback((value: boolean) => {
+        saveSettings({ enableMeta: value })
+    }, [])
+
+    const setExportMetaList = useCallback((value: ExportMeta[]) => {
+        saveSettings({ exportMetaList: value })
+    }, [])
+
+    const setExportAllLimit = useCallback((value: number) => {
+        saveSettings({ exportAllLimit: value })
+    }, [])
 
     const resetDefault = useCallback(() => {
-        setFormat(defaultFormat)
-        setEnableTimestamp(false)
-        setEnableMeta(false)
-        setExportMetaList(defaultExportMetaList)
-        setExportAllLimit(defaultExportAllLimit)
-    }, [
+        resetSettings()
+    }, [])
+
+    const contextValue = useMemo<SettingContextValue>(() => ({
+        ...settings,
         setFormat,
         setEnableTimestamp,
+        setTimeStamp24H,
+        setEnableTimestampHTML,
+        setEnableTimestampMarkdown,
         setEnableMeta,
         setExportMetaList,
         setExportAllLimit,
+        resetDefault,
+    }), [
+        settings,
+        setFormat,
+        setEnableTimestamp,
+        setTimeStamp24H,
+        setEnableTimestampHTML,
+        setEnableTimestampMarkdown,
+        setEnableMeta,
+        setExportMetaList,
+        setExportAllLimit,
+        resetDefault,
     ])
 
     return (
-        <SettingContext.Provider
-            value={{
-                format,
-                setFormat,
-
-                enableTimestamp,
-                setEnableTimestamp,
-                timeStamp24H,
-                setTimeStamp24H,
-                enableTimestampHTML,
-                setEnableTimestampHTML,
-                enableTimestampMarkdown,
-                setEnableTimestampMarkdown,
-
-                enableMeta,
-                setEnableMeta,
-                exportMetaList,
-                setExportMetaList,
-
-                exportAllLimit,
-                setExportAllLimit,
-
-                resetDefault,
-            }}
-        >
+        <SettingContext.Provider value={contextValue}>
             {children}
         </SettingContext.Provider>
     )
 }
 
 export const useSettingContext = () => useContext(SettingContext)
+
+export type { ExportMeta }

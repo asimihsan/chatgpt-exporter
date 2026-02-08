@@ -1,15 +1,27 @@
-import { GM_deleteValue, GM_getValue, GM_setValue } from 'vite-plugin-monkey/dist/client'
+type GlobalWithGM = typeof globalThis & {
+    GM_getValue?: <T>(key: string, defaultValue?: T) => T
+    GM_setValue?: <T>(key: string, value: T) => void
+    GM_deleteValue?: (key: string) => void
+}
+
+const runtime = globalThis as GlobalWithGM
 
 /**
  * Greasemonkey storage API
  * @see https://www.tampermonkey.net/documentation.php#api:GM_setValue
- * @see https://www.tampermonkey.net/documentation.php#api:GM_setValue
+ * @see https://www.tampermonkey.net/documentation.php#api:GM_getValue
  */
 export class GMStorage {
-    static supported = typeof GM_getValue === 'function' && typeof GM_setValue === 'function' && typeof GM_deleteValue === 'function'
+    static get supported(): boolean {
+        return typeof runtime.GM_getValue === 'function'
+            && typeof runtime.GM_setValue === 'function'
+            && typeof runtime.GM_deleteValue === 'function'
+    }
 
     static get<T>(key: string): T | null {
-        const item = GM_getValue<string>(key, '')
+        if (!this.supported) return null
+
+        const item = runtime.GM_getValue?.<string>(key, '')
         if (item) {
             try {
                 return JSON.parse(item)
@@ -22,17 +34,22 @@ export class GMStorage {
     }
 
     static set<T>(key: string, value: T): void {
+        if (!this.supported) return
+
         const item = JSON.stringify(value)
-        GM_setValue(key, item)
+        runtime.GM_setValue?.(key, item)
     }
 
     static delete(key: string): void {
-        GM_deleteValue(key)
+        if (!this.supported) return
+        runtime.GM_deleteValue?.(key)
     }
 }
 
 export class LocalStorage {
-    static supported = typeof localStorage === 'object'
+    static get supported(): boolean {
+        return typeof localStorage === 'object'
+    }
 
     static get<T>(key: string): T | null {
         const item = localStorage.getItem(key)

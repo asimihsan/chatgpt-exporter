@@ -4,8 +4,18 @@ const API_MAPPING: Record<string, string> = {
     'https://new.oaifree.com': 'https://new.oaifree.com/backend-api',
 }
 
+const FALLBACK_BASE_URL = 'https://chat.openai.com'
+
+function getBaseUrl() {
+    if (typeof location === 'object' && typeof location.href === 'string') {
+        return new URL(location.href).origin
+    }
+
+    return FALLBACK_BASE_URL
+}
+
 // export const baseUrl = 'https://chat.openai.com'
-export const baseUrl = new URL(location.href).origin
+export const baseUrl = getBaseUrl()
 export const apiUrl = API_MAPPING[baseUrl]
 
 export const KEY_LANGUAGE = 'exporter:language'
