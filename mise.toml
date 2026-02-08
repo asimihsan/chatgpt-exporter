@@ -28,7 +28,16 @@ alias = "b"
 description = "Build userscript bundle (non-minified)"
 depends = ["install"]
 run = "bun run build"
-sources = ["src/**/*", "index.html", "vite.config.ts", "package.json", "tsconfig.json"]
+sources = [
+  "src/**/*",
+  "index.html",
+  "vite.config.ts",
+  "package.json",
+  "bun.lock",
+  "tsconfig*.json",
+  "mise.toml",
+  "mise.lock",
+]
 outputs = ["dist/chatgpt.user.js"]
 
 [tasks.lint]
@@ -36,21 +45,45 @@ alias = "l"
 description = "Run strict type-aware ESLint"
 depends = ["install"]
 run = "bun run lint"
-sources = ["src/**/*", "eslint.config.js", "package.json", "tsconfig.json"]
+sources = [
+  "src/**/*",
+  "eslint.config.js",
+  "eslint.type-aware.config.js",
+  "package.json",
+  "bun.lock",
+  "tsconfig*.json",
+  "mise.toml",
+  "mise.lock",
+]
 
 [tasks.typecheck]
 alias = "tc"
 description = "Run TypeScript static type checks"
 depends = ["install"]
 run = "bun run typecheck"
-sources = ["src/**/*", "tsconfig.json", "package.json"]
+sources = [
+  "src/**/*",
+  "tsconfig*.json",
+  "package.json",
+  "bun.lock",
+  "mise.toml",
+  "mise.lock",
+]
 
 [tasks.test-unit]
 alias = "tu"
 description = "Run unit tests"
 depends = ["install"]
 run = "bun run test:unit"
-sources = ["src/**/*", "package.json", "tsconfig.json", "vite.config.ts"]
+sources = [
+  "src/**/*",
+  "package.json",
+  "bun.lock",
+  "tsconfig*.json",
+  "vite.config.ts",
+  "mise.toml",
+  "mise.lock",
+]
 
 [tasks.test]
 alias = "t"
