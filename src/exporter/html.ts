@@ -8,6 +8,7 @@ import { downloadFile, getFileNameWithFormat } from '../utils/download'
 import { fromMarkdown, toHtml } from '../utils/markdown'
 import { ScriptStorage } from '../utils/storage'
 import { standardizeLineBreaks } from '../utils/text'
+import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
 import { shouldIncludeMessageForExport } from './messageClassifier'
 import { dateStr, getColorScheme, timestamp, unixTimestampToISOString } from '../utils/utils'
 import { normalizeReferenceText, replaceReferenceTokens, stripUiTokens } from './shared'
@@ -293,14 +294,15 @@ function transformContent(
             return postProcess(stripUiTokens(content.parts?.join('\n') || ''))
         case 'code':
             return `Code:\n\`\`\`\n${stripUiTokens(content.text)}\n\`\`\``
-        case 'execution_output':
-            if (metadata?.aggregate_result?.messages) {
-                return metadata.aggregate_result.messages
-                    .filter(msg => msg.message_type === 'image')
-                    .map(msg => `<img src="${msg.image_url}" height="${msg.height}" width="${msg.width}" />`)
+        case 'execution_output': {
+            const images = getExecutionOutputImages(metadata)
+            if (images.length > 0) {
+                return images
+                    .map(image => `<img src="${image.image_url}" height="${image.height}" width="${image.width}" />`)
                     .join('\n')
             }
-            return postProcess(`Result:\n\`\`\`\n${stripUiTokens(content.text)}\n\`\`\``)
+            return postProcess(`Result:\n\`\`\`\n${getExecutionOutputText(content)}\n\`\`\``)
+        }
         case 'tether_quote':
             return postProcess(`> ${stripUiTokens(content.title || content.text || '')}`)
         case 'tether_browsing_code':

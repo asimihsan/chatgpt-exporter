@@ -19031,7 +19031,7 @@ self2.previous !== null ||
   }
   function hasExecutionOutputImage(message) {
     if (message.content.content_type !== "execution_output") return false;
-    return message.metadata?.aggregate_result?.messages?.some((msg) => msg.message_type === "image") ?? false;
+    return getExecutionOutputImages(message.metadata).length > 0;
   }
   function isThinkingToolTextMessage(message) {
     return isThinkingMessage(message) && message.author.role === "tool" && message.content.content_type === "text";
@@ -19071,6 +19071,19 @@ self2.previous !== null ||
       output2 = output2.replaceAll(token, replacement);
     }
     return output2;
+  }
+  function isExecutionOutputImage(value) {
+    if (typeof value !== "object" || value === null) return false;
+    const maybeImage = value;
+    return maybeImage.message_type === "image" && typeof maybeImage.image_url === "string" && typeof maybeImage.height === "number" && typeof maybeImage.width === "number";
+  }
+  function getExecutionOutputImages(metadata) {
+    const messages = metadata?.aggregate_result?.messages;
+    if (!Array.isArray(messages)) return [];
+    return messages.filter(isExecutionOutputImage);
+  }
+  function getExecutionOutputText(content2) {
+    return stripUiTokens(content2.text || "");
   }
   async function exportToText() {
     if (!checkIfConversationStarted()) {
@@ -19118,11 +19131,13 @@ ${content2}`;
         return stripUiTokens(content2.parts?.join("\n") || "");
       case "code":
         return stripUiTokens(content2.text || "");
-      case "execution_output":
-        if (metadata?.aggregate_result?.messages) {
-          return metadata.aggregate_result.messages.filter((msg) => msg.message_type === "image").map(() => "[image]").join("\n");
+      case "execution_output": {
+        const images = getExecutionOutputImages(metadata);
+        if (images.length > 0) {
+          return images.map(() => "[image]").join("\n");
         }
-        return stripUiTokens(content2.text || "");
+        return getExecutionOutputText(content2);
+      }
       case "tether_quote":
         return `> ${stripUiTokens(content2.title || content2.text || "")}`;
       case "tether_browsing_code":
@@ -25399,14 +25414,16 @@ createTime = Math.floor(Date.now() / 1e3),
 \`\`\`
 ${stripUiTokens(content2.text)}
 \`\`\``;
-      case "execution_output":
-        if (metadata?.aggregate_result?.messages) {
-          return metadata.aggregate_result.messages.filter((msg) => msg.message_type === "image").map((msg) => `<img src="${msg.image_url}" height="${msg.height}" width="${msg.width}" />`).join("\n");
+      case "execution_output": {
+        const images = getExecutionOutputImages(metadata);
+        if (images.length > 0) {
+          return images.map((image2) => `<img src="${image2.image_url}" height="${image2.height}" width="${image2.width}" />`).join("\n");
         }
         return postProcess(`Result:
 \`\`\`
-${stripUiTokens(content2.text)}
+${getExecutionOutputText(content2)}
 \`\`\``);
+      }
       case "tether_quote":
         return postProcess(`> ${stripUiTokens(content2.title || content2.text || "")}`);
       case "tether_browsing_code":
@@ -25897,14 +25914,16 @@ ${citationText}`;
 \`\`\`
 ${stripUiTokens(content2.text)}
 \`\`\``;
-      case "execution_output":
-        if (metadata?.aggregate_result?.messages) {
-          return metadata.aggregate_result.messages.filter((msg) => msg.message_type === "image").map((msg) => `![image](${msg.image_url})`).join("\n");
+      case "execution_output": {
+        const images = getExecutionOutputImages(metadata);
+        if (images.length > 0) {
+          return images.map((image2) => `![image](${image2.image_url})`).join("\n");
         }
         return postProcess(`Result:
 \`\`\`
-${stripUiTokens(content2.text)}
+${getExecutionOutputText(content2)}
 \`\`\``);
+      }
       case "tether_quote":
         return postProcess(`> ${stripUiTokens(content2.title || content2.text || "")}`);
       case "tether_browsing_code":

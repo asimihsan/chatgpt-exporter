@@ -1,4 +1,5 @@
 import type { ConversationNodeMessage } from '../api'
+import { getExecutionOutputImages } from './executionOutput'
 
 const INTERNAL_CONTENT_TYPES = new Set<ConversationNodeMessage['content']['content_type']>([
     'thoughts',
@@ -61,7 +62,7 @@ export function isThinkingMessage(message?: ConversationNodeMessage): boolean {
 
 function hasExecutionOutputImage(message: ConversationNodeMessage): boolean {
     if (message.content.content_type !== 'execution_output') return false
-    return message.metadata?.aggregate_result?.messages?.some(msg => msg.message_type === 'image') ?? false
+    return getExecutionOutputImages(message.metadata).length > 0
 }
 
 function isThinkingToolTextMessage(message: ConversationNodeMessage): boolean {

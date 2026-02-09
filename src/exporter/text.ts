@@ -4,6 +4,7 @@ import { checkIfConversationStarted } from '../page'
 import { copyToClipboard } from '../utils/clipboard'
 import { flatMap, fromMarkdown, toMarkdown } from '../utils/markdown'
 import { standardizeLineBreaks } from '../utils/text'
+import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
 import { shouldIncludeMessageForExport } from './messageClassifier'
 import { normalizeReferenceText, replaceReferenceTokens, stripUiTokens } from './shared'
 import type { ConversationNodeMessage } from '../api'
@@ -81,14 +82,13 @@ function transformContent(
             return stripUiTokens(content.parts?.join('\n') || '')
         case 'code':
             return stripUiTokens(content.text || '')
-        case 'execution_output':
-            if (metadata?.aggregate_result?.messages) {
-                return metadata.aggregate_result.messages
-                    .filter(msg => msg.message_type === 'image')
-                    .map(() => '[image]')
-                    .join('\n')
+        case 'execution_output': {
+            const images = getExecutionOutputImages(metadata)
+            if (images.length > 0) {
+                return images.map(() => '[image]').join('\n')
             }
-            return stripUiTokens(content.text || '')
+            return getExecutionOutputText(content)
+        }
         case 'tether_quote':
             return `> ${stripUiTokens(content.title || content.text || '')}`
         case 'tether_browsing_code':
