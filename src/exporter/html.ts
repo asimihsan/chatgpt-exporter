@@ -10,6 +10,7 @@ import { ScriptStorage } from '../utils/storage'
 import { standardizeLineBreaks } from '../utils/text'
 import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
 import { shouldIncludeMessageForExport } from './messageClassifier'
+import { getExportAuthorLabel } from './messageLabel'
 import { dateStr, getColorScheme, timestamp, unixTimestampToISOString } from '../utils/utils'
 import { normalizeReferenceText, replaceReferenceTokens, stripUiTokens } from './shared'
 import type { ApiConversationWithId, ConversationNodeMessage, ConversationResult } from '../api'
@@ -84,7 +85,7 @@ function conversationToHtml(conversation: ConversationResult, avatar: string, me
         if (!message?.content) return null
         if (!shouldIncludeMessageForExport(message)) return null
 
-        const author = transformAuthor(message.author)
+        const author = getExportAuthorLabel(message)
         const model = message?.metadata?.model_slug === 'gpt-4' ? 'GPT-4' : 'GPT-3'
         const authorType = message.author.role === 'user' ? 'user' : model
         const avatarEl = message.author.role === 'user'
@@ -203,19 +204,6 @@ function conversationToHtml(conversation: ConversationResult, avatar: string, me
         .replaceAll('{{details}}', detailsHtml)
         .replaceAll('{{content}}', conversationHtml)
     return html
-}
-
-function transformAuthor(author: ConversationNodeMessage['author']): string {
-    switch (author.role) {
-        case 'assistant':
-            return 'ChatGPT'
-        case 'user':
-            return 'You'
-        case 'tool':
-            return `Plugin${author.name ? ` (${author.name})` : ''}`
-        default:
-            return author.role
-    }
 }
 
 /**

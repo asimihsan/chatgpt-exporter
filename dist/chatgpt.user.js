@@ -19085,6 +19085,30 @@ self2.previous !== null ||
   function getExecutionOutputText(content2) {
     return stripUiTokens(content2.text || "");
   }
+  function getExportAuthorLabel(message) {
+    if (isThinkingMessage(message)) {
+      return "ChatGPT (Thinking)";
+    }
+    if (isAnalysisCodeMessage(message)) {
+      return "ChatGPT (Analysis)";
+    }
+    if (isAnalysisExecutionOutput(message)) {
+      if (message.author.name === "python") {
+        return "Python (Analysis)";
+      }
+      return `Plugin${message.author.name ? ` (${message.author.name})` : ""} (Analysis)`;
+    }
+    switch (message.author.role) {
+      case "assistant":
+        return "ChatGPT";
+      case "user":
+        return "You";
+      case "tool":
+        return `Plugin${message.author.name ? ` (${message.author.name})` : ""}`;
+      default:
+        return message.author.role;
+    }
+  }
   async function exportToText() {
     if (!checkIfConversationStarted()) {
       alert(instance.t("Please start a conversation first"));
@@ -19101,7 +19125,7 @@ self2.previous !== null ||
   function transformMessage(message) {
     if (!message?.content) return null;
     if (!shouldIncludeMessageForExport(message)) return null;
-    const author = transformAuthor$2(message.author);
+    const author = getExportAuthorLabel(message);
     let content2 = transformContent$2(message.content, message.metadata);
     const matches = content2.match(LatexRegex$1);
     if (matches) {
@@ -19175,18 +19199,6 @@ case "tether_browsing_display": {
       return result.slice(1);
     }
     return result;
-  }
-  function transformAuthor$2(author) {
-    switch (author.role) {
-      case "assistant":
-        return "ChatGPT";
-      case "user":
-        return "You";
-      case "tool":
-        return `Plugin${author.name ? ` (${author.name})` : ""}`;
-      default:
-        return author.role;
-    }
   }
   function transformContentReferences$2(input, metadata) {
     const contentRefs = metadata?.content_references;
@@ -25283,7 +25295,7 @@ createTime = Math.floor(Date.now() / 1e3),
     const conversationHtml = conversationNodes.map(({ message }) => {
       if (!message?.content) return null;
       if (!shouldIncludeMessageForExport(message)) return null;
-      const author = transformAuthor$1(message.author);
+      const author = getExportAuthorLabel(message);
       const model2 = message?.metadata?.model_slug === "gpt-4" ? "GPT-4" : "GPT-3";
       const authorType = message.author.role === "user" ? "user" : model2;
       const avatarEl = message.author.role === "user" ? `<img alt="${author}" />` : '<svg width="41" height="41"><use xlink:href="#chatgpt" /></svg>';
@@ -25354,18 +25366,6 @@ createTime = Math.floor(Date.now() / 1e3),
 </details>` : "";
     const html2 = templateHtml.replaceAll("{{title}}", title2).replaceAll("{{date}}", date).replaceAll("{{time}}", time).replaceAll("{{source}}", source).replaceAll("{{lang}}", lang).replaceAll("{{theme}}", theme).replaceAll("{{avatar}}", avatar).replaceAll("{{details}}", detailsHtml).replaceAll("{{content}}", conversationHtml);
     return html2;
-  }
-  function transformAuthor$1(author) {
-    switch (author.role) {
-      case "assistant":
-        return "ChatGPT";
-      case "user":
-        return "You";
-      case "tool":
-        return `Plugin${author.name ? ` (${author.name})` : ""}`;
-      default:
-        return author.role;
-    }
   }
   function transformFootNotes$1(input, metadata) {
     const footNoteMarkRegex = /【(\d+)†\((.+?)\)】/g;
@@ -25807,7 +25807,7 @@ ${_metaList.join("\n")}
 
 `;
       }
-      const author = transformAuthor(message.author);
+      const author = getExportAuthorLabel(message);
       const postSteps = [];
       if (message.author.role === "assistant") {
         postSteps.push((input) => transformContentReferences(input, message.metadata));
@@ -25842,18 +25842,6 @@ ${timestampHtml}${content22}`;
 
 ${content2}`;
     return markdown;
-  }
-  function transformAuthor(author) {
-    switch (author.role) {
-      case "assistant":
-        return "ChatGPT";
-      case "user":
-        return "You";
-      case "tool":
-        return `Plugin${author.name ? ` (${author.name})` : ""}`;
-      default:
-        return author.role;
-    }
   }
   function transformFootNotes(input, metadata) {
     const footNoteMarkRegex = /【(\d+)†\((.+?)\)】/g;

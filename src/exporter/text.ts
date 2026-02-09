@@ -6,6 +6,7 @@ import { flatMap, fromMarkdown, toMarkdown } from '../utils/markdown'
 import { standardizeLineBreaks } from '../utils/text'
 import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
 import { shouldIncludeMessageForExport } from './messageClassifier'
+import { getExportAuthorLabel } from './messageLabel'
 import { normalizeReferenceText, replaceReferenceTokens, stripUiTokens } from './shared'
 import type { ConversationNodeMessage } from '../api'
 import type { Emphasis, Strong } from 'mdast'
@@ -38,7 +39,7 @@ function transformMessage(message?: ConversationNodeMessage) {
     if (!message?.content) return null
     if (!shouldIncludeMessageForExport(message)) return null
 
-    const author = transformAuthor(message.author)
+    const author = getExportAuthorLabel(message)
     let content = transformContent(message.content, message.metadata)
 
     const matches = content.match(LatexRegex)
@@ -135,19 +136,6 @@ function reformatContent(input: string) {
         return result.slice(1)
     }
     return result
-}
-
-function transformAuthor(author: ConversationNodeMessage['author']): string {
-    switch (author.role) {
-        case 'assistant':
-            return 'ChatGPT'
-        case 'user':
-            return 'You'
-        case 'tool':
-            return `Plugin${author.name ? ` (${author.name})` : ''}`
-        default:
-            return author.role
-    }
 }
 
 function transformContentReferences(
