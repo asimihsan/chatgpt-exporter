@@ -3,6 +3,15 @@ import { defineConfig } from 'vite'
 import monkey, { cdn } from 'vite-plugin-monkey'
 import packageJson from './package.json'
 
+const defaultUserscriptRepo = process.env.GITHUB_REPOSITORY ?? 'pionxzh/chatgpt-exporter'
+const defaultUserscriptBranch = process.env.GITHUB_REF_NAME
+    ?? process.env.GITHUB_BASE_REF
+    ?? process.env.GITHUB_HEAD_REF
+    ?? 'master'
+const userscriptRepo = process.env.USERSCRIPT_GITHUB_REPO ?? defaultUserscriptRepo
+const userscriptBranch = process.env.USERSCRIPT_GITHUB_BRANCH ?? defaultUserscriptBranch
+const userscriptDistBaseUrl = `https://raw.githubusercontent.com/${userscriptRepo}/${userscriptBranch}/dist`
+
 // https://vitejs.dev/config/
 export default defineConfig({
     // https://github.com/lisonge/vite-plugin-monkey/issues/10#issuecomment-1207264978
@@ -30,6 +39,8 @@ export default defineConfig({
                     'zh-TW': packageJson['description:zh-TW'],
                 },
                 'license': packageJson.license,
+                'updateURL': `${userscriptDistBaseUrl}/chatgpt.meta.js`,
+                'downloadURL': `${userscriptDistBaseUrl}/chatgpt.user.js`,
                 'match': [
                     'https://chat.openai.com/',
                     // support https://chat.openai.com/?model={model}
@@ -77,6 +88,7 @@ export default defineConfig({
             },
             build: {
                 fileName: 'chatgpt.user.js',
+                metaFileName: true,
                 externalGlobals: [
                     ['jszip', cdn.jsdelivr('JSZip', 'dist/jszip.min.js')],
                     ['html2canvas', cdn.jsdelivr('html2canvas', 'dist/html2canvas.min.js')],

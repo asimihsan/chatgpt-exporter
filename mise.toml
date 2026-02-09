@@ -1,8 +1,10 @@
 min_version = "2024.9.5"
 
 [tools]
+actionlint = "latest"
 bun = "latest"
 node = "lts"
+shellcheck = "latest"
 
 [env]
 _.path = ["{{config_root}}/node_modules/.bin"]
@@ -38,7 +40,7 @@ sources = [
   "mise.toml",
   "mise.lock",
 ]
-outputs = ["dist/chatgpt.user.js"]
+outputs = ["dist/chatgpt.user.js", "dist/chatgpt.meta.js"]
 
 [tasks.lint]
 alias = "l"
@@ -97,9 +99,24 @@ depends = ["install"]
 run = "bun audit --audit-level=low"
 sources = ["package.json", "bun.lock", "mise.toml", "mise.lock"]
 
+[tasks.shellcheck]
+description = "Lint shell scripts"
+run = "shellcheck scripts/release/*.sh"
+sources = ["scripts/**/*.sh", "mise.toml", "mise.lock"]
+
+[tasks.actionlint]
+description = "Lint GitHub Actions workflows"
+run = "actionlint"
+sources = [
+  ".github/workflows/*.yml",
+  ".github/workflows/*.yaml",
+  "mise.toml",
+  "mise.lock",
+]
+
 [tasks.ci]
-description = "Run lint, tests, and security audit"
-depends = ["lint", "test", "audit"]
+description = "Run lint, tests, security audit, shell lint, and workflow lint"
+depends = ["lint", "test", "audit", "shellcheck", "actionlint"]
 run = "echo ci checks complete"
 
 [tasks.check]
