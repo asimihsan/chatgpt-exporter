@@ -10,6 +10,10 @@ backend = "core:bun"
 version = "1.2.0"
 backend = "go:github.com/google/addlicense"
 
+[[tools.jujutsu]]
+version = "0.38.0"
+backend = "aqua:jj-vcs/jj"
+
 [[tools.node]]
 version = "24.11.1"
 backend = "core:node"
