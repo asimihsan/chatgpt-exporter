@@ -8,11 +8,10 @@ repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${repo_root}"
 
 base_rev="${SPDX_BASE_REV:-master@upstream}"
+git_base_ref="${SPDX_GIT_BASE_REF:-}"
 
-if ! command -v jj >/dev/null 2>&1; then
-    echo "Error: jj is required for SPDX classification." >&2
-    exit 1
-fi
+# shellcheck source=./classify-changes.sh
+source "${repo_root}/scripts/license/classify-changes.sh"
 
 mapfile -t target_files < <(
     rg --files \
@@ -41,16 +40,23 @@ fi
 declare -A added_files=()
 declare -A modified_files=()
 
-while read -r status path; do
-    case "${status}" in
-        A)
-            added_files["${path}"]=1
-            ;;
-        M)
-            modified_files["${path}"]=1
-            ;;
-    esac
-done < <(jj diff --summary --from "${base_rev}" --to @ --no-pager)
+if ! collect_spdx_change_summary "${base_rev}" "${git_base_ref}"; then
+    exit 1
+fi
+
+if [[ -n "${SPDX_CHANGE_SUMMARY}" ]]; then
+    while read -r status path; do
+        [[ -z "${status}" || -z "${path}" ]] && continue
+        case "${status}" in
+            A)
+                added_files["${path}"]=1
+                ;;
+            M)
+                modified_files["${path}"]=1
+                ;;
+        esac
+    done <<< "${SPDX_CHANGE_SUMMARY}"
+fi
 
 failures=0
 
@@ -86,8 +92,8 @@ for file_path in "${target_files[@]}"; do
 done
 
 if ((failures > 0)); then
-    echo "SPDX check failed with ${failures} file(s) out of policy relative to ${base_rev}." >&2
+    echo "SPDX check failed with ${failures} file(s) out of policy relative to ${SPDX_CLASSIFICATION_BASE_LABEL:-${base_rev}}." >&2
     exit 1
 fi
 
-echo "SPDX headers verified against base revision: ${base_rev}"
+echo "SPDX headers verified against base revision: ${SPDX_CLASSIFICATION_BASE_LABEL:-${base_rev}}"
