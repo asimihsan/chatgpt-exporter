@@ -1,3 +1,8 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * SPDX-License-Identifier: MIT
+ */
+
 import { jsonlStringify, nonNullable } from './utils'
 import type { ConversationNode, ConversationResult } from '../api'
 

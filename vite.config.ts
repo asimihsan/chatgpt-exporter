@@ -1,9 +1,15 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0 AND MIT
+ */
+
 import preact from '@preact/preset-vite'
 import { defineConfig } from 'vite'
 import monkey, { cdn } from 'vite-plugin-monkey'
 import packageJson from './package.json'
 
-const defaultUserscriptRepo = process.env.GITHUB_REPOSITORY ?? 'pionxzh/chatgpt-exporter'
+const defaultUserscriptRepo = process.env.GITHUB_REPOSITORY ?? 'asimihsan/chatgpt-exporter'
 const defaultUserscriptBranch = process.env.GITHUB_REF_NAME
     ?? process.env.GITHUB_BASE_REF
     ?? process.env.GITHUB_HEAD_REF

@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 import type { ApiConversationWithId, ConversationNode, ConversationResult, ModelSlug } from './types'
 
 const MODEL_MAPPING: { [key in ModelSlug]: string } & { [key: string]: string } = {

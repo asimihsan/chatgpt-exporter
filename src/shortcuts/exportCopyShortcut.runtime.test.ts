@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const exportToTextMock = vi.fn<() => Promise<boolean>>()

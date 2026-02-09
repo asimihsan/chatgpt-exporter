@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+# Copyright 2026 Asim Ihsan
+# SPDX-License-Identifier: MPL-2.0
+
 set -euo pipefail
 
 tag_prefix="${TAG_PREFIX:-userscript-v}"

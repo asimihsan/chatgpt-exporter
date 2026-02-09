@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 import { GM, GM_registerMenuCommand } from 'vite-plugin-monkey/dist/client'
 import i18n from '../i18n'
 import { openSettingsPanel } from './panel'

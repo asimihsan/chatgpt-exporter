@@ -1,3 +1,9 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0 AND MIT
+ */
+
 const API_MAPPING: Record<string, string> = {
     'https://chat.openai.com': 'https://chat.openai.com/backend-api',
     'https://chatgpt.com': 'https://chatgpt.com/backend-api',

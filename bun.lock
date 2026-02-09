@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "@pionxzh/chatgpt-exporter",
+      "name": "@asimihsan/chatgpt-exporter",
       "dependencies": {
         "@headlessui/react": "^1.7.14",
         "@radix-ui/react-dialog": "^1.0.3",

@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 const EDITABLE_SELECTOR = 'input, textarea, select, [contenteditable], [role="textbox"]'
 const MODIFIER_ORDER = ['Mod', 'Shift', 'Alt'] as const
 

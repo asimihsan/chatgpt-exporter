@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 import { describe, expect, it, vi } from 'vitest'
 import { conversationToHtml } from './html'
 import { conversationToMarkdown } from './markdown'

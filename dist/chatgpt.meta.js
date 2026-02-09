@@ -2,16 +2,20 @@
 // @name               ChatGPT Exporter
 // @name:zh-CN         ChatGPT Exporter
 // @name:zh-TW         ChatGPT Exporter
-// @namespace          pionxzh
+// @namespace          asimihsan
 // @version            2.29.3
-// @author             pionxzh
+// @author             asimihsan
 // @description        Easily export the whole ChatGPT conversation history for further analysis or sharing.
 // @description:zh-CN  轻松导出 ChatGPT 聊天记录，以便进一步分析或分享。
 // @description:zh-TW  輕鬆匯出 ChatGPT 聊天紀錄，以便進一步分析或分享。
-// @license            MIT
+// @license            MPL-2.0 AND MIT
 // @icon               https://chat.openai.com/favicon.ico
-// @downloadURL        https://raw.githubusercontent.com/pionxzh/chatgpt-exporter/master/dist/chatgpt.user.js
-// @updateURL          https://raw.githubusercontent.com/pionxzh/chatgpt-exporter/master/dist/chatgpt.meta.js
+// @homepage           https://github.com/asimihsan/chatgpt-exporter
+// @homepageURL        https://github.com/asimihsan/chatgpt-exporter
+// @source             https://github.com/asimihsan/chatgpt-exporter.git
+// @supportURL         https://github.com/asimihsan/chatgpt-exporter/issues
+// @downloadURL        https://raw.githubusercontent.com/asimihsan/chatgpt-exporter/master/dist/chatgpt.user.js
+// @updateURL          https://raw.githubusercontent.com/asimihsan/chatgpt-exporter/master/dist/chatgpt.meta.js
 // @match              https://chat.openai.com/
 // @match              https://chat.openai.com/?model=*
 // @match              https://chat.openai.com/c/*

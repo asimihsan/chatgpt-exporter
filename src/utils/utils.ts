@@ -1,3 +1,8 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * SPDX-License-Identifier: MIT
+ */
+
 export function noop() {}
 
 export function nonNullable<T>(x: T): x is NonNullable<T> {

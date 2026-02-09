@@ -1,13 +1,20 @@
+# Copyright 2026 Asim Ihsan
+# SPDX-License-Identifier: MPL-2.0
+
 min_version = "2024.9.5"
 
 [tools]
 actionlint = "latest"
 bun = "latest"
+"go:github.com/google/addlicense" = "latest"
 node = "lts"
 shellcheck = "latest"
 
 [env]
 _.path = ["{{config_root}}/node_modules/.bin"]
+
+[settings]
+experimental = true
 
 [settings.npm]
 package_manager = "bun"
@@ -114,9 +121,43 @@ sources = [
   "mise.lock",
 ]
 
+[tasks.license-apply]
+description = "Apply SPDX license headers using jj upstream classification"
+run = "bash scripts/license/apply-spdx-headers.sh"
+sources = [
+  "src/**/*",
+  "scripts/**/*.sh",
+  ".github/workflows/*.yml",
+  ".github/workflows/*.yaml",
+  "*.js",
+  "*.ts",
+  "*.html",
+  "*.toml",
+  "scripts/license/templates/*.txt",
+  "mise.toml",
+  "mise.lock",
+]
+
+[tasks.license-check]
+description = "Verify SPDX headers match jj upstream classification"
+run = "bash scripts/license/check-spdx-headers.sh"
+sources = [
+  "src/**/*",
+  "scripts/**/*.sh",
+  ".github/workflows/*.yml",
+  ".github/workflows/*.yaml",
+  "*.js",
+  "*.ts",
+  "*.html",
+  "*.toml",
+  "scripts/license/templates/*.txt",
+  "mise.toml",
+  "mise.lock",
+]
+
 [tasks.ci]
-description = "Run lint, tests, security audit, shell lint, and workflow lint"
-depends = ["lint", "test", "audit", "shellcheck", "actionlint"]
+description = "Run lint, tests, security audit, shell lint, workflow lint, and SPDX checks"
+depends = ["lint", "test", "audit", "shellcheck", "actionlint", "license-check"]
 run = "echo ci checks complete"
 
 [tasks.check]

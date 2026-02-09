@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 import { exportToText } from '../exporter/text'
 import { getSettings, subscribeSettings } from '../settings/service'
 import { DEFAULT_COPY_TEXT_SHORTCUT, isEditableContext, isMacPlatform, matchesExportCopyShortcut } from './exportCopyShortcutHelpers'

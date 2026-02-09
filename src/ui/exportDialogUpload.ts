@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 import type { ApiConversationWithId } from '../api'
 
 function isObject(value: unknown): value is Record<string, unknown> {

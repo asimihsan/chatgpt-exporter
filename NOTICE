@@ -1,0 +1,17 @@
+ChatGPT Exporter (fork)
+Copyright (c) 2026 Asim Ihsan
+
+This repository is a fork of:
+https://github.com/pionxzh/chatgpt-exporter
+
+Licensing summary:
+- The root project license is Mozilla Public License 2.0 (MPL-2.0). See LICENSE.
+- Upstream MIT license text is preserved verbatim in LICENSE-MIT.
+- Source files use SPDX headers that are assigned using Jujutsu ancestry against
+  master@upstream:
+  - New fork files: MPL-2.0
+  - Modified upstream-derived files: MPL-2.0 AND MIT
+  - Unchanged upstream-derived files: MIT
+
+If this summary differs from the full license texts, the terms in LICENSE and
+LICENSE-MIT govern.

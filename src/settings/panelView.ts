@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 import i18n, { LOCALES } from '../i18n'
 
 export interface PanelElements {

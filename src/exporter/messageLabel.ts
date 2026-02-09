@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 import { isAnalysisCodeMessage, isAnalysisExecutionOutput, isThinkingMessage } from './messageClassifier'
 import type { ConversationNodeMessage } from '../api'
 

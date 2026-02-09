@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 import i18n from '../i18n'
 import { normalizeCopyTextShortcut } from '../shortcuts/exportCopyShortcutHelpers'
 import {

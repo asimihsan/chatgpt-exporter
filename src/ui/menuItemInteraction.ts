@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 export const TOUCH_CLICK_DEDUP_WINDOW_MS = 700
 
 export function shouldSuppressClickAfterTouch(

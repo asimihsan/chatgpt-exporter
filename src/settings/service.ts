@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 import {
     KEY_COPY_TEXT_SHORTCUT,
     KEY_COPY_TEXT_SHORTCUT_ENABLED,

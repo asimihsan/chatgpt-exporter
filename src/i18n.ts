@@ -1,3 +1,9 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0 AND MIT
+ */
+
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import { KEY_LANGUAGE, KEY_OAI_LOCALE } from './constants'

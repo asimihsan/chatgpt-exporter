@@ -1,3 +1,9 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0 AND MIT
+ */
+
 import html2canvas from 'html2canvas'
 import i18n from '../i18n'
 import { checkIfConversationStarted, getChatIdFromUrl } from '../page'

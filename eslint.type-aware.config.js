@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import tsPlugin from '@typescript-eslint/eslint-plugin'

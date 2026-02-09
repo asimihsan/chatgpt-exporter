@@ -1,5 +1,5 @@
 {
-  "name": "@pionxzh/chatgpt-exporter",
+  "name": "@asimihsan/chatgpt-exporter",
   "type": "module",
   "version": "2.29.3",
   "private": true,
@@ -10,8 +10,16 @@
   "description": "Easily export the whole ChatGPT conversation history for further analysis or sharing.",
   "description:zh-CN": "轻松导出 ChatGPT 聊天记录，以便进一步分析或分享。",
   "description:zh-TW": "輕鬆匯出 ChatGPT 聊天紀錄，以便進一步分析或分享。",
-  "author": "pionxzh",
-  "license": "MIT",
+  "author": "asimihsan",
+  "homepage": "https://github.com/asimihsan/chatgpt-exporter",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/asimihsan/chatgpt-exporter.git"
+  },
+  "bugs": {
+    "url": "https://github.com/asimihsan/chatgpt-exporter/issues"
+  },
+  "license": "MPL-2.0 AND MIT",
   "engines": {
     "node": ">=20.0.0"
   },

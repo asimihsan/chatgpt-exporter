@@ -1,3 +1,9 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0 AND MIT
+ */
+
 import { useEffect, useState } from 'preact/hooks'
 import './CheckBox.css'
 import { IconCheckBox, IconCheckBoxChecked } from './Icons'

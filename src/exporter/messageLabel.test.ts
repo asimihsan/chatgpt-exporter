@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 import { describe, expect, it } from 'vitest'
 import { getExportAuthorLabel } from './messageLabel'
 import type { ConversationNodeMessage } from '../api'

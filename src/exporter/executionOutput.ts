@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 import { stripUiTokens } from './shared'
 import type { ConversationNodeMessage } from '../api'
 

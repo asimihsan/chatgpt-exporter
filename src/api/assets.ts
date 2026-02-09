@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 import { blobToDataURL } from '../utils/dom'
 import { fetchApi, getFileDownloadApiUrl } from './http'
 import type { ApiConversation } from './types'

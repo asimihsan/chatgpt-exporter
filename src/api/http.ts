@@ -1,3 +1,8 @@
+/**
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0
+ */
+
 import urlcat from 'urlcat'
 import { apiUrl, baseUrl } from '../constants'
 import { getPageAccessToken } from '../page'
