@@ -19216,12 +19216,12 @@ self2.previous !== null ||
     const chatId = await getCurrentChatId();
     const rawConversation = await fetchConversation(chatId, false);
     const { conversationNodes } = processConversation(rawConversation);
-    const text2 = conversationNodes.map(({ message }) => transformMessage(message)).filter(Boolean).join("\n\n");
+    const text2 = conversationNodes.map(({ message }) => transformMessageForTextExport(message)).filter(Boolean).join("\n\n");
     await copyToClipboard(standardizeLineBreaks(text2));
     return true;
   }
   const LatexRegex$1 = /(\s\$\$.+\$\$\s|\s\$.+\$\s|\\\[.+\\\]|\\\(.+\\\))|(^\$$[\S\s]+^\$$)|(^\$\$[\S\s]+^\$\$$)/gm;
-  function transformMessage(message) {
+  function transformMessageForTextExport(message) {
     if (!message?.content) return null;
     if (!shouldIncludeMessageForExport(message)) return null;
     const author = getExportAuthorLabel(message);
@@ -25386,7 +25386,15 @@ createTime = Math.floor(Date.now() / 1e3),
     downloadFile("chatgpt-export-html.zip", "application/zip", blob);
     return true;
   }
-  function conversationToHtml(conversation, avatar, metaList) {
+  function resolveDocumentLanguage() {
+    if (typeof document !== "object") return "en";
+    return document.documentElement.lang || "en";
+  }
+  function resolveColorScheme() {
+    if (typeof document !== "object") return "light";
+    return getColorScheme() || "light";
+  }
+  function conversationToHtml(conversation, avatar, metaList, options) {
     const { id, title: title2, model, modelSlug, createTime, updateTime, conversationNodes } = conversation;
     const enableTimestamp = ScriptStorage.get(KEY_TIMESTAMP_ENABLED) ?? false;
     const timeStampHtml = ScriptStorage.get(KEY_TIMESTAMP_HTML) ?? false;
@@ -25452,8 +25460,8 @@ createTime = Math.floor(Date.now() / 1e3),
     const date = dateStr();
     const time = ( new Date()).toISOString();
     const source = `${baseUrl}/c/${id}`;
-    const lang = document.documentElement.lang ?? "en";
-    const theme = getColorScheme();
+    const lang = resolveDocumentLanguage();
+    const theme = resolveColorScheme();
     const _metaList = metaList?.filter((x2) => !!x2.name).map(({ name, value }) => {
       const val = value.replace("{title}", title2).replace("{date}", date).replace("{timestamp}", timestamp()).replace("{source}", source).replace("{model}", model).replace("{mode_name}", modelSlug).replace("{create_time}", unixTimestampToISOString(createTime)).replace("{update_time}", unixTimestampToISOString(updateTime));
       return [name, val];

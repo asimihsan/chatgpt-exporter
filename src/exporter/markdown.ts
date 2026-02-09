@@ -70,7 +70,7 @@ export async function exportAllToMarkdown(fileNameFormat: string, apiConversatio
 
 const LatexRegex = /(\s\$\$.+\$\$\s|\s\$.+\$\s|\\\[.+\\\]|\\\(.+\\\))|(^\$$[\S\s]+^\$$)|(^\$\$[\S\s]+^\$\$$)/gm
 
-function conversationToMarkdown(conversation: ConversationResult, metaList?: ExportMeta[]) {
+export function conversationToMarkdown(conversation: ConversationResult, metaList?: ExportMeta[]) {
     const { id, title, model, modelSlug, createTime, updateTime, conversationNodes } = conversation
     const source = `${baseUrl}/c/${id}`
 

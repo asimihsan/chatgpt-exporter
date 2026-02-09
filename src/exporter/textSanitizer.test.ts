@@ -57,6 +57,21 @@ describe('sanitizeLLMText', () => {
             removeC0Controls: true,
         })).toBe('A\tB\nC\rDE')
     })
+
+    it('supports disabling transformation toggles', () => {
+        const input = '“A”—B…\u00A0x\u00AD\u200B\u202E'
+        expect(sanitizeLLMText(input, {
+            normalization: 'none',
+            replaceQuotes: false,
+            replaceDashes: false,
+            replaceEllipsis: false,
+            normalizeLineBreaks: false,
+            normalizeSpaces: false,
+            removeSoftHyphen: false,
+            removeZeroWidth: false,
+            removeBidiControls: false,
+        })).toBe(input)
+    })
 })
 
 describe('findSuspiciousChars', () => {

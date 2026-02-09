@@ -73,7 +73,25 @@ export async function exportAllToHtml(fileNameFormat: string, apiConversations: 
     return true
 }
 
-function conversationToHtml(conversation: ConversationResult, avatar: string, metaList?: ExportMeta[]) {
+function resolveDocumentLanguage(): string {
+    if (typeof document !== 'object') return 'en'
+    return document.documentElement.lang || 'en'
+}
+
+function resolveColorScheme(): 'light' | 'dark' {
+    if (typeof document !== 'object') return 'light'
+    return getColorScheme() || 'light'
+}
+
+export function conversationToHtml(
+    conversation: ConversationResult,
+    avatar: string,
+    metaList?: ExportMeta[],
+    options?: {
+        lang?: string
+        theme?: 'light' | 'dark'
+    },
+) {
     const { id, title, model, modelSlug, createTime, updateTime, conversationNodes } = conversation
 
     const enableTimestamp = ScriptStorage.get<boolean>(KEY_TIMESTAMP_ENABLED) ?? false
@@ -166,8 +184,8 @@ function conversationToHtml(conversation: ConversationResult, avatar: string, me
     const date = dateStr()
     const time = new Date().toISOString()
     const source = `${baseUrl}/c/${id}`
-    const lang = document.documentElement.lang ?? 'en'
-    const theme = getColorScheme()
+    const lang = options?.lang || resolveDocumentLanguage()
+    const theme = options?.theme || resolveColorScheme()
 
     const _metaList = metaList
         ?.filter(x => !!x.name)

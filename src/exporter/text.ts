@@ -25,7 +25,7 @@ export async function exportToText() {
 
     const { conversationNodes } = processConversation(rawConversation)
     const text = conversationNodes
-        .map(({ message }) => transformMessage(message))
+        .map(({ message }) => transformMessageForTextExport(message))
         .filter(Boolean)
         .join('\n\n')
 
@@ -36,7 +36,7 @@ export async function exportToText() {
 
 const LatexRegex = /(\s\$\$.+\$\$\s|\s\$.+\$\s|\\\[.+\\\]|\\\(.+\\\))|(^\$$[\S\s]+^\$$)|(^\$\$[\S\s]+^\$\$$)/gm
 
-function transformMessage(message?: ConversationNodeMessage) {
+export function transformMessageForTextExport(message?: ConversationNodeMessage) {
     if (!message?.content) return null
     if (!shouldIncludeMessageForExport(message)) return null
 
