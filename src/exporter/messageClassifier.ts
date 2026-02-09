@@ -58,3 +58,29 @@ export function isThinkingMessage(message?: ConversationNodeMessage): boolean {
 
     return isProThinkingMeta(message)
 }
+
+function hasExecutionOutputImage(message: ConversationNodeMessage): boolean {
+    if (message.content.content_type !== 'execution_output') return false
+    return message.metadata?.aggregate_result?.messages?.some(msg => msg.message_type === 'image') ?? false
+}
+
+function isThinkingToolTextMessage(message: ConversationNodeMessage): boolean {
+    return isThinkingMessage(message)
+        && message.author.role === 'tool'
+        && message.content.content_type === 'text'
+}
+
+export function shouldIncludeMessageForExport(message?: ConversationNodeMessage): boolean {
+    if (!message?.content) return false
+    if (shouldSkipAsInternal(message)) return false
+
+    if (isAnalysisCodeMessage(message)) return true
+    if (isAnalysisExecutionOutput(message)) return true
+    if (isThinkingToolTextMessage(message)) return true
+
+    if (message.recipient !== 'all') return false
+    if (message.author.role !== 'tool') return true
+
+    return message.content.content_type === 'multimodal_text'
+        || hasExecutionOutputImage(message)
+}

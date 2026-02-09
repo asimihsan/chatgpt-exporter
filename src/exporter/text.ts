@@ -4,7 +4,8 @@ import { checkIfConversationStarted } from '../page'
 import { copyToClipboard } from '../utils/clipboard'
 import { flatMap, fromMarkdown, toMarkdown } from '../utils/markdown'
 import { standardizeLineBreaks } from '../utils/text'
-import { normalizeReferenceText, replaceReferenceTokens, shouldSkipMessage, stripUiTokens } from './shared'
+import { shouldIncludeMessageForExport } from './messageClassifier'
+import { normalizeReferenceText, replaceReferenceTokens, stripUiTokens } from './shared'
 import type { ConversationNodeMessage } from '../api'
 import type { Emphasis, Strong } from 'mdast'
 
@@ -34,23 +35,7 @@ const LatexRegex = /(\s\$\$.+\$\$\s|\s\$.+\$\s|\\\[.+\\\]|\\\(.+\\\))|(^\$$[\S\s
 
 function transformMessage(message?: ConversationNodeMessage) {
     if (!message?.content) return null
-    if (shouldSkipMessage(message)) return null
-
-    // Skip tool's intermediate message.
-    if (message.author.role === 'tool') {
-        if (
-            // HACK: we special case the content_type 'multimodal_text' here because it is used by
-            // the dalle tool to return the image result, and we do want to show that.
-            message.content.content_type !== 'multimodal_text'
-            // Code execution result with image
-            && !(
-                message.content.content_type === 'execution_output'
-                && message.metadata?.aggregate_result?.messages?.some(msg => msg.message_type === 'image')
-            )
-        ) {
-            return null
-        }
-    }
+    if (!shouldIncludeMessageForExport(message)) return null
 
     const author = transformAuthor(message.author)
     let content = transformContent(message.content, message.metadata)

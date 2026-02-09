@@ -3,6 +3,7 @@ import {
     isAnalysisCodeMessage,
     isAnalysisExecutionOutput,
     isThinkingMessage,
+    shouldIncludeMessageForExport,
     shouldSkipAsInternal,
 } from './messageClassifier'
 import type { ConversationNodeMessage } from '../api'
@@ -127,5 +128,83 @@ describe('isThinkingMessage', () => {
         expect(isThinkingMessage(hiddenThoughts)).toBe(true)
         expect(isThinkingMessage(proThinkingToolText)).toBe(true)
         expect(isThinkingMessage(regularAssistantText)).toBe(false)
+    })
+})
+
+describe('shouldIncludeMessageForExport', () => {
+    it('includes analysis code, analysis output, thinking tool text, and regular chat text', () => {
+        const analysisCode = createMessage({
+            author: { role: 'assistant', metadata: {} },
+            recipient: 'python',
+            channel: 'commentary',
+            content: {
+                content_type: 'code',
+                language: 'unknown',
+                text: 'print("hi")',
+            },
+        })
+        const analysisOutput = createMessage({
+            author: { role: 'tool', name: 'python', metadata: {} },
+            channel: 'commentary',
+            content: {
+                content_type: 'execution_output',
+                text: 'result',
+            },
+        })
+        const proThinkingToolText = createMessage({
+            author: {
+                role: 'tool',
+                name: 'a8km123',
+                metadata: {},
+            },
+            content: {
+                content_type: 'text',
+                parts: ['Planning...'],
+            },
+            metadata: {
+                initial_text: 'Reasoning',
+                finished_text: 'Reasoned for 33m 31s',
+                async_task_type: 'pro_mode',
+            },
+        })
+        const regularChat = createMessage()
+
+        expect(shouldIncludeMessageForExport(analysisCode)).toBe(true)
+        expect(shouldIncludeMessageForExport(analysisOutput)).toBe(true)
+        expect(shouldIncludeMessageForExport(proThinkingToolText)).toBe(true)
+        expect(shouldIncludeMessageForExport(regularChat)).toBe(true)
+    })
+
+    it('excludes non-analysis non-thinking tool intermediates', () => {
+        const toolText = createMessage({
+            author: { role: 'tool', name: 'browser', metadata: {} },
+            content: {
+                content_type: 'text',
+                parts: ['intermediate'],
+            },
+        })
+        const toolExecutionNoImage = createMessage({
+            author: { role: 'tool', name: 'browser', metadata: {} },
+            channel: null,
+            content: {
+                content_type: 'execution_output',
+                text: 'plain result',
+            },
+            metadata: {
+                aggregate_result: {
+                    code: 'print(1)',
+                    end_time: 0,
+                    jupyter_messages: [],
+                    messages: [],
+                    run_id: '1',
+                    start_time: 0,
+                    status: 'success',
+                    update_time: 0,
+                },
+            },
+        })
+
+        expect(shouldIncludeMessageForExport(toolText)).toBe(false)
+        expect(shouldIncludeMessageForExport(toolExecutionNoImage)).toBe(false)
     })
 })

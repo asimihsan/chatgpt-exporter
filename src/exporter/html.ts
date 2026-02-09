@@ -8,8 +8,9 @@ import { downloadFile, getFileNameWithFormat } from '../utils/download'
 import { fromMarkdown, toHtml } from '../utils/markdown'
 import { ScriptStorage } from '../utils/storage'
 import { standardizeLineBreaks } from '../utils/text'
+import { shouldIncludeMessageForExport } from './messageClassifier'
 import { dateStr, getColorScheme, timestamp, unixTimestampToISOString } from '../utils/utils'
-import { normalizeReferenceText, replaceReferenceTokens, shouldSkipMessage, stripUiTokens } from './shared'
+import { normalizeReferenceText, replaceReferenceTokens, stripUiTokens } from './shared'
 import type { ApiConversationWithId, ConversationNodeMessage, ConversationResult } from '../api'
 import type { ExportMeta } from '../ui/SettingContext'
 
@@ -80,23 +81,7 @@ function conversationToHtml(conversation: ConversationResult, avatar: string, me
 
     const conversationHtml = conversationNodes.map(({ message }) => {
         if (!message?.content) return null
-        if (shouldSkipMessage(message)) return null
-
-        // Skip tool's intermediate message.
-        if (message.author.role === 'tool') {
-            if (
-                // HACK: we special case the content_type 'multimodal_text' here because it is used by
-                // the dalle tool to return the image result, and we do want to show that.
-                message.content.content_type !== 'multimodal_text'
-                // Code execution result with image
-            && !(
-                message.content.content_type === 'execution_output'
-                && message.metadata?.aggregate_result?.messages?.some(msg => msg.message_type === 'image')
-            )
-            ) {
-                return null
-            }
-        }
+        if (!shouldIncludeMessageForExport(message)) return null
 
         const author = transformAuthor(message.author)
         const model = message?.metadata?.model_slug === 'gpt-4' ? 'GPT-4' : 'GPT-3'

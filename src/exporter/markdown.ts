@@ -7,8 +7,9 @@ import { downloadFile, getFileNameWithFormat } from '../utils/download'
 import { fromMarkdown, toMarkdown } from '../utils/markdown'
 import { ScriptStorage } from '../utils/storage'
 import { standardizeLineBreaks } from '../utils/text'
+import { shouldIncludeMessageForExport } from './messageClassifier'
 import { dateStr, timestamp, unixTimestampToISOString } from '../utils/utils'
-import { normalizeReferenceText, replaceReferenceTokens, shouldSkipMessage, stripUiTokens } from './shared'
+import { normalizeReferenceText, replaceReferenceTokens, stripUiTokens } from './shared'
 import type { ApiConversationWithId, Citation, ConversationNodeMessage, ConversationResult } from '../api'
 import type { ExportMeta } from '../ui/SettingContext'
 
@@ -96,23 +97,7 @@ function conversationToMarkdown(conversation: ConversationResult, metaList?: Exp
 
     const content = conversationNodes.map(({ message }) => {
         if (!message?.content) return null
-        if (shouldSkipMessage(message)) return null
-
-        // Skip tool's intermediate message.
-        if (message.author.role === 'tool') {
-            if (
-                // HACK: we special case the content_type 'multimodal_text' here because it is used by
-                // the dalle tool to return the image result, and we do want to show that.
-                message.content.content_type !== 'multimodal_text'
-                // Code execution result with image
-            && !(
-                message.content.content_type === 'execution_output'
-                && message.metadata?.aggregate_result?.messages?.some(msg => msg.message_type === 'image')
-            )
-            ) {
-                return null
-            }
-        }
+        if (!shouldIncludeMessageForExport(message)) return null
 
         const timestamp = message?.create_time ?? ''
         const showTimestamp = enableTimestamp && timeStampMarkdown && timestamp

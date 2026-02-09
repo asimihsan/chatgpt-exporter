@@ -18993,6 +18993,15 @@ self2.previous !== null ||
     "reasoning_recap",
     "model_editable_context"
   ]);
+  const THINKING_CONTENT_TYPES = new Set([
+    "thoughts",
+    "reasoning_recap"
+  ]);
+  function isProThinkingMeta(message) {
+    const initialText = message.metadata?.initial_text?.toLowerCase() || "";
+    const finishedText = message.metadata?.finished_text?.toLowerCase() || "";
+    return message.metadata?.async_task_type === "pro_mode" || initialText.includes("reason") || finishedText.startsWith("reasoned for");
+  }
   function isInternalContentType(contentType) {
     return INTERNAL_CONTENT_TYPES.has(contentType);
   }
@@ -19000,6 +19009,42 @@ self2.previous !== null ||
     if (!message?.content) return true;
     if (message.metadata?.is_visually_hidden_from_conversation) return true;
     return isInternalContentType(message.content.content_type);
+  }
+  function isAnalysisCodeMessage(message) {
+    if (!message?.content) return false;
+    if (message.author.role !== "assistant") return false;
+    if (message.content.content_type !== "code") return false;
+    return message.recipient === "python" || message.channel === "commentary";
+  }
+  function isAnalysisExecutionOutput(message) {
+    if (!message?.content) return false;
+    if (message.author.role !== "tool") return false;
+    if (message.content.content_type !== "execution_output") return false;
+    return message.author.name === "python" || message.channel === "commentary";
+  }
+  function isThinkingMessage(message) {
+    if (!message?.content) return false;
+    if (THINKING_CONTENT_TYPES.has(message.content.content_type)) return true;
+    if (message.author.role !== "tool") return false;
+    if (message.content.content_type !== "text") return false;
+    return isProThinkingMeta(message);
+  }
+  function hasExecutionOutputImage(message) {
+    if (message.content.content_type !== "execution_output") return false;
+    return message.metadata?.aggregate_result?.messages?.some((msg) => msg.message_type === "image") ?? false;
+  }
+  function isThinkingToolTextMessage(message) {
+    return isThinkingMessage(message) && message.author.role === "tool" && message.content.content_type === "text";
+  }
+  function shouldIncludeMessageForExport(message) {
+    if (!message?.content) return false;
+    if (shouldSkipAsInternal(message)) return false;
+    if (isAnalysisCodeMessage(message)) return true;
+    if (isAnalysisExecutionOutput(message)) return true;
+    if (isThinkingToolTextMessage(message)) return true;
+    if (message.recipient !== "all") return false;
+    if (message.author.role !== "tool") return true;
+    return message.content.content_type === "multimodal_text" || hasExecutionOutputImage(message);
   }
   const UI_TOKEN_REGEX = /\uE200([a-z0-9_]+)\uE202([\s\S]*?)\uE201/giu;
   const UNICODE_SPACE_REGEX = /[\u00A0\u202F\u2007\u2060]/gu;
@@ -19027,11 +19072,6 @@ self2.previous !== null ||
     }
     return output2;
   }
-  function shouldSkipMessage(message) {
-    if (!message?.content) return true;
-    if (message.recipient !== "all") return true;
-    return shouldSkipAsInternal(message);
-  }
   async function exportToText() {
     if (!checkIfConversationStarted()) {
       alert(instance.t("Please start a conversation first"));
@@ -19047,15 +19087,7 @@ self2.previous !== null ||
   const LatexRegex$1 = /(\s\$\$.+\$\$\s|\s\$.+\$\s|\\\[.+\\\]|\\\(.+\\\))|(^\$$[\S\s]+^\$$)|(^\$\$[\S\s]+^\$\$$)/gm;
   function transformMessage(message) {
     if (!message?.content) return null;
-    if (shouldSkipMessage(message)) return null;
-    if (message.author.role === "tool") {
-      if (
-
-message.content.content_type !== "multimodal_text" && !(message.content.content_type === "execution_output" && message.metadata?.aggregate_result?.messages?.some((msg) => msg.message_type === "image"))
-      ) {
-        return null;
-      }
-    }
+    if (!shouldIncludeMessageForExport(message)) return null;
     const author = transformAuthor$2(message.author);
     let content2 = transformContent$2(message.content, message.metadata);
     const matches = content2.match(LatexRegex$1);
@@ -25235,15 +25267,7 @@ createTime = Math.floor(Date.now() / 1e3),
     const LatexRegex2 = /(\s\$\$.+?\$\$\s|\s\$.+?\$\s|\\\[.+?\\\]|\\\(.+?\\\))|(^\$$[\S\s]+?^\$$)|(^\$\$[\S\s]+?^\$\$\$)/gm;
     const conversationHtml = conversationNodes.map(({ message }) => {
       if (!message?.content) return null;
-      if (shouldSkipMessage(message)) return null;
-      if (message.author.role === "tool") {
-        if (
-
-message.content.content_type !== "multimodal_text" && !(message.content.content_type === "execution_output" && message.metadata?.aggregate_result?.messages?.some((msg) => msg.message_type === "image"))
-        ) {
-          return null;
-        }
-      }
+      if (!shouldIncludeMessageForExport(message)) return null;
       const author = transformAuthor$1(message.author);
       const model2 = message?.metadata?.model_slug === "gpt-4" ? "GPT-4" : "GPT-3";
       const authorType = message.author.role === "user" ? "user" : model2;
@@ -25755,15 +25779,7 @@ ${_metaList.join("\n")}
     const timeStamp24H = ScriptStorage.get(KEY_TIMESTAMP_24H) ?? false;
     const content2 = conversationNodes.map(({ message }) => {
       if (!message?.content) return null;
-      if (shouldSkipMessage(message)) return null;
-      if (message.author.role === "tool") {
-        if (
-
-message.content.content_type !== "multimodal_text" && !(message.content.content_type === "execution_output" && message.metadata?.aggregate_result?.messages?.some((msg) => msg.message_type === "image"))
-        ) {
-          return null;
-        }
-      }
+      if (!shouldIncludeMessageForExport(message)) return null;
       const timestamp2 = message?.create_time ?? "";
       const showTimestamp = enableTimestamp && timeStampMarkdown && timestamp2;
       let timestampHtml = "";
