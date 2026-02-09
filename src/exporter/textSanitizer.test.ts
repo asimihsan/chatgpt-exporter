@@ -72,6 +72,36 @@ describe('sanitizeLLMText', () => {
             removeBidiControls: false,
         })).toBe(input)
     })
+
+    it('removes trailing chatgpt utm_source from markdown links by default', () => {
+        const input = '[OpenAI](https://openai.com/?utm_source=chatgpt.com)'
+        expect(sanitizeLLMText(input, { normalization: 'none' }))
+            .toBe('[OpenAI](https://openai.com/)')
+    })
+
+    it('removes trailing chatgpt utm_source while preserving other query params', () => {
+        const input = '[Docs](https://example.com/path?a=1&utm_source=chatgpt.com "Example")'
+        expect(sanitizeLLMText(input, { normalization: 'none' }))
+            .toBe('[Docs](https://example.com/path?a=1 "Example")')
+    })
+
+    it('keeps markdown link URL unchanged when utm cleanup is disabled', () => {
+        const input = '[OpenAI](https://openai.com/?utm_source=chatgpt.com)'
+        expect(sanitizeLLMText(input, {
+            normalization: 'none',
+            stripChatGptUtmSourceFromMarkdownLinks: false,
+        })).toBe(input)
+    })
+
+    it('keeps markdown link URL unchanged when URL parse fails', () => {
+        const input = '[Broken](not-a-url?utm_source=chatgpt.com)'
+        expect(sanitizeLLMText(input, { normalization: 'none' })).toBe(input)
+    })
+
+    it('keeps markdown link URL unchanged when utm_source is not trailing', () => {
+        const input = '[OpenAI](https://openai.com/?utm_source=chatgpt.com&a=1)'
+        expect(sanitizeLLMText(input, { normalization: 'none' })).toBe(input)
+    })
 })
 
 describe('findSuspiciousChars', () => {

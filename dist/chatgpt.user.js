@@ -19126,7 +19126,8 @@ self2.previous !== null ||
     removeZeroWidth: true,
     preserveEmojiZWJ: true,
     removeBidiControls: true,
-    removeC0Controls: false
+    removeC0Controls: false,
+    stripChatGptUtmSourceFromMarkdownLinks: true
   };
   const ODD_LINE_BREAKS_REGEX = /[\u0085\u2028\u2029]/gu;
   const ELLIPSIS_REGEX = /\u2026/gu;
@@ -19139,6 +19140,8 @@ self2.previous !== null ||
   const ZERO_WIDTH_REGEX = /(?:\u200B|\u200C|\u200D|\u2060|\uFEFF)/gu;
   const ZERO_WIDTH_NO_ZWJ_REGEX = /(?:\u200B|\u200C|\u2060|\uFEFF)/gu;
   const BIDI_CONTROLS_REGEX = /[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/gu;
+  const MARKDOWN_LINK_URL_REGEX = /(\[[^\]]+\]\(\s*<?)([^>\s)]+)(>?(?:\s+(?:"[^"]*"|'[^']*'|\([^)]+\)))?\s*\))/gu;
+  const CHATGPT_UTM_SOURCE_AT_END_REGEX = /(?:\?|&)utm_source=chatgpt\.com$/;
   function resolveSanitizeTextOptions(options = {}) {
     return {
       ...DEFAULT_SANITIZE_TEXT_OPTIONS,
@@ -19168,6 +19171,21 @@ self2.previous !== null ||
       segments.push(input.slice(segmentStart));
     }
     return segments.join("");
+  }
+  function stripChatGptUtmSourceFromMarkdownLinks(input) {
+    return input.replaceAll(MARKDOWN_LINK_URL_REGEX, (match, prefix, urlText, suffix) => {
+      if (!CHATGPT_UTM_SOURCE_AT_END_REGEX.test(urlText)) return match;
+      try {
+        const parsed = new URL(urlText);
+        if (parsed.searchParams.get("utm_source") !== "chatgpt.com") return match;
+        parsed.searchParams.delete("utm_source");
+        const serialized = parsed.toString();
+        if (!serialized) return match;
+        return `${prefix}${serialized}${suffix}`;
+      } catch {
+        return match;
+      }
+    });
   }
   function sanitizeLLMText(input, options = {}) {
     const resolved = resolveSanitizeTextOptions(options);
@@ -19205,6 +19223,9 @@ self2.previous !== null ||
     }
     if (resolved.removeC0Controls) {
       output2 = removeC0ControlCharacters(output2);
+    }
+    if (resolved.stripChatGptUtmSourceFromMarkdownLinks) {
+      output2 = stripChatGptUtmSourceFromMarkdownLinks(output2);
     }
     return output2;
   }

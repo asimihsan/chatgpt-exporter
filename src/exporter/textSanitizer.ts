@@ -15,6 +15,7 @@ export interface SanitizeTextOptions {
     preserveEmojiZWJ?: boolean
     removeBidiControls?: boolean
     removeC0Controls?: boolean
+    stripChatGptUtmSourceFromMarkdownLinks?: boolean
 }
 
 export interface SuspiciousChar {
@@ -35,6 +36,7 @@ export const DEFAULT_SANITIZE_TEXT_OPTIONS: Required<SanitizeTextOptions> = {
     preserveEmojiZWJ: true,
     removeBidiControls: true,
     removeC0Controls: false,
+    stripChatGptUtmSourceFromMarkdownLinks: true,
 }
 
 const SUSPICIOUS_CHAR_REGEX =
@@ -51,6 +53,8 @@ const SOFT_HYPHEN_REGEX = /\u00AD/gu
 const ZERO_WIDTH_REGEX = /(?:\u200B|\u200C|\u200D|\u2060|\uFEFF)/gu
 const ZERO_WIDTH_NO_ZWJ_REGEX = /(?:\u200B|\u200C|\u2060|\uFEFF)/gu
 const BIDI_CONTROLS_REGEX = /[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/gu
+const MARKDOWN_LINK_URL_REGEX = /(\[[^\]]+\]\(\s*<?)([^>\s)]+)(>?(?:\s+(?:"[^"]*"|'[^']*'|\([^)]+\)))?\s*\))/gu
+const CHATGPT_UTM_SOURCE_AT_END_REGEX = /(?:\?|&)utm_source=chatgpt\.com$/
 
 export function resolveSanitizeTextOptions(options: SanitizeTextOptions = {}): Required<SanitizeTextOptions> {
     return {
@@ -96,6 +100,26 @@ function removeC0ControlCharacters(input: string): string {
     }
 
     return segments.join('')
+}
+
+function stripChatGptUtmSourceFromMarkdownLinks(input: string): string {
+    return input.replaceAll(MARKDOWN_LINK_URL_REGEX, (match, prefix: string, urlText: string, suffix: string) => {
+        if (!CHATGPT_UTM_SOURCE_AT_END_REGEX.test(urlText)) return match
+
+        try {
+            const parsed = new URL(urlText)
+            if (parsed.searchParams.get('utm_source') !== 'chatgpt.com') return match
+
+            parsed.searchParams.delete('utm_source')
+            const serialized = parsed.toString()
+            if (!serialized) return match
+
+            return `${prefix}${serialized}${suffix}`
+        }
+        catch {
+            return match
+        }
+    })
 }
 
 export function sanitizeLLMText(input: string, options: SanitizeTextOptions = {}): string {
@@ -147,6 +171,10 @@ export function sanitizeLLMText(input: string, options: SanitizeTextOptions = {}
 
     if (resolved.removeC0Controls) {
         output = removeC0ControlCharacters(output)
+    }
+
+    if (resolved.stripChatGptUtmSourceFromMarkdownLinks) {
+        output = stripChatGptUtmSourceFromMarkdownLinks(output)
     }
 
     return output
