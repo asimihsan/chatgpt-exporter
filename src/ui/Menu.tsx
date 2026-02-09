@@ -11,6 +11,7 @@ import { useWindowResize } from '../hooks/useWindowResize'
 import { getHistoryDisabled } from '../page'
 import { COPY_TEXT_SHORTCUT_SUCCESS_EVENT } from '../shortcuts/exportCopyShortcut'
 import { openSettingsPanel } from '../settings/panel'
+import { EXPORT_DIALOG_CLASS_NAMES } from './dialogClassNames'
 import { Divider } from './Divider'
 import { ExportDialog } from './ExportDialog'
 import { FileCode, IconArrowRightFromBracket, IconCamera, IconCopy, IconJSON, IconMarkdown, IconSetting, IconZip } from './Icons'
@@ -219,9 +220,9 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                         />
                     </Dialog.Trigger>
                     <Dialog.Portal>
-                        <Dialog.Overlay className="DialogOverlay" />
-                        <Dialog.Content className="DialogContent" style={{ width: '320px' }}>
-                            <Dialog.Title className="DialogTitle">{t('JSON')}</Dialog.Title>
+                        <Dialog.Overlay className={EXPORT_DIALOG_CLASS_NAMES.overlay} />
+                        <Dialog.Content className={EXPORT_DIALOG_CLASS_NAMES.content} style={{ width: '320px' }}>
+                            <Dialog.Title className={EXPORT_DIALOG_CLASS_NAMES.title}>{t('JSON')}</Dialog.Title>
                             <MenuItem
                                 text={t('OpenAI Official Format')}
                                 icon={IconCopy}

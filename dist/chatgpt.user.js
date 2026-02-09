@@ -25917,6 +25917,11 @@ case "tether_browsing_display": {
     window.addEventListener("resize", callback);
     return () => window.removeEventListener("resize", callback);
   }
+  const EXPORT_DIALOG_CLASS_NAMES = {
+    overlay: "ce-dialog-overlay",
+    content: "ce-dialog-content",
+    title: "ce-dialog-title"
+  };
   const Divider = () => u$1("div", { className: "h-px bg-token-border-light" });
   function EventEmitter(n2) {
     return { all: n2 = n2 || new Map(), on: function(t2, e2) {
@@ -26129,6 +26134,24 @@ u$1(
 u$1("span", { className: "LabelText", children: label })
     ] });
   };
+  function isObject(value) {
+    return typeof value === "object" && value !== null;
+  }
+  function isApiConversationWithId(value) {
+    if (!isObject(value)) return false;
+    return typeof value.id === "string" && typeof value.title === "string" && typeof value.current_node === "string" && typeof value.create_time === "number" && typeof value.update_time === "number" && typeof value.is_archived === "boolean" && isObject(value.mapping);
+  }
+  function parseLocalConversationsFromUpload(rawContent) {
+    let parsed;
+    try {
+      parsed = JSON.parse(rawContent);
+    } catch {
+      return null;
+    }
+    if (!Array.isArray(parsed)) return null;
+    if (!parsed.every(isApiConversationWithId)) return null;
+    return parsed;
+  }
   const defaultContextValue = {
     ...DEFAULT_EXPORTER_SETTINGS,
     exportMetaList: [...DEFAULT_EXPORT_META_LIST],
@@ -26321,18 +26344,26 @@ u$1("ul", { className: "SelectList", children: [
       currentStatus: ""
     });
     const onUpload = q$1((e2) => {
-      const file = e2.target?.files?.[0];
+      const target = e2.target;
+      const file = target?.files?.[0];
       if (!file) return;
       const fileReader = new FileReader();
       fileReader.onload = () => {
-        const data = JSON.parse(fileReader.result);
-        if (!Array.isArray(data)) {
+        const fileContent = typeof fileReader.result === "string" ? fileReader.result : "";
+        const data = parseLocalConversationsFromUpload(fileContent);
+        if (!data) {
           alert(t2("Invalid File Format"));
+          if (target) target.value = "";
           return;
         }
         setSelected([]);
         setExportSource("Local");
         setLocalConversations(data);
+        if (target) target.value = "";
+      };
+      fileReader.onerror = () => {
+        alert(t2("Invalid File Format"));
+        if (target) target.value = "";
       };
       fileReader.readAsText(file);
     }, [t2, setExportSource, setLocalConversations]);
@@ -26448,7 +26479,7 @@ u$1("ul", { className: "SelectList", children: [
       }).finally(() => setLoading(false));
     }, [selectedProject, exportAllLimit]);
     return u$1(k$2, { children: [
-u$1(Title, { className: "DialogTitle", children: t2("Export Dialog Title") }),
+u$1(Title, { className: EXPORT_DIALOG_CLASS_NAMES.title, children: t2("Export Dialog Title") }),
 u$1("div", { className: "flex items-center text-gray-600 dark:text-gray-300 flex justify-between border-b-[1px] pb-3 mb-3 dark:border-gray-700", children: [
         t2("Export from official export file"),
         " (conversations.json) ",
@@ -26503,17 +26534,25 @@ u$1(Close, { asChild: true, children: u$1("button", { className: "IconButton Clo
         children: [
 u$1(Trigger$1, { asChild: true, children }),
 u$1(Portal$1, { children: [
-u$1(Overlay, { className: "DialogOverlay" }),
-u$1(Content$1, { className: "DialogContent", children: open && u$1(DialogContent, { format }) })
+u$1(Overlay, { className: EXPORT_DIALOG_CLASS_NAMES.overlay }),
+u$1(Content$1, { className: EXPORT_DIALOG_CLASS_NAMES.content, children: open && u$1(DialogContent, { format }) })
           ] })
         ]
       }
     );
   };
+  const TOUCH_CLICK_DEDUP_WINDOW_MS = 700;
+  function shouldSuppressClickAfterTouch(lastTouchTimestampMs, nowMs) {
+    if (!lastTouchTimestampMs || lastTouchTimestampMs <= 0) return false;
+    const elapsedMs = nowMs - lastTouchTimestampMs;
+    if (elapsedMs < 0) return false;
+    return elapsedMs <= TOUCH_CLICK_DEDUP_WINDOW_MS;
+  }
   const TIMEOUT = 2500;
   const MenuItem = ({ text: text2, successText, disabled = false, title: title2, icon: Icon, onClick, className }) => {
     const [loading, setLoading] = d(false);
     const [succeed, setSucceed] = d(false);
+    const lastTouchTimestampMsRef = A$1(null);
     const handleClickAsync = async (e2) => {
       e2.preventDefault();
       if (loading || disabled) return;
@@ -26532,6 +26571,13 @@ u$1(Content$1, { className: "DialogContent", children: open && u$1(DialogContent
       }
     };
     const handleClick = typeof onClick === "function" ? (e2) => {
+      if (shouldSuppressClickAfterTouch(lastTouchTimestampMsRef.current, Date.now())) {
+        return;
+      }
+      void handleClickAsync(e2);
+    } : void 0;
+    const handleTouchStart = typeof onClick === "function" ? (e2) => {
+      lastTouchTimestampMsRef.current = Date.now();
       void handleClickAsync(e2);
     } : void 0;
     return u$1(
@@ -26546,7 +26592,7 @@ u$1(Content$1, { className: "DialogContent", children: open && u$1(DialogContent
             ${disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer"}
             border ce-border-menu ${className}`,
         onClick: handleClick,
-        onTouchStart: handleClick,
+        onTouchStart: handleTouchStart,
         "aria-disabled": disabled,
         title: title2,
         children: loading ? u$1("div", { className: "flex justify-center items-center w-full h-full", children: u$1(IconLoading, { className: "w-4 h-4" }) }) : u$1(k$2, { children: [
@@ -26558,7 +26604,7 @@ u$1(Content$1, { className: "DialogContent", children: open && u$1(DialogContent
   };
   const styleCss = 'span[data-time-format] {\n    display: none;\n}\n\nbody[data-time-format="12"] span[data-time-format="12"] {\n    display: inline;\n}\n\nbody[data-time-format="24"] span[data-time-format="24"] {\n    display: inline;\n}\n\n.Select {\n    padding: 0 0 0 0.5rem;\n    width: 7.5rem;\n    border-radius: 4px;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\n.dark .Select {\n    background-color: #2f2f2f;\n    color: #fff;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\nhtml {\n    --ce-text-primary: var(--text-primary, #0d0d0d);\n    --ce-menu-primary: #f7f7f8;\n    --ce-menu-secondary: #ececf1;\n    --ce-border-light: rgba(0, 0, 0, .14);\n}\n\n.dark {\n    --ce-text-primary: var(--text-primary, #ececec);\n    --ce-menu-primary: #202123;\n    --ce-menu-secondary: #2d2f34;\n    --ce-border-light: rgba(255, 255, 255, .16);\n}\n\n.ce-text-menu {\n    color: var(--ce-text-primary);\n}\n\n.ce-bg-menu {\n    background-color: var(--ce-menu-primary);\n}\n\n.ce-border-menu {\n    border-color: var(--ce-border-light);\n}\n\n.ce-menu-content,\n.ce-menu-content[data-state="open"],\n.ce-menu-content[data-state="closed"] {\n    display: flex !important;\n    flex-direction: column !important;\n    padding: 0.5rem 0.5rem 0.25rem !important;\n    opacity: 1 !important;\n    background-color: var(--ce-menu-primary) !important;\n    border-width: 1px !important;\n    border-style: solid !important;\n    border-radius: 0.375rem !important;\n    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18) !important;\n    backdrop-filter: none !important;\n    filter: none !important;\n    mix-blend-mode: normal !important;\n    isolation: isolate !important;\n}\n\n.ce-menu-item {\n    height: 46px;\n    width: 100%;\n    background-color: var(--ce-menu-primary) !important;\n    color: var(--ce-text-primary) !important;\n    border-width: 1px !important;\n    border-style: solid !important;\n}\n\n.ce-menu-item[aria-disabled="false"]:hover {\n    background-color: var(--ce-menu-secondary) !important;\n}\n\n.ce-menu-trigger-success {\n    background-color: color-mix(in srgb, var(--ce-menu-secondary) 82%, #1f9f54 18%) !important;\n    border-color: color-mix(in srgb, var(--ce-border-light) 50%, #1f9f54 50%) !important;\n}\n\n.ce-menu-item[aria-disabled="true"] {\n    filter: brightness(0.5);\n}\n\n.inputFieldSet {\n    display: block;\n    border-width: 2px;\n    border-style: groove;\n}\n\n.inputFieldSet legend {\n    margin-left: 4px;\n}\n\n.inputFieldSet input {\n    background-color: transparent;\n    box-shadow: none!important;\n}\n\n.dropdown-backdrop {\n    display: block;\n    position: fixed;\n    top: 0;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    background-color: rgba(0,0,0,.5);\n    animation-name: cePointerFadeIn;\n    animation-duration: .3s;\n}\n\n@keyframes ceFadeIn {\n    from {\n        opacity: 0;\n    }\n    to {\n        opacity: 1;\n    }\n}\n\n@keyframes ceSlideUp {\n    from {\n        transform: translateY(100%);\n    }\n    to {\n        transform: translateY(0);\n    }\n}\n\n@keyframes cePointerFadeIn {\n    from {\n        opacity: 0;\n        pointer-events: none;\n    }\n    to {\n        opacity: 1;\n        pointer-events: auto;\n    }\n}\n\n@keyframes rotate {\n    from {\n        transform: rotate(0deg);\n    }\n    to {\n        transform: rotate(360deg);\n    }\n}\n\n@keyframes circularDash {\n    0% {\n        stroke-dasharray: 1px, 200px;\n        stroke-dashoffset: 0;\n    }\n    50% {\n        stroke-dasharray: 100px, 200px;\n        stroke-dashoffset: -15px;\n    }\n    100% {\n        stroke-dasharray: 100px, 200px;\n        stroke-dashoffset: -125px;\n    }\n}\n';
   importCSS(styleCss);
-  const DialogCss = '.DialogOverlay {\n    background-color: rgba(0, 0, 0, 0.44);\n    position: fixed;\n    inset: 0;\n    z-index: 1000;\n    animation: fadeIn 150ms cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.DialogContent {\n    background-color: #f3f3f3;\n    border-radius: 6px;\n    box-shadow: hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px;\n    position: fixed;\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%, -50%);\n    width: 90vw;\n    max-width: 560px;\n    max-height: 85vh;\n    overflow-x: hidden;\n    overflow-y: auto;\n    padding: 16px 24px;\n    z-index: 1001;\n    outline: none;\n    animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.dark .DialogContent {\n    background-color: #2a2a2a;\n    border-color: #40414f;\n    border-width: 1px;\n}\n\n.DialogContent input[type="checkbox"] {\n    border: none;\n    outline: none;\n    box-shadow: none;\n}\n\n.DialogTitle {\n    margin: 0 0 16px 0;\n    font-weight: 500;\n    color: #1a1523;\n    font-size: 20px;\n}\n\n.dark .DialogTitle {\n    color: #fff;\n}\n\n.Button {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 4px;\n    padding: 0 15px;\n    font-size: 15px;\n    line-height: 1;\n    height: 35px;\n}\n.Button.green {\n    background-color: #ddf3e4;\n    color: #18794e;\n}\n.Button.red {\n    background-color: #f9d9d9;\n    color: #a71d2a;\n}\n.Button.green:hover {\n    background-color: #ccebd7;\n}\n.Button:disabled {\n    opacity: 0.5;\n    color: #6f6e77;\n    background-color: #e0e0e0;\n    cursor: not-allowed;\n}\n.Button:disabled:hover {\n    background-color: #e0e0e0;\n}\n\n.IconButton {\n    font-family: inherit;\n    border-radius: 100%;\n    height: 25px;\n    width: 25px;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    color: #6f6e77;\n}\n.IconButton:hover {\n    background-color: rgba(0, 0, 0, 0.06);\n}\n\n.CloseButton {\n    position: absolute;\n    top: 10px;\n    right: 10px;\n}\n\n.Fieldset {\n    display: flex;\n    gap: 20px;\n    align-items: center;\n    margin-bottom: 15px;\n}\n\n.Label {\n    font-size: 15px;\n    color: #1a1523;\n    min-width: 90px;\n    text-align: right;\n}\n\n.dark .Label {\n    color: #fff;\n}\n\n.Input {\n    width: 100%;\n    flex: 1;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 4px;\n    padding: 0 10px;\n    font-size: 15px;\n    line-height: 1;\n    color: #000;\n    background-color: #fafafa;\n    box-shadow: 0 0 0 1px #6f6e77;\n    height: 35px;\n    outline: none;\n}\n\n.dark .Input {\n    background-color: #2f2f2f;\n    color: #fff;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\n.Description {\n    font-size: 13px;\n    color: #5a5865;\n    text-align: right;\n    margin-bottom: 4px;\n}\n\n.dark .Description {\n    color: #bcbcbc;\n}\n\n.SelectToolbar {\n    display: flex;\n    align-items: center;\n    padding: 12px 16px;\n    border-radius: 4px 4px 0 0;\n    border: 1px solid #6f6e77;\n    border-bottom: none;\n}\n\n.SelectList {\n    position: relative;\n    width: 100%;\n    height: 270px;\n    padding: 12px 16px;\n    overflow-x: hidden;\n    overflow-y: auto;\n    border: 1px solid #6f6e77;\n    border-radius: 0 0 4px 4px;\n    white-space: nowrap;\n}\n\n.SelectItem {\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n\n.SelectItem label, .SelectItem input {\n    cursor: pointer;\n}\n\n.SelectItem span {\n    vertical-align: middle;\n}\n\n@keyframes contentShow {\n    from {\n        opacity: 0;\n        transform: translate(-50%, -48%) scale(0.96);\n    }\n    to {\n        opacity: 1;\n        transform: translate(-50%, -50%) scale(1);\n    }\n}\n';
+  const DialogCss = '.ce-dialog-overlay {\n    background-color: rgba(0, 0, 0, 0.44);\n    position: fixed;\n    inset: 0;\n    z-index: 1000;\n    animation: fadeIn 150ms cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.ce-dialog-content {\n    background-color: #f3f3f3;\n    border-radius: 6px;\n    box-shadow: hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px;\n    position: fixed;\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%, -50%);\n    width: 90vw;\n    max-width: 560px;\n    max-height: 85vh;\n    overflow-x: hidden;\n    overflow-y: auto;\n    padding: 16px 24px;\n    z-index: 1001;\n    outline: none;\n    animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.dark .ce-dialog-content {\n    background-color: #2a2a2a;\n    border-color: #40414f;\n    border-width: 1px;\n}\n\n.ce-dialog-content input[type="checkbox"] {\n    border: none;\n    outline: none;\n    box-shadow: none;\n}\n\n.ce-dialog-title {\n    margin: 0 0 16px 0;\n    font-weight: 500;\n    color: #1a1523;\n    font-size: 20px;\n}\n\n.dark .ce-dialog-title {\n    color: #fff;\n}\n\n.Button {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 4px;\n    padding: 0 15px;\n    font-size: 15px;\n    line-height: 1;\n    height: 35px;\n}\n.Button.green {\n    background-color: #ddf3e4;\n    color: #18794e;\n}\n.Button.red {\n    background-color: #f9d9d9;\n    color: #a71d2a;\n}\n.Button.green:hover {\n    background-color: #ccebd7;\n}\n.Button:disabled {\n    opacity: 0.5;\n    color: #6f6e77;\n    background-color: #e0e0e0;\n    cursor: not-allowed;\n}\n.Button:disabled:hover {\n    background-color: #e0e0e0;\n}\n\n.IconButton {\n    font-family: inherit;\n    border-radius: 100%;\n    height: 25px;\n    width: 25px;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    color: #6f6e77;\n}\n.IconButton:hover {\n    background-color: rgba(0, 0, 0, 0.06);\n}\n\n.CloseButton {\n    position: absolute;\n    top: 10px;\n    right: 10px;\n}\n\n.Fieldset {\n    display: flex;\n    gap: 20px;\n    align-items: center;\n    margin-bottom: 15px;\n}\n\n.Label {\n    font-size: 15px;\n    color: #1a1523;\n    min-width: 90px;\n    text-align: right;\n}\n\n.dark .Label {\n    color: #fff;\n}\n\n.Input {\n    width: 100%;\n    flex: 1;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 4px;\n    padding: 0 10px;\n    font-size: 15px;\n    line-height: 1;\n    color: #000;\n    background-color: #fafafa;\n    box-shadow: 0 0 0 1px #6f6e77;\n    height: 35px;\n    outline: none;\n}\n\n.dark .Input {\n    background-color: #2f2f2f;\n    color: #fff;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\n.Description {\n    font-size: 13px;\n    color: #5a5865;\n    text-align: right;\n    margin-bottom: 4px;\n}\n\n.dark .Description {\n    color: #bcbcbc;\n}\n\n.SelectToolbar {\n    display: flex;\n    align-items: center;\n    padding: 12px 16px;\n    border-radius: 4px 4px 0 0;\n    border: 1px solid #6f6e77;\n    border-bottom: none;\n}\n\n.SelectList {\n    position: relative;\n    width: 100%;\n    height: 270px;\n    padding: 12px 16px;\n    overflow-x: hidden;\n    overflow-y: auto;\n    border: 1px solid #6f6e77;\n    border-radius: 0 0 4px 4px;\n    white-space: nowrap;\n}\n\n.SelectItem {\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n\n.SelectItem label, .SelectItem input {\n    cursor: pointer;\n}\n\n.SelectItem span {\n    vertical-align: middle;\n}\n\n@keyframes contentShow {\n    from {\n        opacity: 0;\n        transform: translate(-50%, -48%) scale(0.96);\n    }\n    to {\n        opacity: 1;\n        transform: translate(-50%, -50%) scale(1);\n    }\n}\n';
   importCSS(DialogCss);
   function MenuInner({ container }) {
     const { t: t2 } = useTranslation();
@@ -26752,9 +26798,9 @@ u$1(Trigger$1, { asChild: true, children: u$1(
                     }
                   ) }),
 u$1(Portal$1, { children: [
-u$1(Overlay, { className: "DialogOverlay" }),
-u$1(Content$1, { className: "DialogContent", style: { width: "320px" }, children: [
-u$1(Title, { className: "DialogTitle", children: t2("JSON") }),
+u$1(Overlay, { className: EXPORT_DIALOG_CLASS_NAMES.overlay }),
+u$1(Content$1, { className: EXPORT_DIALOG_CLASS_NAMES.content, style: { width: "320px" }, children: [
+u$1(Title, { className: EXPORT_DIALOG_CLASS_NAMES.title, children: t2("JSON") }),
 u$1(
                         MenuItem,
                         {

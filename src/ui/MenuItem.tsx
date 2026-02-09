@@ -1,4 +1,5 @@
-import { useState } from 'preact/hooks'
+import { useRef, useState } from 'preact/hooks'
+import { shouldSuppressClickAfterTouch } from './menuItemInteraction'
 import { IconLoading } from './Icons'
 import type { FC } from '../type'
 
@@ -17,30 +18,42 @@ export interface MenuItemProps {
 export const MenuItem: FC<MenuItemProps> = ({ text, successText, disabled = false, title, icon: Icon, onClick, className }) => {
     const [loading, setLoading] = useState(false)
     const [succeed, setSucceed] = useState(false)
+    const lastTouchTimestampMsRef = useRef<number | null>(null)
 
     const handleClickAsync = async (e: Event) => {
-            e.preventDefault()
-            if (loading || disabled) return
-            if (!onClick) return
+        e.preventDefault()
+        if (loading || disabled) return
+        if (!onClick) return
 
-            try {
-                setLoading(true)
-                const result = await onClick()
-                if (result) {
-                    setSucceed(true)
-                    setTimeout(() => setSucceed(false), TIMEOUT)
-                }
-            }
-            catch (error) {
-                console.error(error)
-            }
-            finally {
-                setLoading(false)
+        try {
+            setLoading(true)
+            const result = await onClick()
+            if (result) {
+                setSucceed(true)
+                setTimeout(() => setSucceed(false), TIMEOUT)
             }
         }
+        catch (error) {
+            console.error(error)
+        }
+        finally {
+            setLoading(false)
+        }
+    }
 
     const handleClick = typeof onClick === 'function'
         ? (e: Event) => {
+            if (shouldSuppressClickAfterTouch(lastTouchTimestampMsRef.current, Date.now())) {
+                return
+            }
+
+            void handleClickAsync(e)
+        }
+        : undefined
+
+    const handleTouchStart = typeof onClick === 'function'
+        ? (e: Event) => {
+            lastTouchTimestampMsRef.current = Date.now()
             void handleClickAsync(e)
         }
         : undefined
@@ -56,7 +69,7 @@ export const MenuItem: FC<MenuItemProps> = ({ text, successText, disabled = fals
             ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
             border ce-border-menu ${className}`}
             onClick={handleClick}
-            onTouchStart={handleClick}
+            onTouchStart={handleTouchStart}
             aria-disabled={disabled}
             title={title}
         >
