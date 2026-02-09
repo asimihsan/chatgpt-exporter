@@ -456,6 +456,114 @@ reset: function() {
   }
   var sentinel_umdExports = requireSentinel_umd();
   const sentinel = getDefaultExportFromCjs(sentinel_umdExports);
+  var _GM = (() => typeof GM != "undefined" ? GM : void 0)();
+  var _GM_registerMenuCommand = (() => typeof GM_registerMenuCommand != "undefined" ? GM_registerMenuCommand : void 0)();
+  var _unsafeWindow = (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
+  const API_MAPPING = {
+    "https://chat.openai.com": "https://chat.openai.com/backend-api",
+    "https://chatgpt.com": "https://chatgpt.com/backend-api",
+    "https://new.oaifree.com": "https://new.oaifree.com/backend-api"
+  };
+  const FALLBACK_BASE_URL = "https://chat.openai.com";
+  function getBaseUrl() {
+    if (typeof location === "object" && typeof location.href === "string") {
+      return new URL(location.href).origin;
+    }
+    return FALLBACK_BASE_URL;
+  }
+  const baseUrl = getBaseUrl();
+  const apiUrl = API_MAPPING[baseUrl];
+  const KEY_LANGUAGE = "exporter:language";
+  const KEY_FILENAME_FORMAT = "exporter:filename_format";
+  const KEY_TIMESTAMP_ENABLED = "exporter:enable_timestamp";
+  const KEY_TIMESTAMP_24H = "exporter:timestamp_24h";
+  const KEY_TIMESTAMP_MARKDOWN = "exporter:timestamp_markdown";
+  const KEY_TIMESTAMP_HTML = "exporter:timestamp_html";
+  const KEY_META_ENABLED = "exporter:enable_meta";
+  const KEY_META_LIST = "exporter:meta_list";
+  const KEY_EXPORT_ALL_LIMIT = "exporter:export_all_limit";
+  const KEY_COPY_TEXT_SHORTCUT_ENABLED = "exporter:enable_copy_text_shortcut";
+  const KEY_COPY_TEXT_SHORTCUT = "exporter:copy_text_shortcut";
+  const KEY_OAI_LOCALE = "oai/apps/locale";
+  const KEY_OAI_HISTORY_DISABLED = "oai/apps/historyDisabled";
+  function getBase64FromImg(el) {
+    const canvas = document.createElement("canvas");
+    canvas.width = el.naturalWidth;
+    canvas.height = el.naturalHeight;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return "";
+    ctx.drawImage(el, 0, 0);
+    return canvas.toDataURL("image/png");
+  }
+  async function getBase64FromImageUrl(url) {
+    const img = await loadImage(url);
+    return getBase64FromImg(img);
+  }
+  function loadImage(url) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.src = url;
+      img.crossOrigin = "anonymous";
+      img.onload = () => resolve(img);
+      img.onerror = reject;
+    });
+  }
+  function blobToDataURL(blob) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = reject;
+      reader.onload = () => resolve(reader.result);
+      reader.readAsDataURL(blob);
+    });
+  }
+  function getHistoryDisabled() {
+    return localStorage.getItem(KEY_OAI_HISTORY_DISABLED) === '"true"';
+  }
+  function getPageAccessToken() {
+    return _unsafeWindow?.__remixContext?.state?.loaderData?.root?.clientBootstrap?.session?.accessToken ?? null;
+  }
+  function getUserProfile() {
+    const user = _unsafeWindow?.__NEXT_DATA__?.props?.pageProps?.user ?? _unsafeWindow?.__remixContext?.state?.loaderData?.root?.clientBootstrap?.session?.user;
+    if (!user) throw new Error("No user found.");
+    return user;
+  }
+  function getChatIdFromUrl() {
+    const match = location.pathname.match(/^\/(?:share|c|g\/[a-z0-9-]+\/c)\/([a-z0-9-]+)/i);
+    if (match) return match[1];
+    return null;
+  }
+  function isSharePage() {
+    return location.pathname.startsWith("/share") && !location.pathname.endsWith("/continue");
+  }
+  function getConversationFromSharePage() {
+    if (window.__NEXT_DATA__?.props?.pageProps?.serverResponse?.data) {
+      return JSON.parse(JSON.stringify(window.__NEXT_DATA__.props.pageProps.serverResponse.data));
+    }
+    if (window.__remixContext?.state?.loaderData?.["routes/share.$shareId.($action)"]?.serverResponse?.data) {
+      return JSON.parse(JSON.stringify(window.__remixContext.state.loaderData["routes/share.$shareId.($action)"].serverResponse.data));
+    }
+    return null;
+  }
+  const defaultAvatar = "data:image/svg+xml,%3Csvg%20stroke%3D%22currentColor%22%20fill%3D%22none%22%20stroke-width%3D%221.5%22%20viewBox%3D%22-6%20-6%2036%2036%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20style%3D%22color%3A%20white%3B%20background%3A%20%23ab68ff%3B%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M20%2021v-2a4%204%200%200%200-4-4H8a4%204%200%200%200-4%204v2%22%3E%3C%2Fpath%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%227%22%20r%3D%224%22%3E%3C%2Fcircle%3E%3C%2Fsvg%3E";
+  async function getUserAvatar() {
+    try {
+      const { picture } = getUserProfile();
+      if (picture) return await getBase64FromImageUrl(picture);
+    } catch (e2) {
+      console.error(e2);
+    }
+    try {
+      const avatars = Array.from(document.querySelectorAll("img[alt]:not([aria-hidden])"));
+      const avatar = avatars.find((avatar2) => !avatar2.src.startsWith("data:"));
+      if (avatar) return getBase64FromImg(avatar);
+    } catch (e2) {
+      console.error(e2);
+    }
+    return defaultAvatar;
+  }
+  function checkIfConversationStarted() {
+    return !!document.querySelector('[data-testid^="conversation-turn-"]');
+  }
   var type;
   var hasRequiredType;
   function requireType() {
@@ -3016,114 +3124,6 @@ depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : de
   function notNullOrUndefined(v2) {
     return v2 !== void 0 && v2 !== null;
   }
-  const API_MAPPING = {
-    "https://chat.openai.com": "https://chat.openai.com/backend-api",
-    "https://chatgpt.com": "https://chatgpt.com/backend-api",
-    "https://new.oaifree.com": "https://new.oaifree.com/backend-api"
-  };
-  const FALLBACK_BASE_URL = "https://chat.openai.com";
-  function getBaseUrl() {
-    if (typeof location === "object" && typeof location.href === "string") {
-      return new URL(location.href).origin;
-    }
-    return FALLBACK_BASE_URL;
-  }
-  const baseUrl = getBaseUrl();
-  const apiUrl = API_MAPPING[baseUrl];
-  const KEY_LANGUAGE = "exporter:language";
-  const KEY_FILENAME_FORMAT = "exporter:filename_format";
-  const KEY_TIMESTAMP_ENABLED = "exporter:enable_timestamp";
-  const KEY_TIMESTAMP_24H = "exporter:timestamp_24h";
-  const KEY_TIMESTAMP_MARKDOWN = "exporter:timestamp_markdown";
-  const KEY_TIMESTAMP_HTML = "exporter:timestamp_html";
-  const KEY_META_ENABLED = "exporter:enable_meta";
-  const KEY_META_LIST = "exporter:meta_list";
-  const KEY_EXPORT_ALL_LIMIT = "exporter:export_all_limit";
-  const KEY_COPY_TEXT_SHORTCUT_ENABLED = "exporter:enable_copy_text_shortcut";
-  const KEY_COPY_TEXT_SHORTCUT = "exporter:copy_text_shortcut";
-  const KEY_OAI_LOCALE = "oai/apps/locale";
-  const KEY_OAI_HISTORY_DISABLED = "oai/apps/historyDisabled";
-  var _GM = (() => typeof GM != "undefined" ? GM : void 0)();
-  var _GM_registerMenuCommand = (() => typeof GM_registerMenuCommand != "undefined" ? GM_registerMenuCommand : void 0)();
-  var _unsafeWindow = (() => typeof unsafeWindow != "undefined" ? unsafeWindow : void 0)();
-  function getBase64FromImg(el) {
-    const canvas = document.createElement("canvas");
-    canvas.width = el.naturalWidth;
-    canvas.height = el.naturalHeight;
-    const ctx = canvas.getContext("2d");
-    if (!ctx) return "";
-    ctx.drawImage(el, 0, 0);
-    return canvas.toDataURL("image/png");
-  }
-  async function getBase64FromImageUrl(url) {
-    const img = await loadImage(url);
-    return getBase64FromImg(img);
-  }
-  function loadImage(url) {
-    return new Promise((resolve, reject) => {
-      const img = new Image();
-      img.src = url;
-      img.crossOrigin = "anonymous";
-      img.onload = () => resolve(img);
-      img.onerror = reject;
-    });
-  }
-  function blobToDataURL(blob) {
-    return new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onerror = reject;
-      reader.onload = () => resolve(reader.result);
-      reader.readAsDataURL(blob);
-    });
-  }
-  function getHistoryDisabled() {
-    return localStorage.getItem(KEY_OAI_HISTORY_DISABLED) === '"true"';
-  }
-  function getPageAccessToken() {
-    return _unsafeWindow?.__remixContext?.state?.loaderData?.root?.clientBootstrap?.session?.accessToken ?? null;
-  }
-  function getUserProfile() {
-    const user = _unsafeWindow?.__NEXT_DATA__?.props?.pageProps?.user ?? _unsafeWindow?.__remixContext?.state?.loaderData?.root?.clientBootstrap?.session?.user;
-    if (!user) throw new Error("No user found.");
-    return user;
-  }
-  function getChatIdFromUrl() {
-    const match = location.pathname.match(/^\/(?:share|c|g\/[a-z0-9-]+\/c)\/([a-z0-9-]+)/i);
-    if (match) return match[1];
-    return null;
-  }
-  function isSharePage() {
-    return location.pathname.startsWith("/share") && !location.pathname.endsWith("/continue");
-  }
-  function getConversationFromSharePage() {
-    if (window.__NEXT_DATA__?.props?.pageProps?.serverResponse?.data) {
-      return JSON.parse(JSON.stringify(window.__NEXT_DATA__.props.pageProps.serverResponse.data));
-    }
-    if (window.__remixContext?.state?.loaderData?.["routes/share.$shareId.($action)"]?.serverResponse?.data) {
-      return JSON.parse(JSON.stringify(window.__remixContext.state.loaderData["routes/share.$shareId.($action)"].serverResponse.data));
-    }
-    return null;
-  }
-  const defaultAvatar = "data:image/svg+xml,%3Csvg%20stroke%3D%22currentColor%22%20fill%3D%22none%22%20stroke-width%3D%221.5%22%20viewBox%3D%22-6%20-6%2036%2036%22%20stroke-linecap%3D%22round%22%20stroke-linejoin%3D%22round%22%20style%3D%22color%3A%20white%3B%20background%3A%20%23ab68ff%3B%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cpath%20d%3D%22M20%2021v-2a4%204%200%200%200-4-4H8a4%204%200%200%200-4%204v2%22%3E%3C%2Fpath%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%227%22%20r%3D%224%22%3E%3C%2Fcircle%3E%3C%2Fsvg%3E";
-  async function getUserAvatar() {
-    try {
-      const { picture } = getUserProfile();
-      if (picture) return await getBase64FromImageUrl(picture);
-    } catch (e2) {
-      console.error(e2);
-    }
-    try {
-      const avatars = Array.from(document.querySelectorAll("img[alt]:not([aria-hidden])"));
-      const avatar = avatars.find((avatar2) => !avatar2.src.startsWith("data:"));
-      if (avatar) return getBase64FromImg(avatar);
-    } catch (e2) {
-      console.error(e2);
-    }
-    return defaultAvatar;
-  }
-  function checkIfConversationStarted() {
-    return !!document.querySelector('[data-testid^="conversation-turn-"]');
-  }
   const generateKey = (args) => JSON.stringify(args);
   function memorize(fn2) {
     const cache = new Map();
@@ -3138,28 +3138,82 @@ depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : de
     };
     return memorized;
   }
-  const sessionApi = urlcat(baseUrl, "/api/auth/session");
-  const conversationApi = (id) => urlcat(apiUrl, "/conversation/:id", { id });
-  const conversationsApi = (offset2, limit) => urlcat(apiUrl, "/conversations", { offset: offset2, limit });
-  const fileDownloadApi = (id) => urlcat(apiUrl, "/files/:id/download", { id });
-  const projectsApi = () => urlcat(apiUrl, "/gizmos/snorlax/sidebar", { conversations_per_gizmo: 0 });
-  const projectConversationsApi = (gizmo, offset2, limit) => urlcat(apiUrl, "/gizmos/:gizmo/conversations", { gizmo, cursor: offset2, limit });
-  const accountsCheckApi = urlcat(apiUrl, "/accounts/check/v4-2023-04-27");
-  async function getCurrentChatId() {
-    if (isSharePage()) {
-      return `__share__${getChatIdFromUrl()}`;
+  const sessionApiUrl = urlcat(baseUrl, "/api/auth/session");
+  const accountsCheckApiUrl = urlcat(apiUrl, "/accounts/check/v4-2023-04-27");
+  const getConversationApiUrl = (id) => urlcat(apiUrl, "/conversation/:id", { id });
+  const getConversationsApiUrl = (offset2, limit) => urlcat(apiUrl, "/conversations", { offset: offset2, limit });
+  const getFileDownloadApiUrl = (id) => urlcat(apiUrl, "/files/:id/download", { id });
+  const getProjectsApiUrl = () => urlcat(apiUrl, "/gizmos/snorlax/sidebar", { conversations_per_gizmo: 0 });
+  const getProjectConversationsApiUrl = (gizmo, offset2, limit) => {
+    return urlcat(apiUrl, "/gizmos/:gizmo/conversations", { gizmo, cursor: offset2, limit });
+  };
+  async function fetchApi(url, options) {
+    const accessToken = await getAccessToken();
+    const accountId = await getTeamAccountId();
+    const response = await fetch(url, {
+      ...options,
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "X-Authorization": `Bearer ${accessToken}`,
+        ...accountId ? { "Chatgpt-Account-Id": accountId } : {},
+        ...options?.headers
+      }
+    });
+    if (!response.ok) {
+      throw new Error(response.statusText);
     }
-    const chatId = getChatIdFromUrl();
-    if (chatId) return chatId;
-    const conversations = await fetchConversations();
-    if (conversations && conversations.items.length > 0) {
-      return conversations.items[0].id;
+    return response.json();
+  }
+  async function _fetchSession() {
+    const response = await fetch(sessionApiUrl);
+    if (!response.ok) {
+      throw new Error(response.statusText);
     }
-    throw new Error("No chat id found.");
+    return response.json();
+  }
+  const fetchSession = memorize(_fetchSession);
+  async function getAccessToken() {
+    const pageAccessToken = getPageAccessToken();
+    if (pageAccessToken) return pageAccessToken;
+    const session = await fetchSession();
+    return session.accessToken;
+  }
+  async function _fetchAccountsCheck() {
+    const accessToken = await getAccessToken();
+    const response = await fetch(accountsCheckApiUrl, {
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "X-Authorization": `Bearer ${accessToken}`
+      }
+    });
+    if (!response.ok) {
+      throw new Error(response.statusText);
+    }
+    return response.json();
+  }
+  const fetchAccountsCheck = memorize(_fetchAccountsCheck);
+  const getCookie = (key2) => document.cookie.match(`(^|;)\\s*${key2}\\s*=\\s*([^;]+)`)?.pop() || "";
+  async function getTeamAccountId() {
+    const accountsCheck = await fetchAccountsCheck();
+    const workspaceId = getCookie(
+      "_account"
+);
+    if (workspaceId) {
+      const account = accountsCheck.accounts[workspaceId];
+      if (account) {
+        return account.account.account_id;
+      }
+    }
+    return null;
+  }
+  function isImageAssetPointer(part) {
+    if (typeof part !== "object" || part === null) return false;
+    const candidate = part;
+    return candidate.content_type === "image_asset_pointer" && typeof candidate.asset_pointer === "string" && typeof candidate.fovea === "number" && typeof candidate.height === "number" && typeof candidate.size_bytes === "number" && typeof candidate.width === "number" && candidate.asset_pointer.startsWith("file-service://");
   }
   async function fetchImageFromPointer(uri2) {
     const pointer = uri2.replace("file-service://", "");
-    const imageDetails = await fetchApi(fileDownloadApi(pointer));
+    const imageDetails = await fetchApi(getFileDownloadApiUrl(pointer));
     if (imageDetails.status === "error") {
       console.error("Failed to fetch image asset", imageDetails.error_code, imageDetails.error_message);
       return null;
@@ -3170,13 +3224,11 @@ depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : de
     return base64.replace(/^data:.*?;/, `data:${image2.headers.get("content-type")};`);
   }
   async function replaceImageAssets(conversation) {
-    const isMultiModalInputImage = (part) => {
-      return typeof part === "object" && part !== null && "content_type" in part && part.content_type === "image_asset_pointer" && "asset_pointer" in part && typeof part.asset_pointer === "string" && part.asset_pointer.startsWith("file-service://");
-    };
     const imageAssets = Object.values(conversation.mapping).flatMap((node2) => {
       if (!node2.message) return [];
       if (node2.message.content.content_type !== "multimodal_text") return [];
-      return (Array.isArray(node2.message.content.parts) ? node2.message.content.parts : []).filter(isMultiModalInputImage);
+      const parts = Array.isArray(node2.message.content.parts) ? node2.message.content.parts : [];
+      return parts.filter((part) => isImageAssetPointer(part));
     });
     const executionOutputs = Object.values(conversation.mapping).flatMap((node2) => {
       if (!node2.message) return [];
@@ -3203,6 +3255,18 @@ depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : de
       })
     ]);
   }
+  async function getCurrentChatId() {
+    if (isSharePage()) {
+      return `__share__${getChatIdFromUrl()}`;
+    }
+    const chatId = getChatIdFromUrl();
+    if (chatId) return chatId;
+    const conversations = await fetchConversations();
+    if (conversations && conversations.items.length > 0) {
+      return conversations.items[0].id;
+    }
+    throw new Error("No chat id found.");
+  }
   async function fetchConversation(chatId, shouldReplaceAssets) {
     if (chatId.startsWith("__share__")) {
       const id = chatId.replace("__share__", "");
@@ -3213,7 +3277,7 @@ depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : de
         ...shareConversation
       };
     }
-    const url = conversationApi(chatId);
+    const url = getConversationApiUrl(chatId);
     const conversation = await fetchApi(url);
     if (shouldReplaceAssets) {
       await replaceImageAssets(conversation);
@@ -3224,7 +3288,7 @@ depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : de
     };
   }
   async function fetchProjects() {
-    const url = projectsApi();
+    const url = getProjectsApiUrl();
     const { items } = await fetchApi(url);
     return items.map((gizmo) => gizmo.gizmo.gizmo);
   }
@@ -3232,11 +3296,11 @@ depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : de
     if (project) {
       return fetchProjectConversations(project, offset2, limit);
     }
-    const url = conversationsApi(offset2, limit);
+    const url = getConversationsApiUrl(offset2, limit);
     return fetchApi(url);
   }
   async function fetchProjectConversations(project, offset2 = 0, limit = 20) {
-    const url = projectConversationsApi(project, offset2, limit);
+    const url = getProjectConversationsApiUrl(project, offset2, limit);
     const { items } = await fetchApi(url);
     return {
       has_missing_conversations: false,
@@ -3270,7 +3334,7 @@ depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : de
     return conversations.slice(0, maxConversations);
   }
   async function archiveConversation(chatId) {
-    const url = conversationApi(chatId);
+    const url = getConversationApiUrl(chatId);
     const { success } = await fetchApi(url, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -3279,7 +3343,7 @@ depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : de
     return success;
   }
   async function deleteConversation(chatId) {
-    const url = conversationApi(chatId);
+    const url = getConversationApiUrl(chatId);
     const { success } = await fetchApi(url, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
@@ -3287,66 +3351,7 @@ depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : de
     });
     return success;
   }
-  async function fetchApi(url, options) {
-    const accessToken = await getAccessToken();
-    const accountId = await getTeamAccountId();
-    const response = await fetch(url, {
-      ...options,
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "X-Authorization": `Bearer ${accessToken}`,
-        ...accountId ? { "Chatgpt-Account-Id": accountId } : {},
-        ...options?.headers
-      }
-    });
-    if (!response.ok) {
-      throw new Error(response.statusText);
-    }
-    return response.json();
-  }
-  async function _fetchSession() {
-    const response = await fetch(sessionApi);
-    if (!response.ok) {
-      throw new Error(response.statusText);
-    }
-    return response.json();
-  }
-  const fetchSession = memorize(_fetchSession);
-  async function getAccessToken() {
-    const pageAccessToken = getPageAccessToken();
-    if (pageAccessToken) return pageAccessToken;
-    const session = await fetchSession();
-    return session.accessToken;
-  }
-  async function _fetchAccountsCheck() {
-    const accessToken = await getAccessToken();
-    const response = await fetch(accountsCheckApi, {
-      headers: {
-        "Authorization": `Bearer ${accessToken}`,
-        "X-Authorization": `Bearer ${accessToken}`
-      }
-    });
-    if (!response.ok) {
-      throw new Error(response.statusText);
-    }
-    return response.json();
-  }
-  const fetchAccountsCheck = memorize(_fetchAccountsCheck);
-  const getCookie = (key2) => document.cookie.match(`(^|;)\\s*${key2}\\s*=\\s*([^;]+)`)?.pop() || "";
-  async function getTeamAccountId() {
-    const accountsCheck = await fetchAccountsCheck();
-    const workspaceId = getCookie(
-      "_account"
-);
-    if (workspaceId) {
-      const account = accountsCheck.accounts[workspaceId];
-      if (account) {
-        return account.account.account_id;
-      }
-    }
-    return null;
-  }
-  const ModelMapping = {
+  const MODEL_MAPPING = {
     "text-davinci-002-render-sha": "GPT-3.5",
     "text-davinci-002-render-paid": "GPT-3.5",
     "text-davinci-002-browse": "GPT-3.5",
@@ -3378,10 +3383,10 @@ depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : de
     let model = "";
     const modelSlug = Object.values(conversationMapping).find((node2) => node2.message?.metadata?.model_slug)?.message?.metadata?.model_slug || "";
     if (modelSlug) {
-      if (ModelMapping[modelSlug]) {
-        model = ModelMapping[modelSlug];
+      if (MODEL_MAPPING[modelSlug]) {
+        model = MODEL_MAPPING[modelSlug];
       } else {
-        Object.keys(ModelMapping).forEach((key2) => {
+        Object.keys(MODEL_MAPPING).forEach((key2) => {
           if (modelSlug.startsWith(key2)) {
             model = key2;
           }
