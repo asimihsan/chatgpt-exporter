@@ -19114,6 +19114,100 @@ self2.previous !== null ||
         return message.author.role;
     }
   }
+  const DEFAULT_SANITIZE_TEXT_OPTIONS = {
+    normalization: "NFKC",
+    replaceQuotes: true,
+    replaceDashes: true,
+    replaceEllipsis: true,
+    normalizeLineBreaks: true,
+    normalizeSpaces: true,
+    collapseSpaces: false,
+    removeSoftHyphen: true,
+    removeZeroWidth: true,
+    preserveEmojiZWJ: true,
+    removeBidiControls: true,
+    removeC0Controls: false
+  };
+  const ODD_LINE_BREAKS_REGEX = /[\u0085\u2028\u2029]/gu;
+  const ELLIPSIS_REGEX = /\u2026/gu;
+  const DASHES_REGEX = /[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/gu;
+  const SINGLE_QUOTES_REGEX = /[\u2018\u2019\u201A\u201B\u2032\u02BC\uFF07]/gu;
+  const DOUBLE_QUOTES_REGEX = /[\u201C\u201D\u201E\u201F\u2033\u00AB\u00BB\u301D-\u301F\uFF02]/gu;
+  const ODD_SPACES_REGEX = /[\u00A0\u202F\u2000-\u200A\u205F\u3000]/gu;
+  const SPACE_RUNS_REGEX = / {2,}/gu;
+  const SOFT_HYPHEN_REGEX = /\u00AD/gu;
+  const ZERO_WIDTH_REGEX = /(?:\u200B|\u200C|\u200D|\u2060|\uFEFF)/gu;
+  const ZERO_WIDTH_NO_ZWJ_REGEX = /(?:\u200B|\u200C|\u2060|\uFEFF)/gu;
+  const BIDI_CONTROLS_REGEX = /[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/gu;
+  function resolveSanitizeTextOptions(options = {}) {
+    return {
+      ...DEFAULT_SANITIZE_TEXT_OPTIONS,
+      ...options
+    };
+  }
+  function isRemovableC0Control(codeUnit) {
+    if (codeUnit === 9 || codeUnit === 10 || codeUnit === 13) return false;
+    return codeUnit >= 0 && codeUnit <= 31 || codeUnit === 127;
+  }
+  function removeC0ControlCharacters(input) {
+    let segments;
+    let segmentStart = 0;
+    for (let index2 = 0; index2 < input.length; index2++) {
+      const codeUnit = input.charCodeAt(index2);
+      if (!isRemovableC0Control(codeUnit)) continue;
+      if (segments === void 0) {
+        segments = [];
+      }
+      if (segmentStart < index2) {
+        segments.push(input.slice(segmentStart, index2));
+      }
+      segmentStart = index2 + 1;
+    }
+    if (segments === void 0) return input;
+    if (segmentStart < input.length) {
+      segments.push(input.slice(segmentStart));
+    }
+    return segments.join("");
+  }
+  function sanitizeLLMText(input, options = {}) {
+    const resolved = resolveSanitizeTextOptions(options);
+    let output2 = input;
+    if (resolved.normalization !== "none") {
+      output2 = output2.normalize(resolved.normalization);
+    }
+    if (resolved.normalizeLineBreaks) {
+      output2 = standardizeLineBreaks(output2);
+      output2 = output2.replaceAll(ODD_LINE_BREAKS_REGEX, "\n");
+    }
+    if (resolved.replaceEllipsis) {
+      output2 = output2.replaceAll(ELLIPSIS_REGEX, "...");
+    }
+    if (resolved.replaceDashes) {
+      output2 = output2.replaceAll(DASHES_REGEX, "-");
+    }
+    if (resolved.replaceQuotes) {
+      output2 = output2.replaceAll(SINGLE_QUOTES_REGEX, "'").replaceAll(DOUBLE_QUOTES_REGEX, '"');
+    }
+    if (resolved.normalizeSpaces) {
+      output2 = output2.replaceAll(ODD_SPACES_REGEX, " ");
+    }
+    if (resolved.collapseSpaces) {
+      output2 = output2.replaceAll(SPACE_RUNS_REGEX, " ");
+    }
+    if (resolved.removeSoftHyphen) {
+      output2 = output2.replaceAll(SOFT_HYPHEN_REGEX, "");
+    }
+    if (resolved.removeZeroWidth) {
+      output2 = output2.replaceAll(resolved.preserveEmojiZWJ ? ZERO_WIDTH_NO_ZWJ_REGEX : ZERO_WIDTH_REGEX, "");
+    }
+    if (resolved.removeBidiControls) {
+      output2 = output2.replaceAll(BIDI_CONTROLS_REGEX, "");
+    }
+    if (resolved.removeC0Controls) {
+      output2 = removeC0ControlCharacters(output2);
+    }
+    return output2;
+  }
   async function exportToText() {
     if (!checkIfConversationStarted()) {
       alert(instance.t("Please start a conversation first"));
@@ -19151,6 +19245,7 @@ self2.previous !== null ||
         return matches[+index2];
       });
     }
+    content2 = sanitizeLLMText(content2);
     return `${author}:
 ${content2}`;
   }
@@ -25331,7 +25426,7 @@ createTime = Math.floor(Date.now() / 1e3),
         postSteps = [...postSteps, (input) => `<p class="no-katex">${escapeHtml(input)}</p>`];
       }
       const postProcess = (input) => postSteps.reduce((acc, fn2) => fn2(acc), input);
-      const content2 = transformContent$1(message.content, message.metadata, postProcess);
+      const content2 = sanitizeLLMText(transformContent$1(message.content, message.metadata, postProcess));
       const timestamp2 = message?.create_time ?? "";
       const showTimestamp = enableTimestamp && timeStampHtml && timestamp2;
       let timestampHtml = "";
@@ -25839,7 +25934,7 @@ ${_metaList.join("\n")}
         });
       }
       const postProcess = (input) => postSteps.reduce((acc, fn2) => fn2(acc), input);
-      const content22 = transformContent(message.content, message.metadata, postProcess);
+      const content22 = sanitizeLLMText(transformContent(message.content, message.metadata, postProcess));
       return `#### ${author}:
 ${timestampHtml}${content22}`;
     }).filter(Boolean).join("\n\n");

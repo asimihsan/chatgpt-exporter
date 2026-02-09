@@ -12,6 +12,7 @@ import { shouldIncludeMessageForExport } from './messageClassifier'
 import { getExportAuthorLabel } from './messageLabel'
 import { dateStr, timestamp, unixTimestampToISOString } from '../utils/utils'
 import { normalizeReferenceText, replaceReferenceTokens, stripUiTokens } from './shared'
+import { sanitizeLLMText } from './textSanitizer'
 import type { ApiConversationWithId, Citation, ConversationNodeMessage, ConversationResult } from '../api'
 import type { ExportMeta } from '../ui/SettingContext'
 
@@ -154,7 +155,7 @@ function conversationToMarkdown(conversation: ConversationResult, metaList?: Exp
             })
         }
         const postProcess = (input: string) => postSteps.reduce((acc, fn) => fn(acc), input)
-        const content = transformContent(message.content, message.metadata, postProcess)
+        const content = sanitizeLLMText(transformContent(message.content, message.metadata, postProcess))
 
         return `#### ${author}:\n${timestampHtml}${content}`
     }).filter(Boolean).join('\n\n')

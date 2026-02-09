@@ -8,6 +8,7 @@ import { getExecutionOutputImages, getExecutionOutputText } from './executionOut
 import { shouldIncludeMessageForExport } from './messageClassifier'
 import { getExportAuthorLabel } from './messageLabel'
 import { normalizeReferenceText, replaceReferenceTokens, stripUiTokens } from './shared'
+import { sanitizeLLMText } from './textSanitizer'
 import type { ConversationNodeMessage } from '../api'
 import type { Emphasis, Strong } from 'mdast'
 
@@ -67,6 +68,8 @@ function transformMessage(message?: ConversationNodeMessage) {
             return matches[+index]
         })
     }
+
+    content = sanitizeLLMText(content)
 
     return `${author}:\n${content}`
 }
