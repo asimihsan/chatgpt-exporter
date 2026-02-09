@@ -22,12 +22,40 @@ describe('resolveSanitizeTextOptions', () => {
 })
 
 describe('sanitizeLLMText', () => {
-    it('applies configured normalization mode', () => {
-        expect(sanitizeLLMText('ＡＢＣ')).toBe('ABC')
+    it('normalizes smart punctuation, odd spaces, and invisible controls by default', () => {
+        const input = '“Spidey”—it’s 3–5pm… cost is −10%\u00A0ok\u200B\u00AD\u202E'
+        expect(sanitizeLLMText(input)).toBe('"Spidey"-it\'s 3-5pm... cost is -10% ok')
     })
 
-    it('skips normalization when mode is none', () => {
-        expect(sanitizeLLMText('ＡＢＣ', { normalization: 'none' })).toBe('ＡＢＣ')
+    it('normalizes line terminators to LF', () => {
+        const input = 'a\r\nb\rc\u0085d\u2028e\u2029f'
+        expect(sanitizeLLMText(input)).toBe('a\nb\nc\nd\ne\nf')
+    })
+
+    it('preserves emoji ZWJ by default and removes it when configured', () => {
+        const emojiSequence = '👩\u200D💻'
+        expect(sanitizeLLMText(emojiSequence)).toBe(emojiSequence)
+        expect(sanitizeLLMText(emojiSequence, { preserveEmojiZWJ: false })).toBe('👩💻')
+    })
+
+    it('can collapse space runs after odd-space normalization', () => {
+        const input = 'a\u00A0  \u2009b'
+        expect(sanitizeLLMText(input, { collapseSpaces: true })).toBe('a b')
+    })
+
+    it('supports disabling normalization and enabling C0 control stripping', () => {
+        expect(sanitizeLLMText('Ａ\u0007Ｂ', {
+            normalization: 'none',
+            removeC0Controls: true,
+        })).toBe('ＡＢ')
+    })
+
+    it('keeps tab/newline/carriage-return while removing other C0 controls', () => {
+        expect(sanitizeLLMText('A\tB\nC\rD\u0000\u007FE', {
+            normalization: 'none',
+            normalizeLineBreaks: false,
+            removeC0Controls: true,
+        })).toBe('A\tB\nC\rDE')
     })
 })
 
