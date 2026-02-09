@@ -121,6 +121,14 @@ interface MessageMeta {
     content_references?: ContentReference[]
     /** Whether this message is hidden in the UI (e.g., internal system prompts) */
     is_visually_hidden_from_conversation?: boolean
+    /** Pro thinking headline, e.g. "Reasoning" */
+    initial_text?: string
+    /** Pro thinking completion label, e.g. "Reasoned for 33m 31s" */
+    finished_text?: string
+    /** Pro task type from async execution flow */
+    async_task_type?: 'pro_mode' | (string & {})
+    /** Duration of pro thinking in seconds */
+    finished_duration_sec?: number
 }
 
 export type AuthorRole = 'system' | 'assistant' | 'user' | 'tool'
@@ -195,7 +203,7 @@ interface MultiModalAudioTranscription {
 export interface ConversationNodeMessage {
     author: {
         role: AuthorRole
-        name?: 'browser' | 'python' & (string & {})
+        name?: 'browser' | 'python' | (string & {})
         metadata: unknown
     }
     content: {
@@ -255,6 +263,7 @@ export interface ConversationNodeMessage {
     metadata?: MessageMeta
     recipient: 'all' | 'browser' | 'python' | 'dalle.text2im' & (string & {})
     status: string
+    channel?: 'commentary' | 'final' | null | (string & {})
     end_turn?: boolean
     weight: number
 }

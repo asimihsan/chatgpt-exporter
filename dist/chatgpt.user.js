@@ -18988,11 +18988,19 @@ self2.previous !== null ||
   function standardizeLineBreaks(text2) {
     return text2.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
   }
-  const SKIPPED_CONTENT_TYPES = new Set([
+  const INTERNAL_CONTENT_TYPES = new Set([
     "thoughts",
     "reasoning_recap",
     "model_editable_context"
   ]);
+  function isInternalContentType(contentType) {
+    return INTERNAL_CONTENT_TYPES.has(contentType);
+  }
+  function shouldSkipAsInternal(message) {
+    if (!message?.content) return true;
+    if (message.metadata?.is_visually_hidden_from_conversation) return true;
+    return isInternalContentType(message.content.content_type);
+  }
   const UI_TOKEN_REGEX = /\uE200([a-z0-9_]+)\uE202([\s\S]*?)\uE201/giu;
   const UNICODE_SPACE_REGEX = /[\u00A0\u202F\u2007\u2060]/gu;
   const UNICODE_HYPHEN_REGEX = /[\u2010-\u2015\u2212]/gu;
@@ -19019,14 +19027,10 @@ self2.previous !== null ||
     }
     return output2;
   }
-  function isSkippableContentType(contentType) {
-    return SKIPPED_CONTENT_TYPES.has(contentType);
-  }
   function shouldSkipMessage(message) {
     if (!message?.content) return true;
     if (message.recipient !== "all") return true;
-    if (message.metadata?.is_visually_hidden_from_conversation) return true;
-    return isSkippableContentType(message.content.content_type);
+    return shouldSkipAsInternal(message);
   }
   async function exportToText() {
     if (!checkIfConversationStarted()) {

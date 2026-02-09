@@ -1,10 +1,5 @@
 import type { ConversationNodeMessage } from '../api'
-
-const SKIPPED_CONTENT_TYPES = new Set<ConversationNodeMessage['content']['content_type']>([
-    'thoughts',
-    'reasoning_recap',
-    'model_editable_context',
-])
+import { isInternalContentType, shouldSkipAsInternal } from './messageClassifier'
 
 const UI_TOKEN_REGEX = /\uE200([a-z0-9_]+)\uE202([\s\S]*?)\uE201/giu
 const UNICODE_SPACE_REGEX = /[\u00A0\u202F\u2007\u2060]/gu
@@ -49,7 +44,7 @@ export function replaceReferenceTokens(
 }
 
 export function isSkippableContentType(contentType: ConversationNodeMessage['content']['content_type']): boolean {
-    return SKIPPED_CONTENT_TYPES.has(contentType)
+    return isInternalContentType(contentType)
 }
 
 export function shouldSkipMessage(message?: ConversationNodeMessage): boolean {
@@ -57,7 +52,5 @@ export function shouldSkipMessage(message?: ConversationNodeMessage): boolean {
 
     if (message.recipient !== 'all') return true
 
-    if (message.metadata?.is_visually_hidden_from_conversation) return true
-
-    return isSkippableContentType(message.content.content_type)
+    return shouldSkipAsInternal(message)
 }
