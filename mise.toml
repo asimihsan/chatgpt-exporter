@@ -9,6 +9,7 @@ bun = "latest"
 "go:github.com/google/addlicense" = "latest"
 jujutsu = "latest"
 node = "lts"
+ripgrep = "latest"
 shellcheck = "latest"
 
 [env]

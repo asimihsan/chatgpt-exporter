@@ -18,6 +18,10 @@ backend = "aqua:jj-vcs/jj"
 version = "24.11.1"
 backend = "core:node"
 
+[[tools.ripgrep]]
+version = "15.1.0"
+backend = "aqua:BurntSushi/ripgrep"
+
 [[tools.shellcheck]]
 version = "0.11.0"
 backend = "aqua:koalaman/shellcheck"
