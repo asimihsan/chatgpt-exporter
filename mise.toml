@@ -1,0 +1,181 @@
+# Copyright 2026 Asim Ihsan
+# SPDX-License-Identifier: MPL-2.0
+
+min_version = "2024.9.5"
+
+[tools]
+actionlint = "latest"
+bun = "latest"
+"go:github.com/google/addlicense" = "latest"
+jujutsu = "latest"
+node = "lts"
+ripgrep = "latest"
+shellcheck = "latest"
+
+[env]
+_.path = ["{{config_root}}/node_modules/.bin"]
+
+[settings]
+experimental = true
+
+[settings.npm]
+package_manager = "bun"
+
+[tasks.install]
+alias = "i"
+description = "Install project dependencies with Bun"
+run = "bun install --frozen-lockfile"
+sources = ["package.json", "bun.lock", "mise.toml"]
+outputs = ["node_modules/.bin"]
+
+[tasks.dev]
+alias = "d"
+description = "Start local development server"
+depends = ["install"]
+run = "bun run dev"
+
+[tasks.build]
+alias = "b"
+description = "Build userscript bundle (non-minified)"
+depends = ["install"]
+run = "bun run build"
+sources = [
+  "src/**/*",
+  "index.html",
+  "vite.config.ts",
+  "package.json",
+  "bun.lock",
+  "tsconfig*.json",
+  "mise.toml",
+  "mise.lock",
+]
+outputs = ["dist/chatgpt.user.js", "dist/chatgpt.meta.js"]
+
+[tasks.lint]
+alias = "l"
+description = "Run strict type-aware ESLint"
+depends = ["install"]
+run = "bun run lint"
+sources = [
+  "src/**/*",
+  "eslint.config.js",
+  "eslint.type-aware.config.js",
+  "package.json",
+  "bun.lock",
+  "tsconfig*.json",
+  "mise.toml",
+  "mise.lock",
+]
+
+[tasks.typecheck]
+alias = "tc"
+description = "Run TypeScript static type checks"
+depends = ["install"]
+run = "bun run typecheck"
+sources = [
+  "src/**/*",
+  "tsconfig*.json",
+  "package.json",
+  "bun.lock",
+  "mise.toml",
+  "mise.lock",
+]
+
+[tasks.test-unit]
+alias = "tu"
+description = "Run unit tests"
+depends = ["install"]
+run = "bun run test:unit"
+sources = [
+  "src/**/*",
+  "package.json",
+  "bun.lock",
+  "tsconfig*.json",
+  "vite.config.ts",
+  "mise.toml",
+  "mise.lock",
+]
+
+[tasks.test]
+alias = "t"
+description = "Run typecheck and unit tests"
+depends = ["typecheck", "test-unit"]
+run = "echo test checks complete"
+
+[tasks.audit]
+description = "Audit dependencies for known vulnerabilities (low+)"
+depends = ["install"]
+run = "bun audit --audit-level=low"
+sources = ["package.json", "bun.lock", "mise.toml", "mise.lock"]
+
+[tasks.shellcheck]
+description = "Lint shell scripts"
+run = "shellcheck scripts/release/*.sh"
+sources = ["scripts/**/*.sh", "mise.toml", "mise.lock"]
+
+[tasks.actionlint]
+description = "Lint GitHub Actions workflows"
+run = "actionlint"
+sources = [
+  ".github/workflows/*.yml",
+  ".github/workflows/*.yaml",
+  "mise.toml",
+  "mise.lock",
+]
+
+[tasks.license-apply]
+description = "Apply SPDX license headers using jj upstream classification"
+run = "bash scripts/license/apply-spdx-headers.sh"
+sources = [
+  "src/**/*",
+  "scripts/**/*.sh",
+  ".github/workflows/*.yml",
+  ".github/workflows/*.yaml",
+  "*.js",
+  "*.ts",
+  "*.html",
+  "*.toml",
+  "scripts/license/templates/*.txt",
+  "mise.toml",
+  "mise.lock",
+]
+
+[tasks.license-check]
+description = "Verify SPDX headers match jj upstream classification"
+run = "bash scripts/license/check-spdx-headers.sh"
+sources = [
+  "src/**/*",
+  "scripts/**/*.sh",
+  ".github/workflows/*.yml",
+  ".github/workflows/*.yaml",
+  "*.js",
+  "*.ts",
+  "*.html",
+  "*.toml",
+  "scripts/license/templates/*.txt",
+  "mise.toml",
+  "mise.lock",
+]
+
+[tasks.ci]
+description = "Run lint, tests, security audit, shell lint, workflow lint, and SPDX checks"
+depends = ["lint", "test", "audit", "shellcheck", "actionlint", "license-check"]
+run = "echo ci checks complete"
+
+[tasks.check]
+alias = "c"
+description = "Run full CI checks"
+depends = ["ci"]
+run = "echo all checks complete"
+
+[tasks.deps-check]
+alias = "dc"
+description = "Show outdated dependencies"
+depends = ["install"]
+run = "bun run deps:check"
+
+[tasks.deps-update]
+alias = "du"
+description = "Update dependencies to latest versions"
+depends = ["install"]
+run = "bun run deps:update"

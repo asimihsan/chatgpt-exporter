@@ -1,3 +1,8 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useState } from 'preact/hooks'
 import { ScriptStorage } from '../utils/storage'
 

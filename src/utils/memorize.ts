@@ -1,3 +1,8 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * SPDX-License-Identifier: MIT
+ */
+
 const generateKey = (args: any[]) => JSON.stringify(args)
 
 export function memorize<T extends (...args: any[]) => any>(fn: T): T {

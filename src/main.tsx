@@ -1,7 +1,15 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0 AND MIT
+ */
+
 import { render } from 'preact'
 import sentinel from 'sentinel-js'
 import { fetchConversation, processConversation } from './api'
 import { getChatIdFromUrl, isSharePage } from './page'
+import { registerExportCopyShortcut } from './shortcuts/exportCopyShortcut'
+import { registerSettingsMenuCommand } from './settings/menuCommand'
 import { Menu } from './ui/Menu'
 import { onloadSafe } from './utils/utils'
 
@@ -12,6 +20,9 @@ main()
 
 function main() {
     onloadSafe(() => {
+        registerSettingsMenuCommand()
+        registerExportCopyShortcut()
+
         const styleEl = document.createElement('style')
         styleEl.id = 'sentinel-css'
         document.head.append(styleEl)
@@ -37,61 +48,70 @@ function main() {
             }
         }
 
-        sentinel.on('nav', injectNavMenu)
+        // Delay DOM injections until the host app has had time to hydrate.
+        setTimeout(() => {
+            sentinel.on('nav', injectNavMenu)
 
-        setInterval(() => {
-            injectionMap.forEach((container, nav) => {
-                if (!nav.isConnected) {
-                    container.remove()
-                    injectionMap.delete(nav)
-                }
+            setInterval(() => {
+                injectionMap.forEach((container, nav) => {
+                    if (!nav.isConnected) {
+                        container.remove()
+                        injectionMap.delete(nav)
+                    }
+                })
+
+                const navList = Array.from(document.querySelectorAll('nav')).filter(nav => !injectionMap.has(nav))
+                navList.forEach(injectNavMenu)
+            }, 300)
+
+            // Support for share page
+            if (isSharePage()) {
+                sentinel.on(`div[role="presentation"] > .w-full > div >.flex.w-full`, (target) => {
+                    target.prepend(getMenuContainer())
+                })
+            }
+
+            /** Insert timestamp to the bottom right of each message */
+            let chatId = ''
+            const addMessageTimestamps = async () => {
+                const currentChatId = getChatIdFromUrl()
+                if (!currentChatId || currentChatId === chatId) return
+                chatId = currentChatId
+
+                const rawConversation = await fetchConversation(chatId, false)
+                const { conversationNodes } = processConversation(rawConversation)
+
+                const threadContents = Array.from(document.querySelectorAll('main [data-testid^="conversation-turn-"] [data-message-id]'))
+                if (threadContents.length === 0) return
+
+                threadContents.forEach((thread, index) => {
+                    const createTime = conversationNodes[index]?.message?.create_time
+                    if (!createTime) return
+
+                    const date = new Date(createTime * 1000)
+
+                    const timestamp = document.createElement('time')
+                    timestamp.className = 'w-full text-gray-500 dark:text-gray-400 text-sm text-right'
+                    timestamp.dateTime = date.toISOString()
+                    timestamp.title = date.toLocaleString()
+
+                    const hour12 = document.createElement('span')
+                    hour12.setAttribute('data-time-format', '12')
+                    hour12.textContent = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
+                    const hour24 = document.createElement('span')
+                    hour24.setAttribute('data-time-format', '24')
+                    hour24.textContent = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
+                    timestamp.append(hour12, hour24)
+                    thread.append(timestamp)
+                })
+            }
+
+            sentinel.on('[role="presentation"]', () => {
+                void addMessageTimestamps().catch((error) => {
+                    console.error('Failed to add message timestamps:', error)
+                })
             })
-
-            const navList = Array.from(document.querySelectorAll('nav')).filter(nav => !injectionMap.has(nav))
-            navList.forEach(injectNavMenu)
-        }, 300)
-
-        // Support for share page
-        if (isSharePage()) {
-            sentinel.on(`div[role="presentation"] > .w-full > div >.flex.w-full`, (target) => {
-                target.prepend(getMenuContainer())
-            })
-        }
-
-        /** Insert timestamp to the bottom right of each message */
-        let chatId = ''
-        sentinel.on('[role="presentation"]', async () => {
-            const currentChatId = getChatIdFromUrl()
-            if (!currentChatId || currentChatId === chatId) return
-            chatId = currentChatId
-
-            const rawConversation = await fetchConversation(chatId, false)
-            const { conversationNodes } = processConversation(rawConversation)
-
-            const threadContents = Array.from(document.querySelectorAll('main [data-testid^="conversation-turn-"] [data-message-id]'))
-            if (threadContents.length === 0) return
-
-            threadContents.forEach((thread, index) => {
-                const createTime = conversationNodes[index]?.message?.create_time
-                if (!createTime) return
-
-                const date = new Date(createTime * 1000)
-
-                const timestamp = document.createElement('time')
-                timestamp.className = 'w-full text-gray-500 dark:text-gray-400 text-sm text-right'
-                timestamp.dateTime = date.toISOString()
-                timestamp.title = date.toLocaleString()
-
-                const hour12 = document.createElement('span')
-                hour12.setAttribute('data-time-format', '12')
-                hour12.textContent = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-                const hour24 = document.createElement('span')
-                hour24.setAttribute('data-time-format', '24')
-                hour24.textContent = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
-                timestamp.append(hour12, hour24)
-                thread.append(timestamp)
-            })
-        })
+        }, 1200)
     })
 }
 

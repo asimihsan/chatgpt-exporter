@@ -1,3 +1,9 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0 AND MIT
+ */
+
 import i18n from 'i18next'
 import { initReactI18next } from 'react-i18next'
 import { KEY_LANGUAGE, KEY_OAI_LOCALE } from './constants'
@@ -174,7 +180,7 @@ function getDefaultLanguage() {
         ?? EN_US.code
 }
 
-i18n
+void i18n
     .use(initReactI18next)
     .init({
         fallbackLng: EN_US.code,
@@ -184,6 +190,9 @@ i18n
         interpolation: {
             escapeValue: false, // not needed for react as it escapes by default
         },
+    })
+    .catch((error) => {
+        console.error('Failed to initialize translations:', error)
     })
 
 i18n.on('languageChanged', (lng) => {

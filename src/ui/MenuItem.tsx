@@ -1,4 +1,11 @@
-import { useState } from 'preact/hooks'
+/**
+ * Copyright 2022-Present Pionxzh
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0 AND MIT
+ */
+
+import { useRef, useState } from 'preact/hooks'
+import { shouldSuppressClickAfterTouch } from './menuItemInteraction'
 import { IconLoading } from './Icons'
 import type { FC } from '../type'
 
@@ -17,42 +24,59 @@ export interface MenuItemProps {
 export const MenuItem: FC<MenuItemProps> = ({ text, successText, disabled = false, title, icon: Icon, onClick, className }) => {
     const [loading, setLoading] = useState(false)
     const [succeed, setSucceed] = useState(false)
+    const lastTouchTimestampMsRef = useRef<number | null>(null)
+
+    const handleClickAsync = async (e: Event) => {
+        e.preventDefault()
+        if (loading || disabled) return
+        if (!onClick) return
+
+        try {
+            setLoading(true)
+            const result = await onClick()
+            if (result) {
+                setSucceed(true)
+                setTimeout(() => setSucceed(false), TIMEOUT)
+            }
+        }
+        catch (error) {
+            console.error(error)
+        }
+        finally {
+            setLoading(false)
+        }
+    }
 
     const handleClick = typeof onClick === 'function'
-        ? async (e: Event) => {
-            e.preventDefault()
-            if (loading) return
+        ? (e: Event) => {
+            if (shouldSuppressClickAfterTouch(lastTouchTimestampMsRef.current, Date.now())) {
+                return
+            }
 
-            try {
-                setLoading(true)
-                const result = await onClick()
-                if (result) {
-                    setSucceed(true)
-                    setTimeout(() => setSucceed(false), TIMEOUT)
-                }
-            }
-            catch (error) {
-                console.error(error)
-            }
-            finally {
-                setLoading(false)
-            }
+            void handleClickAsync(e)
+        }
+        : undefined
+
+    const handleTouchStart = typeof onClick === 'function'
+        ? (e: Event) => {
+            lastTouchTimestampMsRef.current = Date.now()
+            void handleClickAsync(e)
         }
         : undefined
 
     return (
         <div
             className={`
-            menu-item
+            ce-menu-item
             flex flex-shrink-0 py-3 px-3 items-center gap-3 rounded-lg mb-2
-            bg-menu hover:bg-gray-500/10
+            ce-bg-menu
             transition-colors duration-200
-            text-menu text-sm
-            cursor-pointer
-            border border-menu ${className}`}
+            ce-text-menu text-sm
+            ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+            border ce-border-menu ${className}`}
             onClick={handleClick}
-            onTouchStart={handleClick}
-            disabled={disabled}
+            onTouchStart={handleTouchStart}
+            aria-disabled={disabled}
             title={title}
         >
             {loading

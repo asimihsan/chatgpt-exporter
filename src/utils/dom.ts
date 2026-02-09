@@ -1,3 +1,8 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * SPDX-License-Identifier: MIT
+ */
+
 export function getBase64FromImg(el: HTMLImageElement) {
     const canvas = document.createElement('canvas')
     canvas.width = el.naturalWidth

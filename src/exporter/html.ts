@@ -1,3 +1,9 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0 AND MIT
+ */
+
 import JSZip from 'jszip'
 import { fetchConversation, getCurrentChatId, processConversation } from '../api'
 import { KEY_TIMESTAMP_24H, KEY_TIMESTAMP_ENABLED, KEY_TIMESTAMP_HTML, baseUrl } from '../constants'
@@ -8,7 +14,12 @@ import { downloadFile, getFileNameWithFormat } from '../utils/download'
 import { fromMarkdown, toHtml } from '../utils/markdown'
 import { ScriptStorage } from '../utils/storage'
 import { standardizeLineBreaks } from '../utils/text'
+import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
+import { shouldIncludeMessageForExport } from './messageClassifier'
+import { getExportAuthorLabel } from './messageLabel'
 import { dateStr, getColorScheme, timestamp, unixTimestampToISOString } from '../utils/utils'
+import { normalizeReferenceText, replaceReferenceTokens, stripUiTokens } from './shared'
+import { sanitizeLLMText } from './textSanitizer'
 import type { ApiConversationWithId, ConversationNodeMessage, ConversationResult } from '../api'
 import type { ExportMeta } from '../ui/SettingContext'
 
@@ -68,7 +79,25 @@ export async function exportAllToHtml(fileNameFormat: string, apiConversations: 
     return true
 }
 
-function conversationToHtml(conversation: ConversationResult, avatar: string, metaList?: ExportMeta[]) {
+function resolveDocumentLanguage(): string {
+    if (typeof document !== 'object') return 'en'
+    return document.documentElement.lang || 'en'
+}
+
+function resolveColorScheme(): 'light' | 'dark' {
+    if (typeof document !== 'object') return 'light'
+    return getColorScheme() || 'light'
+}
+
+export function conversationToHtml(
+    conversation: ConversationResult,
+    avatar: string,
+    metaList?: ExportMeta[],
+    options?: {
+        lang?: string
+        theme?: 'light' | 'dark'
+    },
+) {
     const { id, title, model, modelSlug, createTime, updateTime, conversationNodes } = conversation
 
     const enableTimestamp = ScriptStorage.get<boolean>(KEY_TIMESTAMP_ENABLED) ?? false
@@ -78,28 +107,10 @@ function conversationToHtml(conversation: ConversationResult, avatar: string, me
     const LatexRegex = /(\s\$\$.+?\$\$\s|\s\$.+?\$\s|\\\[.+?\\\]|\\\(.+?\\\))|(^\$$[\S\s]+?^\$$)|(^\$\$[\S\s]+?^\$\$\$)/gm
 
     const conversationHtml = conversationNodes.map(({ message }) => {
-        if (!message || !message.content) return null
+        if (!message?.content) return null
+        if (!shouldIncludeMessageForExport(message)) return null
 
-        // ChatGPT is talking to tool
-        if (message.recipient !== 'all') return null
-
-        // Skip tool's intermediate message.
-        if (message.author.role === 'tool') {
-            if (
-                // HACK: we special case the content_type 'multimodal_text' here because it is used by
-                // the dalle tool to return the image result, and we do want to show that.
-                message.content.content_type !== 'multimodal_text'
-                // Code execution result with image
-            && !(
-                message.content.content_type === 'execution_output'
-                && message.metadata?.aggregate_result?.messages?.some(msg => msg.message_type === 'image')
-            )
-            ) {
-                return null
-            }
-        }
-
-        const author = transformAuthor(message.author)
+        const author = getExportAuthorLabel(message)
         const model = message?.metadata?.model_slug === 'gpt-4' ? 'GPT-4' : 'GPT-3'
         const authorType = message.author.role === 'user' ? 'user' : model
         const avatarEl = message.author.role === 'user'
@@ -148,7 +159,7 @@ function conversationToHtml(conversation: ConversationResult, avatar: string, me
             postSteps = [...postSteps, input => `<p class="no-katex">${escapeHtml(input)}</p>`]
         }
         const postProcess = (input: string) => postSteps.reduce((acc, fn) => fn(acc), input)
-        const content = transformContent(message.content, message.metadata, postProcess)
+        const content = sanitizeLLMText(transformContent(message.content, message.metadata, postProcess))
 
         const timestamp = message?.create_time ?? ''
         const showTimestamp = enableTimestamp && timeStampHtml && timestamp
@@ -179,8 +190,8 @@ function conversationToHtml(conversation: ConversationResult, avatar: string, me
     const date = dateStr()
     const time = new Date().toISOString()
     const source = `${baseUrl}/c/${id}`
-    const lang = document.documentElement.lang ?? 'en'
-    const theme = getColorScheme()
+    const lang = options?.lang || resolveDocumentLanguage()
+    const theme = options?.theme || resolveColorScheme()
 
     const _metaList = metaList
         ?.filter(x => !!x.name)
@@ -220,19 +231,6 @@ function conversationToHtml(conversation: ConversationResult, avatar: string, me
     return html
 }
 
-function transformAuthor(author: ConversationNodeMessage['author']): string {
-    switch (author.role) {
-        case 'assistant':
-            return 'ChatGPT'
-        case 'user':
-            return 'You'
-        case 'tool':
-            return `Plugin${author.name ? ` (${author.name})` : ''}`
-        default:
-            return author.role
-    }
-}
-
 /**
  * Transform foot notes in assistant's message
  */
@@ -260,17 +258,10 @@ function transformContentReferences(
 
     const sortedRefs = [...contentRefs].sort((a, b) => (b.matched_text?.length || 0) - (a.matched_text?.length || 0))
 
-    // Normalize unicode variants (non-breaking spaces, non-breaking hyphens) to regular ASCII
-    const normalize = (s: string) => s
-        .replaceAll(/[\u00A0\u202F\u2007\u2060]/gu, ' ')
-        .replaceAll(/[\u2010-\u2015\u2212]/gu, '-')
-
-    let output = normalize(input)
+    let output = normalizeReferenceText(input)
 
     for (const ref of sortedRefs) {
         if (!ref.matched_text) continue
-
-        const matchedText = normalize(ref.matched_text)
 
         switch (ref.type) {
             case 'sources_footnote':
@@ -287,17 +278,17 @@ function transformContentReferences(
                         links.push(`[${sw.attribution || sw.title}](${sw.url})`)
                     }
                     // Markdown links will be converted to HTML by the subsequent toHtml step
-                    output = output.replaceAll(matchedText, `(${links.join(', ')})`)
+                    output = replaceReferenceTokens(output, ref.matched_text, `(${links.join(', ')})`)
                 }
                 else {
-                    output = output.replaceAll(matchedText, ref.alt || '')
+                    output = replaceReferenceTokens(output, ref.matched_text, ref.alt || '')
                 }
                 break
             }
             default:
                 // Use ref.alt which contains display text or pre-formatted markdown link
                 // Markdown links will be converted to HTML by the subsequent toHtml step
-                output = output.replaceAll(matchedText, ref.alt || '')
+                output = replaceReferenceTokens(output, ref.matched_text, ref.alt || '')
         }
     }
     return output
@@ -313,19 +304,20 @@ function transformContent(
 ) {
     switch (content.content_type) {
         case 'text':
-            return postProcess(content.parts?.join('\n') || '')
+            return postProcess(stripUiTokens(content.parts?.join('\n') || ''))
         case 'code':
-            return `Code:\n\`\`\`\n${content.text}\n\`\`\`` || ''
-        case 'execution_output':
-            if (metadata?.aggregate_result?.messages) {
-                return metadata.aggregate_result.messages
-                    .filter(msg => msg.message_type === 'image')
-                    .map(msg => `<img src="${msg.image_url}" height="${msg.height}" width="${msg.width}" />`)
+            return `Code:\n\`\`\`\n${stripUiTokens(content.text)}\n\`\`\``
+        case 'execution_output': {
+            const images = getExecutionOutputImages(metadata)
+            if (images.length > 0) {
+                return images
+                    .map(image => `<img src="${image.image_url}" height="${image.height}" width="${image.width}" />`)
                     .join('\n')
             }
-            return postProcess(`Result:\n\`\`\`\n${content.text}\n\`\`\`` || '')
+            return postProcess(`Result:\n\`\`\`\n${getExecutionOutputText(content)}\n\`\`\``)
+        }
         case 'tether_quote':
-            return postProcess(`> ${content.title || content.text || ''}`)
+            return postProcess(`> ${stripUiTokens(content.title || content.text || '')}`)
         case 'tether_browsing_code':
             return postProcess('') // TODO: implement
         case 'tether_browsing_display': {
@@ -339,9 +331,9 @@ function transformContent(
         }
         case 'multimodal_text': {
             return content.parts?.map((part) => {
-                if (typeof part === 'string') return postProcess(part)
+                if (typeof part === 'string') return postProcess(stripUiTokens(part))
                 if (part.content_type === 'image_asset_pointer') return `<img src="${part.asset_pointer}" height="${part.height}" width="${part.width}" />`
-                if (part.content_type === 'audio_transcription') return `<div style="font-style: italic; opacity: 0.65;">“${part.text}”</div>`
+                if (part.content_type === 'audio_transcription') return `<div style="font-style: italic; opacity: 0.65;">“${stripUiTokens(part.text)}”</div>`
                 if (part.content_type === 'audio_asset_pointer') return null
                 if (part.content_type === 'real_time_user_audio_video_asset_pointer') return null
                 return postProcess('[Unsupported multimodal content]')

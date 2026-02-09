@@ -1,3 +1,8 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * SPDX-License-Identifier: MIT
+ */
+
 import { useSyncExternalStore } from 'preact/compat'
 import { noop } from '../utils/utils'
 

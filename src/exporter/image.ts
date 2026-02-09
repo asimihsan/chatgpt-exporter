@@ -1,3 +1,9 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0 AND MIT
+ */
+
 import html2canvas from 'html2canvas'
 import i18n from '../i18n'
 import { checkIfConversationStarted, getChatIdFromUrl } from '../page'
@@ -95,7 +101,6 @@ export async function exportToPng(fileNameFormat: string) {
             })
         }
         catch (error) {
-            // eslint-disable-next-line no-console
             console.log(`ChatGPT Exporter:takeScreenshot with height=${height} width=${width} scale=${scale}`)
             console.error('Failed to take screenshot', error)
         }

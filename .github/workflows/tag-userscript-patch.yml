@@ -1,0 +1,33 @@
+name: Tag Userscript Patch
+
+on:
+  push:
+    branches:
+      - main
+      - master
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tag-userscript-patch-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  tag:
+    if: "!contains(github.event.head_commit.message, 'chore: ci build')"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Create next patch tag
+        env:
+          TAG_PREFIX: userscript-v
+          TAG_REMOTE: origin
+          MAX_ATTEMPTS: "8"
+        run: bash scripts/release/create-next-userscript-tag.sh

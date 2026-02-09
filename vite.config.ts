@@ -1,7 +1,22 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0 AND MIT
+ */
+
 import preact from '@preact/preset-vite'
 import { defineConfig } from 'vite'
 import monkey, { cdn } from 'vite-plugin-monkey'
 import packageJson from './package.json'
+
+const defaultUserscriptRepo = process.env.GITHUB_REPOSITORY ?? 'asimihsan/chatgpt-exporter'
+const defaultUserscriptBranch = process.env.GITHUB_REF_NAME
+    ?? process.env.GITHUB_BASE_REF
+    ?? process.env.GITHUB_HEAD_REF
+    ?? 'master'
+const userscriptRepo = process.env.USERSCRIPT_GITHUB_REPO ?? defaultUserscriptRepo
+const userscriptBranch = process.env.USERSCRIPT_GITHUB_BRANCH ?? defaultUserscriptBranch
+const userscriptDistBaseUrl = `https://raw.githubusercontent.com/${userscriptRepo}/${userscriptBranch}/dist`
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -30,6 +45,8 @@ export default defineConfig({
                     'zh-TW': packageJson['description:zh-TW'],
                 },
                 'license': packageJson.license,
+                'updateURL': `${userscriptDistBaseUrl}/chatgpt.meta.js`,
+                'downloadURL': `${userscriptDistBaseUrl}/chatgpt.user.js`,
                 'match': [
                     'https://chat.openai.com/',
                     // support https://chat.openai.com/?model={model}
@@ -65,24 +82,32 @@ export default defineConfig({
                     'https://new.oaifree.com/share/*/continue',
                 ],
                 'icon': 'https://chat.openai.com/favicon.ico',
+                'grant': [
+                    'GM_getValue',
+                    'GM_setValue',
+                    'GM_deleteValue',
+                    'GM_registerMenuCommand',
+                    'GM.registerMenuCommand',
+                    'unsafeWindow',
+                ],
                 'run-at': 'document-end',
             },
             build: {
                 fileName: 'chatgpt.user.js',
+                metaFileName: true,
                 externalGlobals: [
                     ['jszip', cdn.jsdelivr('JSZip', 'dist/jszip.min.js')],
                     ['html2canvas', cdn.jsdelivr('html2canvas', 'dist/html2canvas.min.js')],
                 ],
-                cssSideEffects() {
-                    return (e) => {
-                        const o = document.createElement('style')
-                        o.textContent = e
-                        document.head.append(o)
-                        setInterval(() => {
-                            if (o.isConnected) return
-                            document.head.append(o)
-                        }, 300)
-                    }
+                cssSideEffects: (css: string) => {
+                    const styleElement = document.createElement('style')
+                    styleElement.textContent = css
+                    document.head.append(styleElement)
+
+                    setInterval(() => {
+                        if (styleElement.isConnected) return
+                        document.head.append(styleElement)
+                    }, 300)
                 },
             },
             server: {
@@ -91,6 +116,7 @@ export default defineConfig({
         }),
     ],
     build: {
+        minify: false,
         cssMinify: false,
     },
 })

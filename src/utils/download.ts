@@ -1,3 +1,8 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * SPDX-License-Identifier: MIT
+ */
+
 import sanitize from 'sanitize-filename'
 import { dateStr, timestamp, unixTimestampToISOString } from './utils'
 

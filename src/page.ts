@@ -1,3 +1,8 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * SPDX-License-Identifier: MIT
+ */
+
 import { unsafeWindow } from 'vite-plugin-monkey/dist/client'
 import { KEY_OAI_HISTORY_DISABLED } from './constants'
 import { getBase64FromImageUrl, getBase64FromImg } from './utils/dom'

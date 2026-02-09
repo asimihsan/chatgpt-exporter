@@ -1,3 +1,9 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0 AND MIT
+ */
+
 import EventEmitter from 'mitt'
 import { sleep } from './utils'
 
@@ -41,7 +47,7 @@ export class RequestQueue<T> {
     start() {
         if (this.status === 'IDLE') {
             this.total = this.queue.length
-            this.process()
+            void this.process()
         }
     }
 
@@ -96,7 +102,7 @@ export class RequestQueue<T> {
         }
 
         await sleep(this.backoff)
-        this.process()
+        void this.process()
     }
 
     private progress(name: string, status: 'processing' | 'retrying') {

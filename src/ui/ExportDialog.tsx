@@ -1,3 +1,9 @@
+/**
+ * Copyright 2022-Present Pionxzh
+ * Copyright 2026 Asim Ihsan
+ * SPDX-License-Identifier: MPL-2.0 AND MIT
+ */
+
 import * as Dialog from '@radix-ui/react-dialog'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'preact/hooks'
 import { useTranslation } from 'react-i18next'
@@ -7,6 +13,8 @@ import { exportAllToJson, exportAllToOfficialJson } from '../exporter/json'
 import { exportAllToMarkdown } from '../exporter/markdown'
 import { RequestQueue } from '../utils/queue'
 import { CheckBox } from './CheckBox'
+import { EXPORT_DIALOG_CLASS_NAMES } from './dialogClassNames'
+import { parseLocalConversationsFromUpload } from './exportDialogUpload'
 import { IconCross, IconUpload } from './Icons'
 import { useSettingContext } from './SettingContext'
 import type { ApiConversationItem, ApiConversationWithId, ApiProjectInfo } from '../api'
@@ -144,20 +152,31 @@ const DialogContent: FC<DialogContentProps> = ({ format }) => {
     })
 
     const onUpload = useCallback((e: ChangeEvent<HTMLInputElement>) => {
-        const file = (e.target as HTMLInputElement)?.files?.[0]
+        const target = e.target as HTMLInputElement | null
+        const file = target?.files?.[0]
         if (!file) return
 
         const fileReader = new FileReader()
         fileReader.onload = () => {
-            const data = JSON.parse(fileReader.result as string)
-            if (!Array.isArray(data)) {
+            const fileContent = typeof fileReader.result === 'string' ? fileReader.result : ''
+            const data = parseLocalConversationsFromUpload(fileContent)
+
+            if (!data) {
                 alert(t('Invalid File Format'))
+                if (target) target.value = ''
                 return
             }
+
             setSelected([])
             setExportSource('Local')
             setLocalConversations(data)
+            if (target) target.value = ''
         }
+        fileReader.onerror = () => {
+            alert(t('Invalid File Format'))
+            if (target) target.value = ''
+        }
+
         fileReader.readAsText(file)
     }, [t, setExportSource, setLocalConversations])
 
@@ -192,7 +211,7 @@ const DialogContent: FC<DialogContentProps> = ({ format }) => {
         const off = requestQueue.on('done', (results) => {
             setProcessing(false)
             const callback = exportAllOptions.find(o => o.label === exportType)?.callback
-            if (callback) callback(format, results, metaList)
+            if (callback) void callback(format, results, metaList)
         })
         return () => off()
     }, [requestQueue, exportAllOptions, exportType, format, metaList])
@@ -237,7 +256,7 @@ const DialogContent: FC<DialogContentProps> = ({ format }) => {
 
         const results = localConversations.filter(c => selected.some(s => s.id === c.id))
         const callback = exportAllOptions.find(o => o.label === exportType)?.callback
-        if (callback) callback(format, results, metaList)
+        if (callback) void callback(format, results, metaList)
     }, [
         disabled,
         selected,
@@ -307,7 +326,7 @@ const DialogContent: FC<DialogContentProps> = ({ format }) => {
 
     return (
         <>
-            <Dialog.Title className="DialogTitle">{t('Export Dialog Title')}</Dialog.Title>
+            <Dialog.Title className={EXPORT_DIALOG_CLASS_NAMES.title}>{t('Export Dialog Title')}</Dialog.Title>
             <div className="flex items-center text-gray-600 dark:text-gray-300 flex justify-between border-b-[1px] pb-3 mb-3 dark:border-gray-700">
                 {t('Export from official export file')} (conversations.json)&nbsp;
                 {exportSource === 'API' && (
@@ -390,8 +409,8 @@ export const ExportDialog: FC<ExportDialogProps> = ({ format, open, onOpenChange
                 {children}
             </Dialog.Trigger>
             <Dialog.Portal>
-                <Dialog.Overlay className="DialogOverlay" />
-                <Dialog.Content className="DialogContent">
+                <Dialog.Overlay className={EXPORT_DIALOG_CLASS_NAMES.overlay} />
+                <Dialog.Content className={EXPORT_DIALOG_CLASS_NAMES.content}>
                     {open && <DialogContent format={format} />}
                 </Dialog.Content>
             </Dialog.Portal>
