@@ -3,7 +3,6 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-import urlcat from 'urlcat'
 import { apiUrl, baseUrl } from '../constants'
 import { getPageAccessToken } from '../page'
 import { memorize } from '../utils/memorize'
@@ -91,15 +90,41 @@ const enum ChatGPTCookie {
     Workspace = '_account',
 }
 
-const sessionApiUrl = urlcat(baseUrl, '/api/auth/session')
-const accountsCheckApiUrl = urlcat(apiUrl, '/accounts/check/v4-2023-04-27')
+type UrlParamValue = boolean | number | string | null | undefined
 
-export const getConversationApiUrl = (id: string) => urlcat(apiUrl, '/conversation/:id', { id })
-export const getConversationsApiUrl = (offset: number, limit: number) => urlcat(apiUrl, '/conversations', { offset, limit })
-export const getFileDownloadApiUrl = (id: string) => urlcat(apiUrl, '/files/:id/download', { id })
-export const getProjectsApiUrl = () => urlcat(apiUrl, '/gizmos/snorlax/sidebar', { conversations_per_gizmo: 0 })
+function buildUrl(base: string, path: string, params: Record<string, UrlParamValue> = {}): string {
+    const remainingParams: Record<string, UrlParamValue> = { ...params }
+    const resolvedPath = path.replace(/:([a-z0-9_]+)/gi, (_, key: string) => {
+        const value = remainingParams[key]
+        if (value === undefined || value === null) {
+            throw new Error(`Missing path parameter: ${key}`)
+        }
+        delete remainingParams[key]
+        return encodeURIComponent(String(value))
+    })
+
+    const baseUrl = new URL(base)
+    const url = new URL(baseUrl.origin)
+    url.pathname = `${baseUrl.pathname.replace(/\/$/, '')}${resolvedPath}`
+    Object.entries(remainingParams).forEach(([key, value]) => {
+        if (value === undefined || value === null) {
+            return
+        }
+        url.searchParams.set(key, String(value))
+    })
+
+    return url.toString()
+}
+
+const sessionApiUrl = buildUrl(baseUrl, '/api/auth/session')
+const accountsCheckApiUrl = buildUrl(apiUrl, '/accounts/check/v4-2023-04-27')
+
+export const getConversationApiUrl = (id: string) => buildUrl(apiUrl, '/conversation/:id', { id })
+export const getConversationsApiUrl = (offset: number, limit: number) => buildUrl(apiUrl, '/conversations', { offset, limit })
+export const getFileDownloadApiUrl = (id: string) => buildUrl(apiUrl, '/files/:id/download', { id })
+export const getProjectsApiUrl = () => buildUrl(apiUrl, '/gizmos/snorlax/sidebar', { conversations_per_gizmo: 0 })
 export const getProjectConversationsApiUrl = (gizmo: string, offset: number, limit: number) => {
-    return urlcat(apiUrl, '/gizmos/:gizmo/conversations', { gizmo, cursor: offset, limit })
+    return buildUrl(apiUrl, '/gizmos/:gizmo/conversations', { gizmo, cursor: offset, limit })
 }
 
 export async function fetchApi<T>(url: string, options?: RequestInit): Promise<T> {

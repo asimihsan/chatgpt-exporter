@@ -8,7 +8,7 @@ import js from '@eslint/js'
 import tsPlugin from '@typescript-eslint/eslint-plugin'
 import tsParser from '@typescript-eslint/parser'
 import globals from 'globals'
-import importPlugin from 'eslint-plugin-import'
+import importPlugin from 'eslint-plugin-import-x'
 import regexpPlugin from 'eslint-plugin-regexp'
 import reactHooks from 'eslint-plugin-react-hooks'
 
