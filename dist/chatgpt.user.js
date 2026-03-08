@@ -3261,9 +3261,24 @@ depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : de
       })
     ]);
   }
+  function getCurrentShareConversationId() {
+    const currentShareId = getChatIdFromUrl();
+    if (!currentShareId) {
+      return null;
+    }
+    return getConversationFromSharePage() ? currentShareId : null;
+  }
+  function getShareConversationId(chatId) {
+    if (chatId.startsWith("__share__")) {
+      return chatId.replace("__share__", "");
+    }
+    const currentShareId = getCurrentShareConversationId();
+    return currentShareId === chatId ? currentShareId : null;
+  }
   async function getCurrentChatId() {
-    if (isSharePage()) {
-      return `__share__${getChatIdFromUrl()}`;
+    const currentShareConversationId = getCurrentShareConversationId();
+    if (currentShareConversationId) {
+      return `__share__${currentShareConversationId}`;
     }
     const chatId = getChatIdFromUrl();
     if (chatId) return chatId;
@@ -3274,12 +3289,17 @@ depth: typeof opts.depth === "number" || opts.depth === false ? +opts.depth : de
     throw new Error("No chat id found.");
   }
   async function fetchConversation(chatId, shouldReplaceAssets) {
-    if (chatId.startsWith("__share__")) {
-      const id = chatId.replace("__share__", "");
+    const shareConversationId = getShareConversationId(chatId);
+    if (shareConversationId) {
       const shareConversation = getConversationFromSharePage();
-      await replaceImageAssets(shareConversation);
+      if (!shareConversation) {
+        throw new Error(`Shared conversation data was not found for id: ${shareConversationId}`);
+      }
+      if (shouldReplaceAssets) {
+        await replaceImageAssets(shareConversation);
+      }
       return {
-        id,
+        id: shareConversationId,
         ...shareConversation
       };
     }

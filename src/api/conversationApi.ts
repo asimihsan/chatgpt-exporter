@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-import { getChatIdFromUrl, getConversationFromSharePage, isSharePage } from '../page'
+import { getChatIdFromUrl, getConversationFromSharePage } from '../page'
 import { replaceImageAssets } from './assets'
 import {
     fetchApi,
@@ -21,9 +21,28 @@ import type {
     ApiProjectInfo,
 } from './types'
 
+function getCurrentShareConversationId(): string | null {
+    const currentShareId = getChatIdFromUrl()
+    if (!currentShareId) {
+        return null
+    }
+
+    return getConversationFromSharePage() ? currentShareId : null
+}
+
+function getShareConversationId(chatId: string): string | null {
+    if (chatId.startsWith('__share__')) {
+        return chatId.replace('__share__', '')
+    }
+
+    const currentShareId = getCurrentShareConversationId()
+    return currentShareId === chatId ? currentShareId : null
+}
+
 export async function getCurrentChatId(): Promise<string> {
-    if (isSharePage()) {
-        return `__share__${getChatIdFromUrl()}`
+    const currentShareConversationId = getCurrentShareConversationId()
+    if (currentShareConversationId) {
+        return `__share__${currentShareConversationId}`
     }
 
     const chatId = getChatIdFromUrl()
@@ -38,13 +57,19 @@ export async function getCurrentChatId(): Promise<string> {
 }
 
 export async function fetchConversation(chatId: string, shouldReplaceAssets: boolean): Promise<ApiConversationWithId> {
-    if (chatId.startsWith('__share__')) {
-        const id = chatId.replace('__share__', '')
-        const shareConversation = getConversationFromSharePage() as ApiConversation
-        await replaceImageAssets(shareConversation)
+    const shareConversationId = getShareConversationId(chatId)
+    if (shareConversationId) {
+        const shareConversation = getConversationFromSharePage() as ApiConversation | null
+        if (!shareConversation) {
+            throw new Error(`Shared conversation data was not found for id: ${shareConversationId}`)
+        }
+
+        if (shouldReplaceAssets) {
+            await replaceImageAssets(shareConversation)
+        }
 
         return {
-            id,
+            id: shareConversationId,
             ...shareConversation,
         }
     }
