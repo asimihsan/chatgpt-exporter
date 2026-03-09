@@ -4,7 +4,7 @@
  */
 
 import { describe, expect, it } from 'vitest'
-import { replaceReferenceTokens, shouldSkipMessage, stripUiTokens } from './shared'
+import { extractDeepResearchReportMessage, replaceReferenceTokens, resolveExportMessage, shouldSkipMessage, stripUiTokens } from './shared'
 import type { ConversationNodeMessage } from '../api'
 
 function createMessage(overrides?: Partial<ConversationNodeMessage>): ConversationNodeMessage {
@@ -41,6 +41,75 @@ describe('replaceReferenceTokens', () => {
         const output = replaceReferenceTokens(input, rawToken, '(Mozilla Add-ons)')
 
         expect(output).toBe('raw=(Mozilla Add-ons); clean=(Mozilla Add-ons)')
+    })
+})
+
+describe('deep research report extraction', () => {
+    it('surfaces report_message from chatgpt_sdk.widget_state for export', () => {
+        const reportMessage = createMessage({
+            id: 'report-message',
+            content: {
+                content_type: 'text',
+                parts: ['# Deep Research Report'],
+            },
+        })
+        const toolMessage = createMessage({
+            author: {
+                role: 'tool',
+                name: 'api_tool.call_tool',
+                metadata: {},
+            },
+            content: {
+                content_type: 'code',
+                language: 'unknown',
+                text: '{"session_id":"abc"}',
+            },
+            metadata: {
+                chatgpt_sdk: {
+                    html_asset_pointer: 'internal://deep-research',
+                    widget_state: JSON.stringify({
+                        status: 'completed',
+                        report_message: reportMessage,
+                    }),
+                },
+            },
+        })
+
+        expect(extractDeepResearchReportMessage(toolMessage)).toEqual(reportMessage)
+        expect(resolveExportMessage(toolMessage)).toEqual(reportMessage)
+    })
+
+    it('does not unwrap report_message for non deep research widgets', () => {
+        const toolMessage = createMessage({
+            author: {
+                role: 'tool',
+                name: 'api_tool.call_tool',
+                metadata: {},
+            },
+            content: {
+                content_type: 'code',
+                language: 'unknown',
+                text: '{"session_id":"abc"}',
+            },
+            metadata: {
+                chatgpt_sdk: {
+                    html_asset_pointer: 'internal://some-other-widget',
+                    widget_state: JSON.stringify({
+                        status: 'completed',
+                        report_message: createMessage({
+                            id: 'report-message',
+                            content: {
+                                content_type: 'text',
+                                parts: ['# Other Widget Report'],
+                            },
+                        }),
+                    }),
+                },
+            },
+        })
+
+        expect(extractDeepResearchReportMessage(toolMessage)).toBeNull()
+        expect(resolveExportMessage(toolMessage)).toEqual(toolMessage)
     })
 })
 

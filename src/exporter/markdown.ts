@@ -17,7 +17,7 @@ import { getExecutionOutputImages, getExecutionOutputText } from './executionOut
 import { shouldIncludeMessageForExport } from './messageClassifier'
 import { getExportAuthorLabel } from './messageLabel'
 import { dateStr, timestamp, unixTimestampToISOString } from '../utils/utils'
-import { normalizeReferenceText, replaceReferenceTokens, stripUiTokens } from './shared'
+import { normalizeReferenceText, replaceReferenceTokens, resolveExportMessage, stripUiTokens } from './shared'
 import { sanitizeLLMText } from './textSanitizer'
 import type { ApiConversationWithId, Citation, ConversationNodeMessage, ConversationResult } from '../api'
 import type { ExportMeta } from '../ui/SettingContext'
@@ -105,10 +105,11 @@ export function conversationToMarkdown(conversation: ConversationResult, metaLis
     const timeStamp24H = ScriptStorage.get<boolean>(KEY_TIMESTAMP_24H) ?? false
 
     const content = conversationNodes.map(({ message }) => {
-        if (!message?.content) return null
-        if (!shouldIncludeMessageForExport(message)) return null
+        const exportMessage = resolveExportMessage(message)
+        if (!exportMessage?.content) return null
+        if (!shouldIncludeMessageForExport(exportMessage)) return null
 
-        const timestamp = message?.create_time ?? ''
+        const timestamp = exportMessage.create_time ?? ''
         const showTimestamp = enableTimestamp && timeStampMarkdown && timestamp
         let timestampHtml = ''
         if (showTimestamp) {
@@ -118,17 +119,17 @@ export function conversationToMarkdown(conversation: ConversationResult, metaLis
             timestampHtml = `<time datetime="${date.toISOString()}" title="${date.toLocaleString()}">${conversationTime}</time>\n\n`
         }
 
-        const author = getExportAuthorLabel(message)
+        const author = getExportAuthorLabel(exportMessage)
 
         const postSteps: Array<(input: string) => string> = []
-        if (message.author.role === 'assistant') {
+        if (exportMessage.author.role === 'assistant') {
             // Handle new-style content references (web search citations with Unicode markers)
-            postSteps.push(input => transformContentReferences(input, message.metadata))
+            postSteps.push(input => transformContentReferences(input, exportMessage.metadata))
             // Handle old-style footnotes (【11†(PrintWiki)】 format)
-            postSteps.push(input => transformFootNotes(input, message.metadata))
+            postSteps.push(input => transformFootNotes(input, exportMessage.metadata))
         }
         // Only message from assistant will be reformatted
-        if (message.author.role === 'assistant') {
+        if (exportMessage.author.role === 'assistant') {
             postSteps.push((input) => {
                 // Replace mathematical formula annotation
                 input = input
@@ -161,7 +162,7 @@ export function conversationToMarkdown(conversation: ConversationResult, metaLis
             })
         }
         const postProcess = (input: string) => postSteps.reduce((acc, fn) => fn(acc), input)
-        const content = sanitizeLLMText(transformContent(message.content, message.metadata, postProcess))
+        const content = sanitizeLLMText(transformContent(exportMessage.content, exportMessage.metadata, postProcess))
 
         return `#### ${author}:\n${timestampHtml}${content}`
     }).filter(Boolean).join('\n\n')

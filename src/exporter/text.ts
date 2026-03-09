@@ -13,7 +13,7 @@ import { standardizeLineBreaks } from '../utils/text'
 import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
 import { shouldIncludeMessageForExport } from './messageClassifier'
 import { getExportAuthorLabel } from './messageLabel'
-import { normalizeReferenceText, replaceReferenceTokens, stripUiTokens } from './shared'
+import { normalizeReferenceText, replaceReferenceTokens, resolveExportMessage, stripUiTokens } from './shared'
 import { sanitizeLLMText } from './textSanitizer'
 import type { ConversationNodeMessage } from '../api'
 import type { Emphasis, Strong } from 'mdast'
@@ -43,11 +43,12 @@ export async function exportToText() {
 const LatexRegex = /(\s\$\$.+\$\$\s|\s\$.+\$\s|\\\[.+\\\]|\\\(.+\\\))|(^\$$[\S\s]+^\$$)|(^\$\$[\S\s]+^\$\$$)/gm
 
 export function transformMessageForTextExport(message?: ConversationNodeMessage) {
-    if (!message?.content) return null
-    if (!shouldIncludeMessageForExport(message)) return null
+    const exportMessage = resolveExportMessage(message)
+    if (!exportMessage?.content) return null
+    if (!shouldIncludeMessageForExport(exportMessage)) return null
 
-    const author = getExportAuthorLabel(message)
-    let content = transformContent(message.content, message.metadata)
+    const author = getExportAuthorLabel(exportMessage)
+    let content = transformContent(exportMessage.content, exportMessage.metadata)
 
     const matches = content.match(LatexRegex)
     if (matches) {
@@ -58,13 +59,13 @@ export function transformMessageForTextExport(message?: ConversationNodeMessage)
         })
     }
 
-    if (message.author.role === 'assistant') {
-        content = transformContentReferences(content, message.metadata)
-        content = transformFootNotes(content, message.metadata)
+    if (exportMessage.author.role === 'assistant') {
+        content = transformContentReferences(content, exportMessage.metadata)
+        content = transformFootNotes(content, exportMessage.metadata)
     }
 
     // Only message from assistant will be reformatted
-    if (message.author.role === 'assistant' && content) {
+    if (exportMessage.author.role === 'assistant' && content) {
         content = reformatContent(content)
     }
 

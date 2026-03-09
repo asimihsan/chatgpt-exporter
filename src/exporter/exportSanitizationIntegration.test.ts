@@ -156,4 +156,65 @@ describe('text-like exporter sanitization integration', () => {
         expect(html).not.toContain(token)
         expect(html).not.toContain('\u200B')
     })
+
+    it('exports deep research widget reports instead of the widget bootstrap payload', () => {
+        const reportToken = '\uE200cite\uE202turn0search0\uE201'
+        const toolMessage = createMessage({
+            id: 'tool-widget-message',
+            author: {
+                role: 'tool',
+                name: 'api_tool.call_tool',
+                metadata: {},
+            },
+            content: {
+                content_type: 'code',
+                language: 'unknown',
+                text: '{"session_id":"deep-research-session"}',
+            },
+            metadata: {
+                chatgpt_sdk: {
+                    html_asset_pointer: 'internal://deep-research',
+                    widget_state: JSON.stringify({
+                        status: 'completed',
+                        report_message: createMessage({
+                            id: 'report-message',
+                            content: {
+                                content_type: 'text',
+                                parts: [`# Deep Research Report\n\nSummary ${reportToken}`],
+                            },
+                            metadata: {
+                                content_references: [
+                                    {
+                                        type: 'alt_text',
+                                        matched_text: reportToken,
+                                        start_idx: 0,
+                                        end_idx: reportToken.length,
+                                        alt: 'Primary Source',
+                                    },
+                                ],
+                            },
+                        }),
+                    }),
+                },
+            },
+        })
+        const conversation = createConversation([toolMessage])
+
+        const text = transformMessageForTextExport(toolMessage)
+        const markdown = conversationToMarkdown(conversation)
+        const html = conversationToHtml(conversation, 'data:,avatar', undefined, { lang: 'en' })
+
+        expect(text).toContain('ChatGPT:\n# Deep Research Report')
+        expect(text).toContain('Summary Primary Source')
+        expect(text).not.toContain('deep-research-session')
+
+        expect(markdown).toContain('#### ChatGPT:')
+        expect(markdown).toContain('# Deep Research Report')
+        expect(markdown).toContain('Summary Primary Source')
+        expect(markdown).not.toContain('deep-research-session')
+
+        expect(html).toContain('Deep Research Report')
+        expect(html).toContain('Summary Primary Source')
+        expect(html).not.toContain('deep-research-session')
+    })
 })

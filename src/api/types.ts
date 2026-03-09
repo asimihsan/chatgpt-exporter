@@ -64,6 +64,11 @@ interface CiteMetadata {
 }
 
 interface MessageMeta {
+    chatgpt_sdk?: {
+        html_asset_pointer?: string
+        resolved_pineapple_uri?: string
+        widget_state?: unknown
+    }
     aggregate_result?: {
         code: string
         final_expression_output?: string

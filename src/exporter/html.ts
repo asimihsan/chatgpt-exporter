@@ -18,7 +18,7 @@ import { getExecutionOutputImages, getExecutionOutputText } from './executionOut
 import { shouldIncludeMessageForExport } from './messageClassifier'
 import { getExportAuthorLabel } from './messageLabel'
 import { dateStr, getColorScheme, timestamp, unixTimestampToISOString } from '../utils/utils'
-import { normalizeReferenceText, replaceReferenceTokens, stripUiTokens } from './shared'
+import { normalizeReferenceText, replaceReferenceTokens, resolveExportMessage, stripUiTokens } from './shared'
 import { sanitizeLLMText } from './textSanitizer'
 import type { ApiConversationWithId, ConversationNodeMessage, ConversationResult } from '../api'
 import type { ExportMeta } from '../ui/SettingContext'
@@ -107,22 +107,23 @@ export function conversationToHtml(
     const LatexRegex = /(\s\$\$.+?\$\$\s|\s\$.+?\$\s|\\\[.+?\\\]|\\\(.+?\\\))|(^\$$[\S\s]+?^\$$)|(^\$\$[\S\s]+?^\$\$\$)/gm
 
     const conversationHtml = conversationNodes.map(({ message }) => {
-        if (!message?.content) return null
-        if (!shouldIncludeMessageForExport(message)) return null
+        const exportMessage = resolveExportMessage(message)
+        if (!exportMessage?.content) return null
+        if (!shouldIncludeMessageForExport(exportMessage)) return null
 
-        const author = getExportAuthorLabel(message)
-        const model = message?.metadata?.model_slug === 'gpt-4' ? 'GPT-4' : 'GPT-3'
-        const authorType = message.author.role === 'user' ? 'user' : model
-        const avatarEl = message.author.role === 'user'
+        const author = getExportAuthorLabel(exportMessage)
+        const model = exportMessage.metadata?.model_slug === 'gpt-4' ? 'GPT-4' : 'GPT-3'
+        const authorType = exportMessage.author.role === 'user' ? 'user' : model
+        const avatarEl = exportMessage.author.role === 'user'
             ? `<img alt="${author}" />`
             : '<svg width="41" height="41"><use xlink:href="#chatgpt" /></svg>'
 
         let postSteps: Array<(input: string) => string> = []
-        if (message.author.role === 'assistant') {
+        if (exportMessage.author.role === 'assistant') {
             // Handle old-style footnotes (【11†(PrintWiki)】 format)
-            postSteps.push(input => transformFootNotes(input, message.metadata))
+            postSteps.push(input => transformFootNotes(input, exportMessage.metadata))
             // Handle new-style content references (web search citations with Unicode markers)
-            postSteps.push(input => transformContentReferences(input, message.metadata))
+            postSteps.push(input => transformContentReferences(input, exportMessage.metadata))
 
             postSteps.push((input) => {
                 const matches = input.match(LatexRegex)
@@ -155,13 +156,13 @@ export function conversationToHtml(
                 return transformed
             })
         }
-        if (message.author.role === 'user') {
+        if (exportMessage.author.role === 'user') {
             postSteps = [...postSteps, input => `<p class="no-katex">${escapeHtml(input)}</p>`]
         }
         const postProcess = (input: string) => postSteps.reduce((acc, fn) => fn(acc), input)
-        const content = sanitizeLLMText(transformContent(message.content, message.metadata, postProcess))
+        const content = sanitizeLLMText(transformContent(exportMessage.content, exportMessage.metadata, postProcess))
 
-        const timestamp = message?.create_time ?? ''
+        const timestamp = exportMessage.create_time ?? ''
         const showTimestamp = enableTimestamp && timeStampHtml && timestamp
         let timestampHtml = ''
 
