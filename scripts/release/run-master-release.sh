@@ -34,8 +34,6 @@ while (( attempt < max_attempts )); do
         exit 0
     fi
 
-    mise check
-
     version="$(node scripts/release/prepare-userscript-release.mjs)"
     echo "Prepared release version ${version}"
 

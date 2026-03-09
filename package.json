@@ -39,8 +39,7 @@
     "deps:check": "bun outdated",
     "lint": "eslint . --config eslint.type-aware.config.js --max-warnings=0",
     "lint:type-aware": "eslint . --config eslint.type-aware.config.js --max-warnings=0",
-    "lint:fix": "eslint . --fix",
-    "prepare": "husky"
+    "lint:fix": "eslint . --fix"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
@@ -83,15 +82,10 @@
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-regexp": "^3.1.0",
     "globals": "^17.4.0",
-    "husky": "^9.1.7",
     "katex": "^0.16.38",
-    "lint-staged": "^16.3.2",
     "rollup": "^4.59.0",
     "typescript": "^5.9.3",
     "vite": "^7.3.1",
     "vitest": "^4.0.18"
-  },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": "bunx eslint"
   }
 }
