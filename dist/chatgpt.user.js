@@ -3,7 +3,7 @@
 // @name:zh-CN         ChatGPT Exporter
 // @name:zh-TW         ChatGPT Exporter
 // @namespace          asimihsan
-// @version            2.29.7
+// @version            2.29.8
 // @author             asimihsan
 // @description        Easily export the whole ChatGPT conversation history for further analysis or sharing.
 // @description:zh-CN  轻松导出 ChatGPT 聊天记录，以便进一步分析或分享。
@@ -15983,6 +15983,45 @@ self2.previous !== null ||
     }
     return output;
   }
+  function parseWidgetState(widgetState) {
+    if (!widgetState) return null;
+    if (typeof widgetState === "string") {
+      try {
+        const parsed = JSON.parse(widgetState);
+        if (parsed && typeof parsed === "object") {
+          return parsed;
+        }
+      } catch {
+        return null;
+      }
+    }
+    if (typeof widgetState === "object") {
+      return widgetState;
+    }
+    return null;
+  }
+  function isDeepResearchWidgetMessage(message) {
+    const chatgptSdk = message?.metadata?.chatgpt_sdk;
+    return chatgptSdk?.html_asset_pointer === "internal://deep-research" || chatgptSdk?.resolved_pineapple_uri === "connectors://connector_openai_deep_research";
+  }
+  function isConversationNodeMessageLike(value) {
+    if (!value || typeof value !== "object") return false;
+    const candidate = value;
+    return typeof candidate.id === "string" && typeof candidate.status === "string" && typeof candidate.weight === "number" && !!candidate.author && typeof candidate.author.role === "string" && !!candidate.content && typeof candidate.content.content_type === "string" && typeof candidate.recipient === "string";
+  }
+  function extractDeepResearchReportMessage(message) {
+    if (!isDeepResearchWidgetMessage(message)) return null;
+    const widgetState = parseWidgetState(message?.metadata?.chatgpt_sdk?.widget_state);
+    const reportMessage = widgetState?.report_message;
+    if (!isConversationNodeMessageLike(reportMessage)) return null;
+    if (reportMessage.author.role !== "assistant") return null;
+    if (reportMessage.recipient !== "all") return null;
+    return reportMessage;
+  }
+  function resolveExportMessage(message) {
+    if (!message?.content) return null;
+    return extractDeepResearchReportMessage(message) ?? message;
+  }
   function isExecutionOutputImage(value) {
     if (typeof value !== "object" || value === null) return false;
     const maybeImage = value;
@@ -16149,10 +16188,11 @@ self2.previous !== null ||
   }
   const LatexRegex$1 = /(\s\$\$.+\$\$\s|\s\$.+\$\s|\\\[.+\\\]|\\\(.+\\\))|(^\$$[\S\s]+^\$$)|(^\$\$[\S\s]+^\$\$$)/gm;
   function transformMessageForTextExport(message) {
-    if (!message?.content) return null;
-    if (!shouldIncludeMessageForExport(message)) return null;
-    const author = getExportAuthorLabel(message);
-    let content2 = transformContent$2(message.content, message.metadata);
+    const exportMessage = resolveExportMessage(message);
+    if (!exportMessage?.content) return null;
+    if (!shouldIncludeMessageForExport(exportMessage)) return null;
+    const author = getExportAuthorLabel(exportMessage);
+    let content2 = transformContent$2(exportMessage.content, exportMessage.metadata);
     const matches = content2.match(LatexRegex$1);
     if (matches) {
       let index2 = 0;
@@ -16160,11 +16200,11 @@ self2.previous !== null ||
         return `╬${index2++}╬`;
       });
     }
-    if (message.author.role === "assistant") {
-      content2 = transformContentReferences$2(content2, message.metadata);
-      content2 = transformFootNotes$2(content2, message.metadata);
+    if (exportMessage.author.role === "assistant") {
+      content2 = transformContentReferences$2(content2, exportMessage.metadata);
+      content2 = transformFootNotes$2(content2, exportMessage.metadata);
     }
-    if (message.author.role === "assistant" && content2) {
+    if (exportMessage.author.role === "assistant" && content2) {
       content2 = reformatContent(content2);
     }
     if (matches) {
@@ -22334,16 +22374,17 @@ createTime = Math.floor(Date.now() / 1e3),
     const timeStamp24H = ScriptStorage.get(KEY_TIMESTAMP_24H) ?? false;
     const LatexRegex2 = /(\s\$\$.+?\$\$\s|\s\$.+?\$\s|\\\[.+?\\\]|\\\(.+?\\\))|(^\$$[\S\s]+?^\$$)|(^\$\$[\S\s]+?^\$\$\$)/gm;
     const conversationHtml = conversationNodes.map(({ message }) => {
-      if (!message?.content) return null;
-      if (!shouldIncludeMessageForExport(message)) return null;
-      const author = getExportAuthorLabel(message);
-      const model2 = message?.metadata?.model_slug === "gpt-4" ? "GPT-4" : "GPT-3";
-      const authorType = message.author.role === "user" ? "user" : model2;
-      const avatarEl = message.author.role === "user" ? `<img alt="${author}" />` : '<svg width="41" height="41"><use xlink:href="#chatgpt" /></svg>';
+      const exportMessage = resolveExportMessage(message);
+      if (!exportMessage?.content) return null;
+      if (!shouldIncludeMessageForExport(exportMessage)) return null;
+      const author = getExportAuthorLabel(exportMessage);
+      const model2 = exportMessage.metadata?.model_slug === "gpt-4" ? "GPT-4" : "GPT-3";
+      const authorType = exportMessage.author.role === "user" ? "user" : model2;
+      const avatarEl = exportMessage.author.role === "user" ? `<img alt="${author}" />` : '<svg width="41" height="41"><use xlink:href="#chatgpt" /></svg>';
       let postSteps = [];
-      if (message.author.role === "assistant") {
-        postSteps.push((input) => transformFootNotes$1(input, message.metadata));
-        postSteps.push((input) => transformContentReferences$1(input, message.metadata));
+      if (exportMessage.author.role === "assistant") {
+        postSteps.push((input) => transformFootNotes$1(input, exportMessage.metadata));
+        postSteps.push((input) => transformContentReferences$1(input, exportMessage.metadata));
         postSteps.push((input) => {
           const matches = input.match(LatexRegex2);
           const isCodeBlock = /```/.test(input);
@@ -22363,12 +22404,12 @@ createTime = Math.floor(Date.now() / 1e3),
           return transformed;
         });
       }
-      if (message.author.role === "user") {
+      if (exportMessage.author.role === "user") {
         postSteps = [...postSteps, (input) => `<p class="no-katex">${escapeHtml(input)}</p>`];
       }
       const postProcess = (input) => postSteps.reduce((acc, fn2) => fn2(acc), input);
-      const content2 = sanitizeLLMText(transformContent$1(message.content, message.metadata, postProcess));
-      const timestamp2 = message?.create_time ?? "";
+      const content2 = sanitizeLLMText(transformContent$1(exportMessage.content, exportMessage.metadata, postProcess));
+      const timestamp2 = exportMessage.create_time ?? "";
       const showTimestamp = enableTimestamp && timeStampHtml && timestamp2;
       let timestampHtml = "";
       if (showTimestamp) {
@@ -22835,9 +22876,10 @@ ${_metaList.join("\n")}
     const timeStampMarkdown = ScriptStorage.get(KEY_TIMESTAMP_MARKDOWN) ?? false;
     const timeStamp24H = ScriptStorage.get(KEY_TIMESTAMP_24H) ?? false;
     const content2 = conversationNodes.map(({ message }) => {
-      if (!message?.content) return null;
-      if (!shouldIncludeMessageForExport(message)) return null;
-      const timestamp2 = message?.create_time ?? "";
+      const exportMessage = resolveExportMessage(message);
+      if (!exportMessage?.content) return null;
+      if (!shouldIncludeMessageForExport(exportMessage)) return null;
+      const timestamp2 = exportMessage.create_time ?? "";
       const showTimestamp = enableTimestamp && timeStampMarkdown && timestamp2;
       let timestampHtml = "";
       if (showTimestamp) {
@@ -22847,13 +22889,13 @@ ${_metaList.join("\n")}
 
 `;
       }
-      const author = getExportAuthorLabel(message);
+      const author = getExportAuthorLabel(exportMessage);
       const postSteps = [];
-      if (message.author.role === "assistant") {
-        postSteps.push((input) => transformContentReferences(input, message.metadata));
-        postSteps.push((input) => transformFootNotes(input, message.metadata));
+      if (exportMessage.author.role === "assistant") {
+        postSteps.push((input) => transformContentReferences(input, exportMessage.metadata));
+        postSteps.push((input) => transformFootNotes(input, exportMessage.metadata));
       }
-      if (message.author.role === "assistant") {
+      if (exportMessage.author.role === "assistant") {
         postSteps.push((input) => {
           input = input.replace(/^\\\[(.+)\\\]$/gm, "$$$$$1$$$$").replace(/\\\[/g, "$").replace(/\\\]/g, "$").replace(/\\\(/g, "$").replace(/\\\)/g, "$");
           const matches = input.match(LatexRegex);
@@ -22874,7 +22916,7 @@ ${_metaList.join("\n")}
         });
       }
       const postProcess = (input) => postSteps.reduce((acc, fn2) => fn2(acc), input);
-      const content22 = sanitizeLLMText(transformContent(message.content, message.metadata, postProcess));
+      const content22 = sanitizeLLMText(transformContent(exportMessage.content, exportMessage.metadata, postProcess));
       return `#### ${author}:
 ${timestampHtml}${content22}`;
     }).filter(Boolean).join("\n\n");
