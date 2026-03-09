@@ -3,7 +3,7 @@
 // @name:zh-CN         ChatGPT Exporter
 // @name:zh-TW         ChatGPT Exporter
 // @namespace          asimihsan
-// @version            2.29.3
+// @version            2.29.7
 // @author             asimihsan
 // @description        Easily export the whole ChatGPT conversation history for further analysis or sharing.
 // @description:zh-CN  轻松导出 ChatGPT 聊天记录，以便进一步分析或分享。
