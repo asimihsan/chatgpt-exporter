@@ -3,15 +3,22 @@ name: Release
 on:
   push:
     branches:
-      - '**'
+      - master
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-master-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
   release:
-    if: "contains(github.event.head_commit.message, 'chore: release')"
+    if: "!startsWith(github.event.head_commit.message, 'chore: release v')"
     runs-on: ubuntu-latest
     env:
       USERSCRIPT_GITHUB_REPO: ${{ github.repository }}
-      USERSCRIPT_GITHUB_BRANCH: ${{ github.ref_name }}
+      USERSCRIPT_GITHUB_BRANCH: master
     defaults:
       run:
         shell: bash
@@ -35,30 +42,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-cache-
 
-      - name: CI
-        run: mise run ci
-
-      - name: Build
-        run: mise build
-
-      - name: Git commit
-        id: commit
-        run: |
-          git config --local user.email github-actions[bot]@users.noreply.github.com
-          git config --local user.name github-actions[bot]
-          git config --global core.autocrlf true
-          git config --global core.safecrlf false
-          git add .
-          git commit -m "chore: ci build" -a
-        continue-on-error: true
-
-      - name: Git push
-        uses: ad-m/github-push-action@master
-        if: ${{ steps.commit.outcome == 'success' }}
-        with:
-          github_token: ${{ secrets.GITHUB_TOKEN }}
-          branch: ${{ github.ref }}
-
-      - name: Log
-        if: ${{ steps.commit.outcome != 'success' }}
-        run: echo Nothing to commit.
+      - name: Release master userscript
+        env:
+          EVENT_SHA: ${{ github.sha }}
+          MAX_ATTEMPTS: "8"
+          RELEASE_BRANCH: master
+          TAG_PREFIX: userscript-v
+          TAG_REMOTE: origin
+        run: bash scripts/release/run-master-release.sh

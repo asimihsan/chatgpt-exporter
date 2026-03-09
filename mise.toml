@@ -88,6 +88,10 @@ depends = ["install"]
 run = "bun run test:unit"
 sources = [
   "src/**/*",
+  "scripts/**/*.sh",
+  "scripts/**/*.ts",
+  "scripts/**/*.js",
+  "scripts/**/*.mjs",
   "package.json",
   "bun.lock",
   "tsconfig*.json",

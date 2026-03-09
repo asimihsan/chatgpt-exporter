@@ -42,6 +42,8 @@
 [Install-2-image]: https://img.shields.io/badge/-Install-blue
 [Install-2-url]: https://raw.githubusercontent.com/asimihsan/chatgpt-exporter/master/dist/chatgpt.user.js
 
+URL instal GitHub di atas adalah URL auto-update stabil dan mengikuti build rilis terbaru di `master`.
+
 #
 
 [📚 Format yang Didukung](#-format-yang-didukung) &nbsp;&nbsp;|&nbsp;&nbsp; [💡 Contoh](#-contoh) &nbsp;&nbsp;|&nbsp;&nbsp; [📤 Ekspor Beberapa Percakapan](#-ekspor-beberapa-percakapan) &nbsp;&nbsp;|&nbsp;&nbsp; [🤝 Kontribusi](#-kontribusi) &nbsp;&nbsp;|&nbsp;&nbsp; [⭐ Sejarah Bintang](#-sejarah-bintang)

@@ -1,0 +1,25 @@
+name: Publish Userscript Release
+
+on:
+  push:
+    tags:
+      - userscript-v*
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: bash scripts/release/publish-github-release.sh

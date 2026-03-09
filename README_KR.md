@@ -42,6 +42,8 @@
 [Install-2-image]: https://img.shields.io/badge/-Install-blue
 [Install-2-url]: https://raw.githubusercontent.com/asimihsan/chatgpt-exporter/master/dist/chatgpt.user.js
 
+위 GitHub 설치 URL은 안정적인 자동 업데이트 URL이며 `master`의 최신 릴리스 빌드를 따라갑니다.
+
 #
 
 [📚 지원하는 형식](#-지원하는-형식) &nbsp;&nbsp;|&nbsp;&nbsp; [💡 예제](#-예제) &nbsp;&nbsp;|&nbsp;&nbsp; [📤 여러 대화 내보내기](#-여러-대화-내보내기) &nbsp;&nbsp;|&nbsp;&nbsp; [🤝 기여하기](#-기여하기) &nbsp;&nbsp;|&nbsp;&nbsp;[⭐ 별 기록](#-별-기록)

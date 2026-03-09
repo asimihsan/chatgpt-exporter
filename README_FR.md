@@ -42,6 +42,8 @@
 [Install-2-image]: https://img.shields.io/badge/-Installer-blue
 [Install-2-url]: https://raw.githubusercontent.com/asimihsan/chatgpt-exporter/master/dist/chatgpt.user.js
 
+L'URL d'installation GitHub ci-dessus est l'URL stable de mise a jour automatique et suit la derniere build de release sur `master`.
+
 #
 
 [📚 Formats Supportés](#-formats-supportés) &nbsp;&nbsp;|&nbsp;&nbsp; [💡 Exemple](#-exemple) &nbsp;&nbsp;|&nbsp;&nbsp; [📤 Exporter Plusieurs Conversations](#-exporter-plusieurs-conversations) &nbsp;&nbsp;|&nbsp;&nbsp; [🤝 Contribution](#-contribution) &nbsp;&nbsp;|&nbsp;&nbsp; [⭐ Historique des Étoiles](#-historique-des-étoiles)
