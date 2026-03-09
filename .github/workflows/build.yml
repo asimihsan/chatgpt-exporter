@@ -20,6 +20,11 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Fetch upstream licensing baseline
+        run: |
+          git remote add upstream https://github.com/pionxzh/chatgpt-exporter.git
+          git fetch --no-tags upstream master
+
       - uses: jdx/mise-action@v3
 
       - name: Cache Bun package cache

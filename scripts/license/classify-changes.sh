@@ -39,13 +39,13 @@ collect_spdx_change_summary() {
     local git_base_ref
     if ! git_base_ref="$(resolve_spdx_git_base_ref "${requested_git_base_ref}")"; then
         echo "Error: unable to determine a git base ref for SPDX classification." >&2
-        echo "Hint: set SPDX_GIT_BASE_REF (for example: origin/master)." >&2
+        echo "Hint: set SPDX_GIT_BASE_REF (for example: upstream/master)." >&2
         return 1
     fi
 
     if ! git rev-parse --verify "${git_base_ref}^{commit}" >/dev/null 2>&1; then
         echo "Error: git base ref '${git_base_ref}' does not resolve to a commit." >&2
-        echo "Hint: set SPDX_GIT_BASE_REF to an existing ref (for example: origin/master)." >&2
+        echo "Hint: set SPDX_GIT_BASE_REF to an existing ref (for example: upstream/master)." >&2
         return 1
     fi
 
@@ -108,12 +108,21 @@ resolve_spdx_git_base_ref() {
 
     local github_base_ref="${GITHUB_BASE_REF:-}"
     if [[ -n "${github_base_ref}" ]]; then
-        printf 'origin/%s\n' "${github_base_ref}"
-        return 0
+        local github_base_candidates=(
+            "upstream/${github_base_ref}"
+            "origin/${github_base_ref}"
+        )
+        local github_base_candidate
+        for github_base_candidate in "${github_base_candidates[@]}"; do
+            if git rev-parse --verify "${github_base_candidate}^{commit}" >/dev/null 2>&1; then
+                printf '%s\n' "${github_base_candidate}"
+                return 0
+            fi
+        done
     fi
 
     local candidate
-    for candidate in origin/master origin/main master main; do
+    for candidate in upstream/master upstream/main origin/master origin/main master main; do
         if git rev-parse --verify "${candidate}^{commit}" >/dev/null 2>&1; then
             printf '%s\n' "${candidate}"
             return 0

@@ -164,12 +164,11 @@ export function conversationToHtml(
         const timestamp = message?.create_time ?? ''
         const showTimestamp = enableTimestamp && timeStampHtml && timestamp
         let timestampHtml = ''
-        let conversationTime = ''
 
         if (showTimestamp) {
             const date = new Date(timestamp * 1000)
             // format: 20:12 / 08:12 PM
-            conversationTime = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: !timeStamp24H })
+            const conversationTime = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: !timeStamp24H })
             timestampHtml = `<time class="time" datetime="${date.toISOString()}" title="${date.toLocaleString()}">${conversationTime}</time>`
         }
 
