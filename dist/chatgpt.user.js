@@ -3,7 +3,7 @@
 // @name:zh-CN         ChatGPT Exporter
 // @name:zh-TW         ChatGPT Exporter
 // @namespace          asimihsan
-// @version            2.29.11
+// @version            2.29.12
 // @author             asimihsan
 // @description        Easily export the whole ChatGPT conversation history for further analysis or sharing.
 // @description:zh-CN  轻松导出 ChatGPT 聊天记录，以便进一步分析或分享。
@@ -16787,16 +16787,18 @@ self2.previous !== null ||
   }
   function getTitle(finding) {
     const commitAnalysis = asRecord(finding.commit_analysis);
-    return getString(commitAnalysis?.reason) ?? getString(commitAnalysis?.description)?.split(". ")[0] ?? `Finding ${finding.hid}`;
+    return getString(commitAnalysis?.title) ?? getString(commitAnalysis?.reason) ?? getString(commitAnalysis?.description)?.split(". ")[0] ?? `Finding ${finding.hid}`;
   }
   function buildSourceUrl(finding) {
     return `${baseUrl}/codex/security/findings/${encodeURIComponent(finding.hid)}`;
   }
   function buildSummarySection(finding) {
     const commitAnalysis = asRecord(finding.commit_analysis);
+    const description = getString(commitAnalysis?.description);
+    const reason = getString(commitAnalysis?.reason);
     const lines = [
-      getString(commitAnalysis?.description),
-      getString(commitAnalysis?.reason) ? `Reason: ${getString(commitAnalysis?.reason)}` : null,
+      description,
+      reason && (reason !== getTitle(finding) || !description) ? `Reason: ${reason}` : null,
       getString(commitAnalysis?.bugs_found_or_fixed) ? `Change impact: ${getString(commitAnalysis?.bugs_found_or_fixed)}` : null,
       getString(finding.criticality) ? `Severity: ${getString(finding.criticality)}` : null,
       getString(finding.status) ? `Status: ${getString(finding.status)}` : null
@@ -16809,15 +16811,28 @@ self2.previous !== null ||
       content: lines.join("\n\n")
     };
   }
+  function asStringList(value) {
+    if (!Array.isArray(value)) return [];
+    return value.map((item) => getString(item)).filter((item) => Boolean(item));
+  }
+  function buildMarkdownList(items) {
+    if (items.length === 0) return null;
+    return items.map((item) => `- ${item}`).join("\n");
+  }
   function buildValidationSection(finding) {
     const commitAnalysis = asRecord(finding.commit_analysis);
     const validation = getString(commitAnalysis?.validation_str);
-    if (!validation) return null;
+    const validationArtifact = getString(commitAnalysis?.validation_artifact);
+    const parts = [
+      validation,
+      validationArtifact ? `Validation artifact: ${validationArtifact}` : null
+    ].filter((value) => Boolean(value));
+    if (parts.length === 0) return null;
     return {
       id: "validation",
       title: "Validation",
       format: "markdown",
-      content: validation
+      content: parts.join("\n\n")
     };
   }
   function buildEvidenceSection(finding) {
@@ -16848,13 +16863,47 @@ ${content2}
     };
   }
   function buildAttackPathSection(finding) {
-    const attackPath = getString(finding.attack_path);
-    if (!attackPath) return null;
+    const commitAnalysis = asRecord(finding.commit_analysis);
+    const attackPathAnalysis = asRecord(commitAnalysis?.attack_path_analysis);
+    const attackPath = asRecord(attackPathAnalysis?.attack_path);
+    const legacyAttackPath = getString(finding.attack_path);
+    const narrative = getString(attackPathAnalysis?.narrative);
+    const summary = getString(commitAnalysis?.attack_path_adjustment_reason) ?? getString(attackPathAnalysis?.adjustment_reason) ?? narrative;
+    const assumptions = asStringList(attackPathAnalysis?.assumptions);
+    const controls = asStringList(attackPathAnalysis?.controls);
+    const blindspots = asStringList(attackPathAnalysis?.blindspots);
+    const parts = [
+      legacyAttackPath ?? summary,
+      getString(attackPath?.ascii) ? `### Path
+
+\`\`\`text
+${getString(attackPath?.ascii)}
+\`\`\`` : null,
+      narrative && narrative !== summary ? `### Narrative
+
+${narrative}` : null,
+      getString(attackPathAnalysis?.likelihood) ? `### Likelihood
+
+${getString(attackPathAnalysis?.likelihood)}` : null,
+      getString(attackPathAnalysis?.impact) ? `### Impact
+
+${getString(attackPathAnalysis?.impact)}` : null,
+      buildMarkdownList(assumptions) ? `### Assumptions
+
+${buildMarkdownList(assumptions)}` : null,
+      buildMarkdownList(controls) ? `### Controls
+
+${buildMarkdownList(controls)}` : null,
+      buildMarkdownList(blindspots) ? `### Blindspots
+
+${buildMarkdownList(blindspots)}` : null
+    ].filter((value) => Boolean(value));
+    if (parts.length === 0) return null;
     return {
       id: "attack-path",
-      title: "Attack Path",
+      title: "Attack-path analysis",
       format: "markdown",
-      content: attackPath
+      content: parts.join("\n\n")
     };
   }
   function buildProposedPatchSection(finding) {
