@@ -52,6 +52,12 @@ describe('normalizeSecurityFindingDocument', () => {
                 title: 'Device code flow allows client impersonation without secret',
                 description: 'Introduced device-code endpoints that mint tokens without client_secret enforcement.',
                 validation_str: 'Validated through workflow review.',
+                validation_artifact: {
+                    file_name: 'devicecode_impersonation.tar.gz',
+                    description: 'Conceptual PoC archive.',
+                    size_bytes: 1295,
+                    download_url: 'https://example.invalid/devicecode_impersonation.tar.gz',
+                },
                 relevant_lines: [
                     {
                         path: '/workspace/example-repo/.github/workflows/ci.yml',
@@ -65,11 +71,18 @@ describe('normalizeSecurityFindingDocument', () => {
                     attack_path: {
                         ascii: 'Attacker -> /v1/device-code/initiate -> User verifies -> /v1/device-code/poll -> Tokens',
                     },
-                    likelihood: 'High - attack is plausible but not automatic.',
-                    impact: 'High - an attacker can mint partner tokens.',
+                    likelihood: {
+                        level: 'high',
+                        why: 'Attack is plausible but not automatic.',
+                    },
+                    impact: {
+                        level: 'high',
+                        why: 'An attacker can mint partner tokens.',
+                    },
                     assumptions: ['A user completes device verification.'],
                     controls: ['PKCE verification in PollDeviceCode'],
                     blindspots: ['Production ACLs were not verified.'],
+                    recommendations: ['Reject missing client authentication for confidential clients.'],
                 },
             },
         }))
@@ -88,11 +101,16 @@ describe('normalizeSecurityFindingDocument', () => {
         expect(document.sections[0].content).toContain('Introduced device-code endpoints')
         expect(document.sections[0].content).toContain('Severity: high')
         expect(document.sections[0].content).toContain('Status: new')
+        expect(document.sections[1].content).toContain('Artifact: devicecode_impersonation.tar.gz')
+        expect(document.sections[1].content).toContain('Download URL: https://example.invalid/devicecode_impersonation.tar.gz')
         expect(document.sections[2].content).toContain('`/workspace/example-repo/.github/workflows/ci.yml:3-9`')
         expect(document.sections[3].title).toBe('Attack-path analysis')
         expect(document.sections[3].content).toContain('### Path')
         expect(document.sections[3].content).toContain('### Likelihood')
+        expect(document.sections[3].content).toContain('High - Attack is plausible but not automatic.')
         expect(document.sections[3].content).toContain('### Impact')
+        expect(document.sections[3].content).toContain('High - An attacker can mint partner tokens.')
+        expect(document.sections[3].content).toContain('### Recommendations')
     })
 
     it('degrades cleanly when optional fields are absent', () => {

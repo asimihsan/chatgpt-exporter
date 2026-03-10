@@ -132,13 +132,27 @@ describe('securityDocument renderers', () => {
                 title: 'Device code flow allows client impersonation without secret',
                 description: 'Finding description.',
                 validation_str: 'Validate this finding.',
+                relevant_lines: [
+                    {
+                        path: 'pkg/server/oauth2/http/handlers/devicecode.go',
+                        start_line_number: 41,
+                        end_line_number: 82,
+                        comment: 'InitiateDeviceCode does not authenticate the client.',
+                    },
+                ],
                 attack_path_adjustment_reason: 'The code clearly lacks client authentication in the device-code flow.',
                 attack_path_analysis: {
                     attack_path: {
                         ascii: 'Attacker -> /v1/device-code/initiate -> User verifies -> /v1/device-code/poll -> Tokens',
                     },
-                    likelihood: 'High',
-                    impact: 'High',
+                    likelihood: {
+                        level: 'high',
+                        why: 'Attack is plausible but not automatic.',
+                    },
+                    impact: {
+                        level: 'high',
+                        why: 'An attacker can mint partner tokens.',
+                    },
                 },
             },
         }))
@@ -157,8 +171,14 @@ describe('securityDocument renderers', () => {
         expect(markdown).toContain('"model": ""')
         expect(markdown).toContain('# Device code flow allows client impersonation without secret')
         expect(markdown).toContain('## Summary')
+        expect(markdown).toContain('## Validation')
+        expect(markdown).toContain('## Evidence')
         expect(markdown).toContain('## Attack-path analysis')
         expect(markdown).toContain('### Path')
+        expect(markdown).toContain('### Likelihood')
+        expect(markdown).toContain('High - Attack is plausible but not automatic.')
+        expect(markdown).toContain('### Impact')
+        expect(markdown).toContain('High - An attacker can mint partner tokens.')
     })
 
     it('renders security html with escaped metadata and section content', () => {

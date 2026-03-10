@@ -106,6 +106,10 @@ const enum ChatGPTCookie {
 
 type UrlParamValue = boolean | number | string | null | undefined
 
+function encodePathSegmentPreservingColons(value: string): string {
+    return encodeURIComponent(value).replaceAll(/%3A/gi, ':')
+}
+
 function buildUrl(base: string, path: string, params: Record<string, UrlParamValue> = {}): string {
     const remainingParams: Record<string, UrlParamValue> = { ...params }
     const resolvedPath = path.replace(/:([a-z0-9_]+)/gi, (_, key: string) => {
@@ -152,8 +156,12 @@ export const getSecurityScanConfigurationsApiUrl = (
     limit: params.limit,
     cursor: params.cursor,
 })
-export const getSecurityScanConfigurationApiUrl = (id: string) => buildUrl(apiUrl, '/aardvark/scan_configurations/:id', { id })
-export const getSecurityScanConfigurationStatsApiUrl = (id: string) => buildUrl(apiUrl, '/aardvark/scan_configurations/:id/stats', { id })
+export const getSecurityScanConfigurationApiUrl = (id: string) => {
+    return `${buildUrl(apiUrl, '/aardvark/scan_configurations', {})}/${encodePathSegmentPreservingColons(id)}`
+}
+export const getSecurityScanConfigurationStatsApiUrl = (id: string) => {
+    return `${getSecurityScanConfigurationApiUrl(id)}/stats`
+}
 export const getSecurityRepoApiUrl = (repoId: string) => buildUrl(apiUrl, '/wham/github/repositories/:repoId', { repoId })
 
 export async function fetchApi<T>(url: string, options?: RequestInit): Promise<T> {

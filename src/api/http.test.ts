@@ -38,8 +38,9 @@ describe('http api url builders', () => {
 
     it('builds Codex Security API urls with path and query parameters', () => {
         expect(getSecurityFindingApiUrl('finding/id')).toBe(`${apiUrl}/aardvark/scan-findings/finding%2Fid`)
-        expect(getSecurityScanConfigurationApiUrl('scan:id')).toBe(`${apiUrl}/aardvark/scan_configurations/scan%3Aid`)
-        expect(getSecurityScanConfigurationStatsApiUrl('scan:id')).toBe(`${apiUrl}/aardvark/scan_configurations/scan%3Aid/stats`)
+        expect(getSecurityScanConfigurationApiUrl('scan:id')).toBe(`${apiUrl}/aardvark/scan_configurations/scan:id`)
+        expect(getSecurityScanConfigurationStatsApiUrl('scan:id')).toBe(`${apiUrl}/aardvark/scan_configurations/scan:id/stats`)
+        expect(getSecurityScanConfigurationApiUrl('scan:id with spaces')).toBe(`${apiUrl}/aardvark/scan_configurations/scan:id%20with%20spaces`)
         expect(getSecurityRepoApiUrl('github-123456789')).toBe(`${apiUrl}/wham/github/repositories/github-123456789`)
         expect(getSecurityScanConfigurationsApiUrl({ repoId: 'github-123456789', limit: 1 })).toBe(
             `${apiUrl}/aardvark/scan_configurations?repo_id=github-123456789&limit=1`,

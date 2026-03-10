@@ -74,10 +74,52 @@ function buildMarkdownList(items: string[]): string | null {
     return items.map(item => `- ${item}`).join('\n')
 }
 
+function getStructuredLevelSummary(value: unknown): string | null {
+    if (typeof value === 'string' && value.trim() !== '') {
+        return value.trim()
+    }
+
+    const record = asRecord(value)
+    if (!record) return null
+
+    const level = getString(record.level)
+    const why = getString(record.why)
+    if (level && why) {
+        return `${level[0].toUpperCase()}${level.slice(1)} - ${why}`
+    }
+    if (level) {
+        return `${level[0].toUpperCase()}${level.slice(1)}`
+    }
+    if (why) {
+        return why
+    }
+
+    return null
+}
+
+function getValidationArtifactSummary(value: unknown): string | null {
+    const record = asRecord(value)
+    if (!record) return getString(value)
+
+    const fileName = getString(record.file_name)
+    const description = getString(record.description)
+    const downloadUrl = getString(record.download_url)
+    const sizeBytes = typeof record.size_bytes === 'number' ? record.size_bytes : null
+
+    const lines = [
+        fileName ? `Artifact: ${fileName}` : null,
+        description ? `Description: ${description}` : null,
+        sizeBytes !== null ? `Size: ${sizeBytes} bytes` : null,
+        downloadUrl ? `Download URL: ${downloadUrl}` : null,
+    ].filter((line): line is string => Boolean(line))
+
+    return lines.length > 0 ? lines.join('\n') : null
+}
+
 function buildValidationSection(finding: ApiSecurityFinding): SecurityDocumentSection | null {
     const commitAnalysis = asRecord(finding.commit_analysis)
     const validation = getString(commitAnalysis?.validation_str)
-    const validationArtifact = getString(commitAnalysis?.validation_artifact)
+    const validationArtifact = getValidationArtifactSummary(commitAnalysis?.validation_artifact)
 
     const parts = [
         validation,
@@ -151,11 +193,11 @@ function buildAttackPathSection(finding: ApiSecurityFinding): SecurityDocumentSe
         narrative && narrative !== summary
             ? `### Narrative\n\n${narrative}`
             : null,
-        getString(attackPathAnalysis?.likelihood)
-            ? `### Likelihood\n\n${getString(attackPathAnalysis?.likelihood)}`
+        getStructuredLevelSummary(attackPathAnalysis?.likelihood)
+            ? `### Likelihood\n\n${getStructuredLevelSummary(attackPathAnalysis?.likelihood)}`
             : null,
-        getString(attackPathAnalysis?.impact)
-            ? `### Impact\n\n${getString(attackPathAnalysis?.impact)}`
+        getStructuredLevelSummary(attackPathAnalysis?.impact)
+            ? `### Impact\n\n${getStructuredLevelSummary(attackPathAnalysis?.impact)}`
             : null,
         buildMarkdownList(assumptions)
             ? `### Assumptions\n\n${buildMarkdownList(assumptions)}`
@@ -165,6 +207,9 @@ function buildAttackPathSection(finding: ApiSecurityFinding): SecurityDocumentSe
             : null,
         buildMarkdownList(blindspots)
             ? `### Blindspots\n\n${buildMarkdownList(blindspots)}`
+            : null,
+        buildMarkdownList(asStringList(attackPathAnalysis?.recommendations))
+            ? `### Recommendations\n\n${buildMarkdownList(asStringList(attackPathAnalysis?.recommendations))}`
             : null,
     ].filter((value): value is string => Boolean(value))
 
