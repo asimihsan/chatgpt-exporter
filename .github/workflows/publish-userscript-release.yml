@@ -22,4 +22,5 @@ jobs:
       - name: Publish GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
+          USERSCRIPT_TAG_NAME: ${{ github.ref_name }}
         run: bash scripts/release/publish-github-release.sh

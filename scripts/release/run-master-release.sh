@@ -27,6 +27,7 @@ while (( attempt < max_attempts )); do
 
     git fetch "${tag_remote}" "${release_branch}" --tags
     git checkout -B release-work "${tag_remote}/${release_branch}"
+    node scripts/release/validate-userscript-tags.mjs
 
     head_subject="$(git log -1 --format=%s HEAD)"
     if git merge-base --is-ancestor "${event_sha}" HEAD && [[ "${head_subject}" == chore:\ release\ v* ]]; then
@@ -42,7 +43,7 @@ while (( attempt < max_attempts )); do
 
     git add package.json dist/chatgpt.meta.js dist/chatgpt.user.js
     if git diff --cached --quiet; then
-        echo "No release file changes detected; releasing current HEAD."
+        git commit --allow-empty -m "chore: release v${version}"
     else
         git commit -m "chore: release v${version}"
     fi
