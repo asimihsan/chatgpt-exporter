@@ -29,7 +29,8 @@ function getString(value: unknown): string | null {
 
 function getTitle(finding: ApiSecurityFinding): string {
     const commitAnalysis = asRecord(finding.commit_analysis)
-    return getString(commitAnalysis?.reason)
+    return getString(commitAnalysis?.title)
+        ?? getString(commitAnalysis?.reason)
         ?? getString(commitAnalysis?.description)?.split('. ')[0]
         ?? `Finding ${finding.hid}`
 }
@@ -40,9 +41,11 @@ function buildSourceUrl(finding: ApiSecurityFinding): string {
 
 function buildSummarySection(finding: ApiSecurityFinding): SecurityDocumentSection | null {
     const commitAnalysis = asRecord(finding.commit_analysis)
+    const description = getString(commitAnalysis?.description)
+    const reason = getString(commitAnalysis?.reason)
     const lines = [
-        getString(commitAnalysis?.description),
-        getString(commitAnalysis?.reason) ? `Reason: ${getString(commitAnalysis?.reason)}` : null,
+        description,
+        reason && (reason !== getTitle(finding) || !description) ? `Reason: ${reason}` : null,
         getString(commitAnalysis?.bugs_found_or_fixed) ? `Change impact: ${getString(commitAnalysis?.bugs_found_or_fixed)}` : null,
         getString(finding.criticality) ? `Severity: ${getString(finding.criticality)}` : null,
         getString(finding.status) ? `Status: ${getString(finding.status)}` : null,
@@ -58,16 +61,36 @@ function buildSummarySection(finding: ApiSecurityFinding): SecurityDocumentSecti
     }
 }
 
+function asStringList(value: unknown): string[] {
+    if (!Array.isArray(value)) return []
+
+    return value
+        .map(item => getString(item))
+        .filter((item): item is string => Boolean(item))
+}
+
+function buildMarkdownList(items: string[]): string | null {
+    if (items.length === 0) return null
+    return items.map(item => `- ${item}`).join('\n')
+}
+
 function buildValidationSection(finding: ApiSecurityFinding): SecurityDocumentSection | null {
     const commitAnalysis = asRecord(finding.commit_analysis)
     const validation = getString(commitAnalysis?.validation_str)
-    if (!validation) return null
+    const validationArtifact = getString(commitAnalysis?.validation_artifact)
+
+    const parts = [
+        validation,
+        validationArtifact ? `Validation artifact: ${validationArtifact}` : null,
+    ].filter((value): value is string => Boolean(value))
+
+    if (parts.length === 0) return null
 
     return {
         id: 'validation',
         title: 'Validation',
         format: 'markdown',
-        content: validation,
+        content: parts.join('\n\n'),
     }
 }
 
@@ -108,14 +131,50 @@ function buildEvidenceSection(finding: ApiSecurityFinding): SecurityDocumentSect
 }
 
 function buildAttackPathSection(finding: ApiSecurityFinding): SecurityDocumentSection | null {
-    const attackPath = getString((finding as Record<string, unknown>).attack_path)
-    if (!attackPath) return null
+    const commitAnalysis = asRecord(finding.commit_analysis)
+    const attackPathAnalysis = asRecord(commitAnalysis?.attack_path_analysis)
+    const attackPath = asRecord(attackPathAnalysis?.attack_path)
+    const legacyAttackPath = getString((finding as Record<string, unknown>).attack_path)
+    const narrative = getString(attackPathAnalysis?.narrative)
+    const summary = getString(commitAnalysis?.attack_path_adjustment_reason)
+        ?? getString(attackPathAnalysis?.adjustment_reason)
+        ?? narrative
+    const assumptions = asStringList(attackPathAnalysis?.assumptions)
+    const controls = asStringList(attackPathAnalysis?.controls)
+    const blindspots = asStringList(attackPathAnalysis?.blindspots)
+
+    const parts = [
+        legacyAttackPath ?? summary,
+        getString(attackPath?.ascii)
+            ? `### Path\n\n\`\`\`text\n${getString(attackPath?.ascii)}\n\`\`\``
+            : null,
+        narrative && narrative !== summary
+            ? `### Narrative\n\n${narrative}`
+            : null,
+        getString(attackPathAnalysis?.likelihood)
+            ? `### Likelihood\n\n${getString(attackPathAnalysis?.likelihood)}`
+            : null,
+        getString(attackPathAnalysis?.impact)
+            ? `### Impact\n\n${getString(attackPathAnalysis?.impact)}`
+            : null,
+        buildMarkdownList(assumptions)
+            ? `### Assumptions\n\n${buildMarkdownList(assumptions)}`
+            : null,
+        buildMarkdownList(controls)
+            ? `### Controls\n\n${buildMarkdownList(controls)}`
+            : null,
+        buildMarkdownList(blindspots)
+            ? `### Blindspots\n\n${buildMarkdownList(blindspots)}`
+            : null,
+    ].filter((value): value is string => Boolean(value))
+
+    if (parts.length === 0) return null
 
     return {
         id: 'attack-path',
-        title: 'Attack Path',
+        title: 'Attack-path analysis',
         format: 'markdown',
-        content: attackPath,
+        content: parts.join('\n\n'),
     }
 }
 

@@ -127,7 +127,21 @@ describe('securityDocument renderers', () => {
     })
 
     it('renders finding documents to text and markdown', () => {
-        const findingDocument = normalizeSecurityFindingDocument(createFinding())
+        const findingDocument = normalizeSecurityFindingDocument(createFinding({
+            commit_analysis: {
+                title: 'Device code flow allows client impersonation without secret',
+                description: 'Finding description.',
+                validation_str: 'Validate this finding.',
+                attack_path_adjustment_reason: 'The code clearly lacks client authentication in the device-code flow.',
+                attack_path_analysis: {
+                    attack_path: {
+                        ascii: 'Attacker -> /v1/device-code/initiate -> User verifies -> /v1/device-code/poll -> Tokens',
+                    },
+                    likelihood: 'High',
+                    impact: 'High',
+                },
+            },
+        }))
         const metaList: ExportMeta[] = [
             { name: 'source', value: '{source}' },
             { name: 'model', value: '{model}' },
@@ -136,12 +150,15 @@ describe('securityDocument renderers', () => {
         const text = securityDocumentToText(findingDocument)
         const markdown = securityDocumentToMarkdown(findingDocument, metaList)
 
-        expect(text).toContain('Title: Finding title')
+        expect(text).toContain('Title: Device code flow allows client impersonation without secret')
         expect(text).toContain('Summary:')
         expect(markdown).toContain('---')
         expect(markdown).toContain(`"source": "${baseUrl}/codex/security/findings/finding-123"`)
         expect(markdown).toContain('"model": ""')
-        expect(markdown).toContain('# Finding title')
+        expect(markdown).toContain('# Device code flow allows client impersonation without secret')
+        expect(markdown).toContain('## Summary')
+        expect(markdown).toContain('## Attack-path analysis')
+        expect(markdown).toContain('### Path')
     })
 
     it('renders security html with escaped metadata and section content', () => {

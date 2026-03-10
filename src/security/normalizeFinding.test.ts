@@ -20,6 +20,7 @@ function createFinding(overrides: Partial<ApiSecurityFinding> = {}): ApiSecurity
         created_at: '2026-03-10T04:04:42.167439Z',
         updated_at: '2026-03-10T04:34:37.933915Z',
         commit_analysis: {
+            title: 'CI workflow grants AWS OIDC role on pull_request builds',
             description: 'Finding description.',
             reason: 'Finding reason',
             bugs_found_or_fixed: 'Introduced a new issue.',
@@ -47,11 +48,34 @@ function createFinding(overrides: Partial<ApiSecurityFinding> = {}): ApiSecurity
 describe('normalizeSecurityFindingDocument', () => {
     it('normalizes finding metadata and ordered sections', () => {
         const document = normalizeSecurityFindingDocument(createFinding({
-            attack_path: 'Attacker modifies the workflow and exfiltrates the token.',
+            commit_analysis: {
+                title: 'Device code flow allows client impersonation without secret',
+                description: 'Introduced device-code endpoints that mint tokens without client_secret enforcement.',
+                validation_str: 'Validated through workflow review.',
+                relevant_lines: [
+                    {
+                        path: '/workspace/example-repo/.github/workflows/ci.yml',
+                        start_line_number: 3,
+                        end_line_number: 9,
+                        comment: 'Merge-group trigger was enabled.',
+                    },
+                ],
+                attack_path_adjustment_reason: 'The device-code flow lacks client authentication while confidential clients exist.',
+                attack_path_analysis: {
+                    attack_path: {
+                        ascii: 'Attacker -> /v1/device-code/initiate -> User verifies -> /v1/device-code/poll -> Tokens',
+                    },
+                    likelihood: 'High - attack is plausible but not automatic.',
+                    impact: 'High - an attacker can mint partner tokens.',
+                    assumptions: ['A user completes device verification.'],
+                    controls: ['PKCE verification in PollDeviceCode'],
+                    blindspots: ['Production ACLs were not verified.'],
+                },
+            },
         }))
 
         expect(document.kind).toBe('security-finding')
-        expect(document.title).toBe('Finding reason')
+        expect(document.title).toBe('Device code flow allows client impersonation without secret')
         expect(document.metadata.findingId).toBe('17b5fd57ec1c8191833dd8b866a0bd9e')
         expect(document.sections.map(section => section.id)).toEqual([
             'summary',
@@ -60,8 +84,15 @@ describe('normalizeSecurityFindingDocument', () => {
             'attack-path',
             'proposed-patch',
         ])
+        expect(document.sections[0].title).toBe('Summary')
+        expect(document.sections[0].content).toContain('Introduced device-code endpoints')
         expect(document.sections[0].content).toContain('Severity: high')
+        expect(document.sections[0].content).toContain('Status: new')
         expect(document.sections[2].content).toContain('`/workspace/example-repo/.github/workflows/ci.yml:3-9`')
+        expect(document.sections[3].title).toBe('Attack-path analysis')
+        expect(document.sections[3].content).toContain('### Path')
+        expect(document.sections[3].content).toContain('### Likelihood')
+        expect(document.sections[3].content).toContain('### Impact')
     })
 
     it('degrades cleanly when optional fields are absent', () => {
@@ -87,6 +118,20 @@ describe('normalizeSecurityFindingDocument', () => {
         }))
 
         expect(document.sections).toEqual([])
+    })
+
+    it('keeps a summary section when only reason and finding metadata remain', () => {
+        const document = normalizeSecurityFindingDocument(createFinding({
+            commit_analysis: {
+                reason: 'Reason only',
+            },
+            proposed_patch: null,
+        }))
+
+        expect(document.sections.map(section => section.id)).toContain('summary')
+        expect(document.sections[0].content).toContain('Reason: Reason only')
+        expect(document.sections[0].content).toContain('Severity: high')
+        expect(document.sections[0].content).toContain('Status: new')
     })
 
     it('drops whitespace-only finding scalars from the summary section', () => {
@@ -115,7 +160,35 @@ describe('normalizeSecurityFindingDocument', () => {
         expect(document.metadata.title).toBe('Finding reason')
         expect(document.metadata.criticality).toBe('high')
         expect(document.metadata.status).toBe('new')
+        expect(document.sections[0].content).toContain('Description with padding.')
         expect(document.sections[0].content).toContain('Severity: high')
         expect(document.sections[0].content).toContain('Status: new')
+    })
+
+    it('falls back to legacy top-level attack_path strings', () => {
+        const document = normalizeSecurityFindingDocument(createFinding({
+            attack_path: 'Attacker reaches token exfiltration path.',
+            commit_analysis: {
+                description: 'Finding description.',
+            },
+        }))
+
+        const attackPathSection = document.sections.find(section => section.id === 'attack-path')
+        expect(attackPathSection?.title).toBe('Attack-path analysis')
+        expect(attackPathSection?.content).toBe('Attacker reaches token exfiltration path.')
+    })
+
+    it('does not duplicate narrative-only attack-path payloads', () => {
+        const document = normalizeSecurityFindingDocument(createFinding({
+            commit_analysis: {
+                description: 'Finding description.',
+                attack_path_analysis: {
+                    narrative: 'Narrative only attack path.',
+                },
+            },
+        }))
+
+        const attackPathSection = document.sections.find(section => section.id === 'attack-path')
+        expect(attackPathSection?.content).toBe('Narrative only attack path.')
     })
 })
