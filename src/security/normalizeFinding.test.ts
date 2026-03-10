@@ -52,6 +52,7 @@ describe('normalizeSecurityFindingDocument', () => {
                 title: 'Device code flow allows client impersonation without secret',
                 description: 'Introduced device-code endpoints that mint tokens without client_secret enforcement.',
                 validation_str: 'Validated through workflow review.',
+                validation_rubric: '- [x] Verify PollDeviceCode mints access/refresh tokens after verification without any client_secret check (devicecode.go:257-418).',
                 validation_artifact: {
                     file_name: 'devicecode_impersonation.tar.gz',
                     description: 'Conceptual PoC archive.',
@@ -99,8 +100,12 @@ describe('normalizeSecurityFindingDocument', () => {
         ])
         expect(document.sections[0].title).toBe('Summary')
         expect(document.sections[0].content).toContain('Introduced device-code endpoints')
-        expect(document.sections[0].content).toContain('Severity: high')
-        expect(document.sections[0].content).toContain('Status: new')
+        expect(document.sections[0].content).toContain('### Severity')
+        expect(document.sections[0].content).toContain('high')
+        expect(document.sections[0].content).toContain('### Status')
+        expect(document.sections[0].content).toContain('new')
+        expect(document.sections[1].content).toContain('### Checklist')
+        expect(document.sections[1].content).toContain('- [x] Verify PollDeviceCode mints access/refresh tokens')
         expect(document.sections[1].content).toContain('Artifact: devicecode_impersonation.tar.gz')
         expect(document.sections[1].content).toContain('Download URL: https://example.invalid/devicecode_impersonation.tar.gz')
         expect(document.sections[2].content).toContain('`/workspace/example-repo/.github/workflows/ci.yml:3-9`')
@@ -147,9 +152,12 @@ describe('normalizeSecurityFindingDocument', () => {
         }))
 
         expect(document.sections.map(section => section.id)).toContain('summary')
-        expect(document.sections[0].content).toContain('Reason: Reason only')
-        expect(document.sections[0].content).toContain('Severity: high')
-        expect(document.sections[0].content).toContain('Status: new')
+        expect(document.sections[0].content).toContain('### Reason')
+        expect(document.sections[0].content).toContain('Reason only')
+        expect(document.sections[0].content).toContain('### Severity')
+        expect(document.sections[0].content).toContain('high')
+        expect(document.sections[0].content).toContain('### Status')
+        expect(document.sections[0].content).toContain('new')
     })
 
     it('drops whitespace-only finding scalars from the summary section', () => {
@@ -179,8 +187,8 @@ describe('normalizeSecurityFindingDocument', () => {
         expect(document.metadata.criticality).toBe('high')
         expect(document.metadata.status).toBe('new')
         expect(document.sections[0].content).toContain('Description with padding.')
-        expect(document.sections[0].content).toContain('Severity: high')
-        expect(document.sections[0].content).toContain('Status: new')
+        expect(document.sections[0].content).toContain('### Severity')
+        expect(document.sections[0].content).toContain('### Status')
     })
 
     it('falls back to legacy top-level attack_path strings', () => {

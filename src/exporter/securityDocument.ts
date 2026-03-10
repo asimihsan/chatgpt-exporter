@@ -175,7 +175,7 @@ export async function loadCurrentSecurityDocument() {
 
 export function securityDocumentToText(document: SecurityDocument<unknown>): string {
     const sections = document.sections
-        .map(section => `${section.title}:\n${section.content}`)
+        .map(section => `## ${section.title}\n\n${section.content}`)
         .join('\n\n')
 
     return `Title: ${normalizeSingleLineText(document.title)}\nSource: ${document.sourceUrl}\n\n${sections}`.trim()

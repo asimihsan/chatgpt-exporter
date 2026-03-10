@@ -43,12 +43,15 @@ function buildSummarySection(finding: ApiSecurityFinding): SecurityDocumentSecti
     const commitAnalysis = asRecord(finding.commit_analysis)
     const description = getString(commitAnalysis?.description)
     const reason = getString(commitAnalysis?.reason)
+    const bugsFoundOrFixed = getString(commitAnalysis?.bugs_found_or_fixed)
+    const criticality = getString(finding.criticality)
+    const status = getString(finding.status)
     const lines = [
         description,
-        reason && (reason !== getTitle(finding) || !description) ? `Reason: ${reason}` : null,
-        getString(commitAnalysis?.bugs_found_or_fixed) ? `Change impact: ${getString(commitAnalysis?.bugs_found_or_fixed)}` : null,
-        getString(finding.criticality) ? `Severity: ${getString(finding.criticality)}` : null,
-        getString(finding.status) ? `Status: ${getString(finding.status)}` : null,
+        reason && (reason !== getTitle(finding) || !description) ? `### Reason\n\n${reason}` : null,
+        bugsFoundOrFixed ? `### Change impact\n\n${bugsFoundOrFixed}` : null,
+        criticality ? `### Severity\n\n${criticality}` : null,
+        status ? `### Status\n\n${status}` : null,
     ].filter((value): value is string => Boolean(value))
 
     if (lines.length === 0) return null
@@ -118,11 +121,14 @@ function getValidationArtifactSummary(value: unknown): string | null {
 
 function buildValidationSection(finding: ApiSecurityFinding): SecurityDocumentSection | null {
     const commitAnalysis = asRecord(finding.commit_analysis)
-    const validation = getString(commitAnalysis?.validation_str)
+    const validation = getString(commitAnalysis?.validation_report)
+        ?? getString(commitAnalysis?.validation_str)
+    const validationRubric = getString(commitAnalysis?.validation_rubric)
     const validationArtifact = getValidationArtifactSummary(commitAnalysis?.validation_artifact)
 
     const parts = [
         validation,
+        validationRubric ? `### Checklist\n\n${validationRubric}` : null,
         validationArtifact ? `Validation artifact: ${validationArtifact}` : null,
     ].filter((value): value is string => Boolean(value))
 

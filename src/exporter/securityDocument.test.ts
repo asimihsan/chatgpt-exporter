@@ -131,7 +131,8 @@ describe('securityDocument renderers', () => {
             commit_analysis: {
                 title: 'Device code flow allows client impersonation without secret',
                 description: 'Finding description.',
-                validation_str: 'Validate this finding.',
+                validation_report: 'Validate this finding.',
+                validation_rubric: '- [x] Confirm device code flow lacks client authentication.',
                 relevant_lines: [
                     {
                         path: 'pkg/server/oauth2/http/handlers/devicecode.go',
@@ -165,7 +166,10 @@ describe('securityDocument renderers', () => {
         const markdown = securityDocumentToMarkdown(findingDocument, metaList)
 
         expect(text).toContain('Title: Device code flow allows client impersonation without secret')
-        expect(text).toContain('Summary:')
+        expect(text).toContain('## Summary')
+        expect(text).toContain('## Validation')
+        expect(text).toContain('### Checklist')
+        expect(text).toContain('- [x] Confirm device code flow lacks client authentication.')
         expect(markdown).toContain('---')
         expect(markdown).toContain(`"source": "${baseUrl}/codex/security/findings/finding-123"`)
         expect(markdown).toContain('"model": ""')
@@ -174,6 +178,8 @@ describe('securityDocument renderers', () => {
         expect(markdown).toContain('## Validation')
         expect(markdown).toContain('## Evidence')
         expect(markdown).toContain('## Attack-path analysis')
+        expect(markdown).toContain('### Checklist')
+        expect(markdown).toContain('- [x] Confirm device code flow lacks client authentication.')
         expect(markdown).toContain('### Path')
         expect(markdown).toContain('### Likelihood')
         expect(markdown).toContain('High - Attack is plausible but not automatic.')
@@ -206,6 +212,38 @@ describe('securityDocument renderers', () => {
         expect(html).not.toContain('href="javascript:alert(1)"')
         expect(html).toContain('href="#"')
         expect(html).not.toContain('<img')
+    })
+
+    it('renders finding html with nested summary headings and validation checklist markup', () => {
+        vi.stubGlobal('document', {
+            documentElement: {
+                lang: 'en',
+                style: {
+                    getPropertyValue: () => 'light',
+                },
+            },
+        })
+
+        const findingDocument = normalizeSecurityFindingDocument(createFinding({
+            commit_analysis: {
+                title: 'Merge queue CI now runs with repository secrets exposed',
+                description: 'The workflow enables merge_group while secrets remain globally available.',
+                reason: 'Queued PR code can access sensitive tokens.',
+                bugs_found_or_fixed: 'Introduced secret exposure on merge queue runs.',
+                validation_report: 'Validated through workflow review.',
+                validation_rubric: '- [x] Confirm workflow triggers include merge_group.\n- [x] Confirm secret is exported globally.',
+            },
+        }))
+
+        const html = securityDocumentToHtml(findingDocument)
+
+        expect(html).toContain('<h2>Summary</h2>')
+        expect(html).toContain('<h3>Reason</h3>')
+        expect(html).toContain('<h3>Change impact</h3>')
+        expect(html).toContain('<h2>Validation</h2>')
+        expect(html).toContain('<h3>Checklist</h3>')
+        expect(html).toContain('type="checkbox"')
+        expect(html).toContain('Confirm workflow triggers include merge_group.')
     })
 
     it('serializes only the raw payload for security json export', () => {
