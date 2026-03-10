@@ -4,6 +4,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiHttpError } from './http'
 import type {
     ApiSecurityGithubRepository,
     ApiSecurityScanConfiguration,
@@ -11,6 +12,7 @@ import type {
 } from './securityTypes'
 
 const {
+    ApiHttpErrorMock,
     fetchApiMock,
     getSecurityFindingApiUrlMock,
     getSecurityRepoApiUrlMock,
@@ -18,6 +20,19 @@ const {
     getSecurityScanConfigurationsApiUrlMock,
     getSecurityScanConfigurationStatsApiUrlMock,
 } = vi.hoisted(() => ({
+    ApiHttpErrorMock: class ApiHttpError extends Error {
+        status: number
+        statusText: string
+        url: string
+
+        constructor(url: string, response: { status: number, statusText: string }) {
+            super(`${response.status} ${response.statusText}`.trim())
+            this.name = 'ApiHttpError'
+            this.status = response.status
+            this.statusText = response.statusText
+            this.url = url
+        }
+    },
     fetchApiMock: vi.fn(),
     getSecurityFindingApiUrlMock: vi.fn((id: string) => `finding:${id}`),
     getSecurityRepoApiUrlMock: vi.fn((id: string) => `repo:${id}`),
@@ -27,6 +42,7 @@ const {
 }))
 
 vi.mock('./http', () => ({
+    ApiHttpError: ApiHttpErrorMock,
     fetchApi: fetchApiMock,
     getSecurityFindingApiUrl: getSecurityFindingApiUrlMock,
     getSecurityRepoApiUrl: getSecurityRepoApiUrlMock,
@@ -168,6 +184,57 @@ describe('securityApi', () => {
         }))
             .rejects
             .toThrow('Preferred scan preferred-scan does not belong to repo github-123456789.')
+    })
+
+    it('falls back to repo list resolution when a preferred configured scan id returns 403', async () => {
+        fetchApiMock
+            .mockRejectedValueOnce(new ApiHttpError('scan:preferred-scan', {
+                status: 403,
+                statusText: 'Forbidden',
+            }))
+            .mockResolvedValueOnce({
+                items: [createScanConfiguration({ id: 'scan-1' })],
+                next_cursor: null,
+            })
+
+        await expect(resolveSecurityScanSelection('github-123456789', {
+            preferredConfiguredScanId: 'preferred-scan',
+        })).resolves.toEqual({
+            configuredScanId: 'scan-1',
+            source: 'list',
+        })
+    })
+
+    it('falls back to repo list resolution when a preferred configured scan id returns 404', async () => {
+        fetchApiMock
+            .mockRejectedValueOnce(new ApiHttpError('scan:preferred-scan', {
+                status: 404,
+                statusText: 'Not Found',
+            }))
+            .mockResolvedValueOnce({
+                items: [createScanConfiguration({ id: 'scan-1' })],
+                next_cursor: null,
+            })
+
+        await expect(resolveSecurityScanSelection('github-123456789', {
+            preferredConfiguredScanId: 'preferred-scan',
+        })).resolves.toEqual({
+            configuredScanId: 'scan-1',
+            source: 'list',
+        })
+    })
+
+    it('fails closed when a preferred configured scan id returns a non-recoverable error', async () => {
+        fetchApiMock.mockRejectedValueOnce(new ApiHttpError('scan:preferred-scan', {
+            status: 500,
+            statusText: 'Internal Server Error',
+        }))
+
+        await expect(resolveSecurityScanSelection('github-123456789', {
+            preferredConfiguredScanId: 'preferred-scan',
+        }))
+            .rejects
+            .toThrow('500 Internal Server Error')
     })
 
     it('fails closed when no scan configuration matches the repo', async () => {

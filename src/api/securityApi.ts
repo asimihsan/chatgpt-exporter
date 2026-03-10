@@ -4,6 +4,7 @@
  */
 
 import {
+    ApiHttpError,
     fetchApi,
     getSecurityFindingApiUrl,
     getSecurityRepoApiUrl,
@@ -118,14 +119,21 @@ export async function resolveSecurityScanSelection(
     const { preferredConfiguredScanId = null, limit = 100 } = options
 
     if (preferredConfiguredScanId) {
-        const preferredScan = await fetchSecurityScan(preferredConfiguredScanId)
-        if (preferredScan.scan_input.repo_id !== repoId) {
-            throw new Error(`Preferred scan ${preferredConfiguredScanId} does not belong to repo ${repoId}.`)
-        }
+        try {
+            const preferredScan = await fetchSecurityScan(preferredConfiguredScanId)
+            if (preferredScan.scan_input.repo_id !== repoId) {
+                throw new Error(`Preferred scan ${preferredConfiguredScanId} does not belong to repo ${repoId}.`)
+            }
 
-        return {
-            configuredScanId: preferredScan.id,
-            source: 'preferred',
+            return {
+                configuredScanId: preferredScan.id,
+                source: 'preferred',
+            }
+        }
+        catch (error) {
+            if (!isRecoverablePreferredScanLookupError(error)) {
+                throw error
+            }
         }
     }
 
@@ -146,6 +154,11 @@ export async function resolveSecurityScanSelection(
         configuredScanId: matchingScans[0].id,
         source: 'list',
     }
+}
+
+function isRecoverablePreferredScanLookupError(error: unknown): boolean {
+    return error instanceof ApiHttpError
+        && (error.status === 403 || error.status === 404)
 }
 
 export async function fetchResolvedSecurityScanByRepoId(

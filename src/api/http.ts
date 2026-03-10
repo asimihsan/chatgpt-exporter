@@ -7,6 +7,20 @@ import { apiUrl, baseUrl } from '../constants'
 import { getPageAccessToken } from '../page'
 import { memorize } from '../utils/memorize'
 
+export class ApiHttpError extends Error {
+    status: number
+    statusText: string
+    url: string
+
+    constructor(url: string, response: Pick<Response, 'status' | 'statusText'>) {
+        super(`${response.status} ${response.statusText}`.trim())
+        this.name = 'ApiHttpError'
+        this.status = response.status
+        this.statusText = response.statusText
+        this.url = url
+    }
+}
+
 interface ApiSession {
     accessToken: string
     authProvider: string
@@ -156,7 +170,7 @@ export async function fetchApi<T>(url: string, options?: RequestInit): Promise<T
         },
     })
     if (!response.ok) {
-        throw new Error(response.statusText)
+        throw new ApiHttpError(url, response)
     }
     return response.json()
 }

@@ -5,15 +5,24 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
+const { getPageContextMock } = vi.hoisted(() => ({
+    getPageContextMock: vi.fn(),
+}))
+
 vi.mock('../api', () => ({
     fetchResolvedSecurityScanByRepoId: vi.fn(),
     fetchSecurityFinding: vi.fn(),
+}))
+
+vi.mock('../pageContext', () => ({
+    getPageContext: getPageContextMock,
 }))
 
 import { normalizeSecurityFindingDocument } from '../security/normalizeFinding'
 import { normalizeSecurityScanDocument } from '../security/normalizeScan'
 import {
     getPreferredConfiguredScanIdFromCurrentPage,
+    loadCurrentSecurityDocument,
     securityDocumentToHtml,
     securityDocumentToJson,
     securityDocumentToMarkdown,
@@ -22,6 +31,7 @@ import {
 import { baseUrl } from '../constants'
 import type { ApiSecurityFinding, ResolvedSecurityScanBundle } from '../api'
 import type { ExportMeta } from '../ui/SettingContext'
+import { fetchResolvedSecurityScanByRepoId } from '../api'
 
 function createFinding(overrides: Partial<ApiSecurityFinding> = {}): ApiSecurityFinding {
     return {
@@ -113,6 +123,7 @@ function createScanBundle(overrides: Partial<ResolvedSecurityScanBundle> = {}): 
 describe('securityDocument renderers', () => {
     afterEach(() => {
         vi.unstubAllGlobals()
+        vi.clearAllMocks()
     })
 
     it('renders finding documents to text and markdown', () => {
@@ -200,6 +211,30 @@ describe('securityDocument renderers', () => {
         })
 
         expect(getPreferredConfiguredScanIdFromCurrentPage('github-123456789')).toBeNull()
+    })
+
+    it('passes the current-page preferred configured scan id into scan document loading', async () => {
+        getPageContextMock.mockReturnValue({
+            kind: 'security-scan',
+            repoId: 'github-123456789',
+            findingId: null,
+            chatId: null,
+            isSharePage: false,
+            isShareContinuePage: false,
+        })
+        vi.stubGlobal('performance', {
+            now: vi.fn(() => 15_000),
+            getEntriesByType: vi.fn(() => [
+                { name: 'https://chatgpt.com/backend-api/aardvark/scan_configurations/user-1:github-123456789/stats', startTime: 14_500 },
+            ]),
+        })
+        vi.mocked(fetchResolvedSecurityScanByRepoId).mockResolvedValueOnce(createScanBundle())
+
+        await loadCurrentSecurityDocument()
+
+        expect(fetchResolvedSecurityScanByRepoId).toHaveBeenCalledWith('github-123456789', {
+            preferredConfiguredScanId: 'user-1:github-123456789',
+        })
     })
 
     it('quotes hostile metadata values in markdown frontmatter', () => {

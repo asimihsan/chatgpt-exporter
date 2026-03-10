@@ -1,5 +1,7 @@
 # Summary
 
+The initial Codex Security scan export shipped with a brittle optimization: on scan detail pages it preferred the newest `scan_configurations/:id` resource entry from `performance` timing, but treated any failure to refetch that concrete id as fatal. Real pages can surface owner-qualified ids such as `user-...:github-...` that the userscript then receives `403 Forbidden` for, even though repo-scoped scan resolution is still available. The fix is to keep the optimization only as a hint and fall back to deterministic repo-based scan selection on `403`/`404` preferred-id lookup failures.
+
 Codex Security support should be added as a first-class export surface rather than squeezed into the existing conversation-only path. The plan supports a phase 1 implementation that exports current findings and scans detail pages, includes threat model content from scan detail, keeps findings-list routes non-exportable for now, and preserves existing conversation/share-page behavior.
 
 Task 4 is in progress. The page-aware capability matrix is already wired into the menu and exporter entrypoints; the current implementation pass is hardening the shared security document renderers, keeping the copy shortcut conversation-only via capability gating, and adding regression coverage for security text/markdown/HTML/JSON rendering.
@@ -98,3 +100,7 @@ Task 6 is now in progress. The current pass is tightening regression coverage ar
   - Current-page text/markdown/HTML/official-JSON exporters now reject non-conversation pages before checking `checkIfConversationStarted()`, so findings-list pages fail closed with the unsupported-page message instead of a chat-only alert.
   - `src/menuInjection.test.ts` now also asserts that `security-sidebar` injections are dropped once the page context becomes `security-findings-list`.
 - [ ] Next: rerun the reviewer after the latest hardening pass and keep iterating until the review is clean.
+- [x] Evidence: real-world scan detail pages can expose a preferred configured scan id that is not directly refetchable by the userscript.
+  - Repro URL: `/codex/security/scans/github-235712907?sev=critical%2Chigh`.
+  - Observed failing requests: `GET /backend-api/aardvark/scan_configurations/user-…:github-235712907` and `/stats`, both `403`.
+  - Conclusion: current-page resource timing is still useful as a hint, but export must fall back to repo-based scan selection when the hinted id is inaccessible.
