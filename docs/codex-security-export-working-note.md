@@ -1,5 +1,7 @@
 # Summary
 
+Finding detail exports were dropping the page-level `Commit` and `Repository` metadata even though the finding payload and DOM both expose them. The fix is to normalize `commit_analysis.commit_hash`/`author`/`author_date` plus `repo_url` into summary sub-sections so text, markdown, and HTML exports retain those blocks.
+
 The initial Codex Security scan export shipped with a brittle optimization: on scan detail pages it preferred the newest `scan_configurations/:id` resource entry from `performance` timing, but treated any failure to refetch that concrete id as fatal. Real pages can surface owner-qualified ids such as `user-...:github-...` that the userscript then receives `403 Forbidden` for, even though repo-scoped scan resolution is still available. The fix is to keep the optimization only as a hint and fall back to deterministic repo-based scan selection on `403`/`404` preferred-id lookup failures.
 
 Codex Security support should be added as a first-class export surface rather than squeezed into the existing conversation-only path. The plan supports a phase 1 implementation that exports current findings and scans detail pages, includes threat model content from scan detail, keeps findings-list routes non-exportable for now, and preserves existing conversation/share-page behavior.
@@ -104,3 +106,7 @@ Task 6 is now in progress. The current pass is tightening regression coverage ar
   - Repro URL: `/codex/security/scans/github-235712907?sev=critical%2Chigh`.
   - Observed failing requests: `GET /backend-api/aardvark/scan_configurations/user-…:github-235712907` and `/stats`, both `403`.
   - Conclusion: current-page resource timing is still useful as a hint, but export must fall back to repo-based scan selection when the hinted id is inaccessible.
+- [x] Evidence: finding detail pages expose `Commit` and `Repository` as first-class metadata and the finding payload also carries the same source data.
+  - The supplied SingleFile DOM shows a stable three-column metadata grid with `Severity`, `Commit`, and `Repository` immediately above the `Summary` section.
+  - The supplied HAR detail response for a finding detail request includes `commit_analysis.commit_hash`, `author`, `author_date`, and `repo_url`.
+  - Conclusion: export should derive commit/repository blocks from the payload instead of trying to scrape rendered DOM text.

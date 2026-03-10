@@ -100,6 +100,7 @@ describe('normalizeSecurityFindingDocument', () => {
         ])
         expect(document.sections[0].title).toBe('Summary')
         expect(document.sections[0].content).toContain('Introduced device-code endpoints')
+        expect(document.sections[0].content).toContain('### Repository')
         expect(document.sections[0].content).toContain('### Severity')
         expect(document.sections[0].content).toContain('high')
         expect(document.sections[0].content).toContain('### Status')
@@ -140,7 +141,14 @@ describe('normalizeSecurityFindingDocument', () => {
             proposed_patch: null,
         }))
 
-        expect(document.sections).toEqual([])
+        expect(document.sections).toEqual([
+            {
+                id: 'summary',
+                title: 'Summary',
+                format: 'markdown',
+                content: '### Repository\n\n[example/example-repo](https://github.com/example/example-repo)',
+            },
+        ])
     })
 
     it('keeps a summary section when only reason and finding metadata remain', () => {
@@ -169,7 +177,55 @@ describe('normalizeSecurityFindingDocument', () => {
             },
         }))
 
-        expect(document.sections[0].content).toBe('Only descriptive text remains.')
+        expect(document.sections[0].content).toBe('Only descriptive text remains.\n\n### Repository\n\n[example/example-repo](https://github.com/example/example-repo)')
+    })
+
+    it('formats commit and repository details from finding payload metadata', () => {
+        const document = normalizeSecurityFindingDocument(createFinding({
+            repo_url: 'https://github.com/example/example-repo',
+            commit_analysis: {
+                description: 'Finding description.',
+                commit_hash: '17d1314fc1bd936f554dad20f2e261860727718c',
+                repo_url: 'https://github.com/example/example-repo',
+                author: '\'example-author\'',
+                author_date: '2025-10-21 10:11:07 -0700',
+            },
+            proposed_patch: null,
+        }))
+
+        expect(document.sections[0].content).toContain('### Commit')
+        expect(document.sections[0].content).toContain('[`17d1314`](https://github.com/example/example-repo/commit/17d1314fc1bd936f554dad20f2e261860727718c) 2025-10-21 10:11:07 -0700')
+        expect(document.sections[0].content).toContain('by example-author')
+        expect(document.sections[0].content).toContain('### Repository')
+        expect(document.sections[0].content).toContain('[example/example-repo](https://github.com/example/example-repo)')
+    })
+
+    it('keeps repository details when commit-specific metadata is absent', () => {
+        const document = normalizeSecurityFindingDocument(createFinding({
+            repo_url: 'https://github.com/example/example-repo',
+            commit_analysis: {
+                description: 'Finding description.',
+            },
+            proposed_patch: null,
+        }))
+
+        expect(document.sections[0].content).not.toContain('### Commit')
+        expect(document.sections[0].content).toContain('### Repository')
+        expect(document.sections[0].content).toContain('[example/example-repo](https://github.com/example/example-repo)')
+    })
+
+    it('falls back to top-level repo_url when commit_analysis repo_url is absent', () => {
+        const document = normalizeSecurityFindingDocument(createFinding({
+            repo_url: 'https://github.com/example/example-repo',
+            commit_analysis: {
+                description: 'Finding description.',
+                commit_hash: '17d1314fc1bd936f554dad20f2e261860727718c',
+            },
+            proposed_patch: null,
+        }))
+
+        expect(document.sections[0].content).toContain('### Repository')
+        expect(document.sections[0].content).toContain('[example/example-repo](https://github.com/example/example-repo)')
     })
 
     it('trims finding-derived strings in title and metadata', () => {

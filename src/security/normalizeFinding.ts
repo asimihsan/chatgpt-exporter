@@ -27,6 +27,64 @@ function getString(value: unknown): string | null {
     return typeof value === 'string' && value.trim() !== '' ? value.trim() : null
 }
 
+function stripWrappingQuotes(value: string): string {
+    if (value.length >= 2 && value.startsWith('\'') && value.endsWith('\'')) {
+        return value.slice(1, -1).trim()
+    }
+
+    return value
+}
+
+function getQuotedString(value: unknown): string | null {
+    const normalized = getString(value)
+    return normalized ? stripWrappingQuotes(normalized) : null
+}
+
+function getRepoDisplayName(repoUrl: string | null): string | null {
+    if (!repoUrl) return null
+
+    try {
+        const url = new URL(repoUrl)
+        const path = url.pathname.replace(/^\/+|\/+$/g, '')
+        const normalized = path.replace(/\.git$/i, '')
+        return normalized || repoUrl
+    } catch {
+        return repoUrl
+    }
+}
+
+function buildCommitSummary(finding: ApiSecurityFinding): string | null {
+    const commitAnalysis = asRecord(finding.commit_analysis)
+    const commitHash = getString(commitAnalysis?.commit_hash)
+    const repoUrl = getString(commitAnalysis?.repo_url) ?? getString(finding.repo_url)
+    const author = getQuotedString(commitAnalysis?.author)
+    const authorDate = getString(commitAnalysis?.author_date)
+
+    if (!commitHash && !author && !authorDate) return null
+
+    const shortHash = commitHash ? commitHash.slice(0, 7) : null
+    const commitUrl = commitHash && repoUrl ? `${repoUrl.replace(/\/+$/g, '')}/commit/${encodeURIComponent(commitHash)}` : null
+    const commitLabel = shortHash
+        ? commitUrl ? `[\`${shortHash}\`](${commitUrl})` : `\`${shortHash}\``
+        : null
+
+    return [
+        [commitLabel, authorDate].filter((value): value is string => Boolean(value)).join(' '),
+        author ? `by ${author}` : null,
+    ].filter((value): value is string => Boolean(value)).join('\n\n')
+}
+
+function buildRepositorySummary(finding: ApiSecurityFinding): string | null {
+    const commitAnalysis = asRecord(finding.commit_analysis)
+    const repoUrl = getString(commitAnalysis?.repo_url) ?? getString(finding.repo_url)
+    const repoDisplayName = getRepoDisplayName(repoUrl)
+
+    if (!repoDisplayName) return null
+    if (!repoUrl) return repoDisplayName
+
+    return `[${repoDisplayName}](${repoUrl})`
+}
+
 function getTitle(finding: ApiSecurityFinding): string {
     const commitAnalysis = asRecord(finding.commit_analysis)
     return getString(commitAnalysis?.title)
@@ -44,12 +102,16 @@ function buildSummarySection(finding: ApiSecurityFinding): SecurityDocumentSecti
     const description = getString(commitAnalysis?.description)
     const reason = getString(commitAnalysis?.reason)
     const bugsFoundOrFixed = getString(commitAnalysis?.bugs_found_or_fixed)
+    const commit = buildCommitSummary(finding)
+    const repository = buildRepositorySummary(finding)
     const criticality = getString(finding.criticality)
     const status = getString(finding.status)
     const lines = [
         description,
         reason && (reason !== getTitle(finding) || !description) ? `### Reason\n\n${reason}` : null,
         bugsFoundOrFixed ? `### Change impact\n\n${bugsFoundOrFixed}` : null,
+        commit ? `### Commit\n\n${commit}` : null,
+        repository ? `### Repository\n\n${repository}` : null,
         criticality ? `### Severity\n\n${criticality}` : null,
         status ? `### Status\n\n${status}` : null,
     ].filter((value): value is string => Boolean(value))

@@ -131,6 +131,10 @@ describe('securityDocument renderers', () => {
             commit_analysis: {
                 title: 'Device code flow allows client impersonation without secret',
                 description: 'Finding description.',
+                commit_hash: '17d1314fc1bd936f554dad20f2e261860727718c',
+                repo_url: 'https://github.com/example/example-repo',
+                author: '\'example-author\'',
+                author_date: '2025-10-21 10:11:07 -0700',
                 validation_report: 'Validate this finding.',
                 validation_rubric: '- [x] Confirm device code flow lacks client authentication.',
                 relevant_lines: [
@@ -168,6 +172,10 @@ describe('securityDocument renderers', () => {
         expect(text).toContain('Title: Device code flow allows client impersonation without secret')
         expect(text).toContain('## Summary')
         expect(text).toContain('## Validation')
+        expect(text).toContain('### Commit')
+        expect(text).toContain('[`17d1314`](https://github.com/example/example-repo/commit/17d1314fc1bd936f554dad20f2e261860727718c) 2025-10-21 10:11:07 -0700')
+        expect(text).toContain('### Repository')
+        expect(text).toContain('[example/example-repo](https://github.com/example/example-repo)')
         expect(text).toContain('### Checklist')
         expect(text).toContain('- [x] Confirm device code flow lacks client authentication.')
         expect(markdown).toContain('---')
@@ -175,6 +183,8 @@ describe('securityDocument renderers', () => {
         expect(markdown).toContain('"model": ""')
         expect(markdown).toContain('# Device code flow allows client impersonation without secret')
         expect(markdown).toContain('## Summary')
+        expect(markdown).toContain('### Commit')
+        expect(markdown).toContain('### Repository')
         expect(markdown).toContain('## Validation')
         expect(markdown).toContain('## Evidence')
         expect(markdown).toContain('## Attack-path analysis')
@@ -230,6 +240,10 @@ describe('securityDocument renderers', () => {
                 description: 'The workflow enables merge_group while secrets remain globally available.',
                 reason: 'Queued PR code can access sensitive tokens.',
                 bugs_found_or_fixed: 'Introduced secret exposure on merge queue runs.',
+                commit_hash: '390a144ed9608376af2f262c2444c7bfd6afd761',
+                repo_url: 'https://github.com/example/example-repo',
+                author: '\'example-author\'',
+                author_date: '2025-10-21 10:11:07 -0700',
                 validation_report: 'Validated through workflow review.',
                 validation_rubric: '- [x] Confirm workflow triggers include merge_group.\n- [x] Confirm secret is exported globally.',
             },
@@ -240,6 +254,10 @@ describe('securityDocument renderers', () => {
         expect(html).toContain('<h2>Summary</h2>')
         expect(html).toContain('<h3>Reason</h3>')
         expect(html).toContain('<h3>Change impact</h3>')
+        expect(html).toContain('<h3>Commit</h3>')
+        expect(html).toContain('<h3>Repository</h3>')
+        expect(html).toContain('href="https://github.com/example/example-repo/commit/390a144ed9608376af2f262c2444c7bfd6afd761"')
+        expect(html).toContain('href="https://github.com/example/example-repo"')
         expect(html).toContain('<h2>Validation</h2>')
         expect(html).toContain('<h3>Checklist</h3>')
         expect(html).toContain('type="checkbox"')
