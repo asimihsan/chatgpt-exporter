@@ -7,9 +7,11 @@
 import { fetchConversation, getCurrentChatId, processConversation } from '../api'
 import i18n from '../i18n'
 import { checkIfConversationStarted } from '../page'
+import { getPageContext } from '../pageContext'
 import { copyToClipboard } from '../utils/clipboard'
 import { flatMap, fromMarkdown, toMarkdown } from '../utils/markdown'
 import { standardizeLineBreaks } from '../utils/text'
+import { getSecurityUnsupportedMessage, loadCurrentSecurityDocument, securityDocumentToText } from './securityDocument'
 import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
 import { shouldIncludeMessageForExport } from './messageClassifier'
 import { getExportAuthorLabel } from './messageLabel'
@@ -19,6 +21,24 @@ import type { ConversationNodeMessage } from '../api'
 import type { Emphasis, Strong } from 'mdast'
 
 export async function exportToText() {
+    const pageContext = getPageContext()
+
+    if (pageContext.kind === 'security-finding' || pageContext.kind === 'security-scan') {
+        const document = await loadCurrentSecurityDocument()
+        if (!document) {
+            alert(getSecurityUnsupportedMessage())
+            return false
+        }
+
+        await copyToClipboard(standardizeLineBreaks(securityDocumentToText(document)))
+        return true
+    }
+
+    if (pageContext.kind !== 'conversation') {
+        alert(getSecurityUnsupportedMessage())
+        return false
+    }
+
     if (!checkIfConversationStarted()) {
         alert(i18n.t('Please start a conversation first'))
         return false

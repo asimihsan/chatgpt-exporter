@@ -7,11 +7,32 @@ import JSZip from 'jszip'
 import { fetchConversation, getCurrentChatId, processConversation } from '../api'
 import i18n from '../i18n'
 import { checkIfConversationStarted } from '../page'
+import { getPageContext } from '../pageContext'
 import { convertToOoba, convertToTavern } from '../utils/conversion'
 import { downloadFile, getFileNameWithFormat } from '../utils/download'
+import { getSecurityFileNameOptions, getSecurityUnsupportedMessage, loadCurrentSecurityDocument, securityDocumentToJson } from './securityDocument'
 import type { ApiConversationWithId } from '../api'
 
 export async function exportToJson(fileNameFormat: string) {
+    const pageContext = getPageContext()
+
+    if (pageContext.kind === 'security-finding' || pageContext.kind === 'security-scan') {
+        const document = await loadCurrentSecurityDocument()
+        if (!document) {
+            alert(getSecurityUnsupportedMessage())
+            return false
+        }
+
+        const fileName = getFileNameWithFormat(fileNameFormat, 'json', getSecurityFileNameOptions(document))
+        downloadFile(fileName, 'application/json', securityDocumentToJson(document))
+        return true
+    }
+
+    if (pageContext.kind !== 'conversation') {
+        alert(getSecurityUnsupportedMessage())
+        return false
+    }
+
     if (!checkIfConversationStarted()) {
         alert(i18n.t('Please start a conversation first'))
         return false
@@ -32,6 +53,12 @@ export async function exportToJson(fileNameFormat: string) {
 }
 
 export async function exportToTavern(fileNameFormat: string) {
+    const pageContext = getPageContext()
+    if (pageContext.kind !== 'conversation') {
+        alert(getSecurityUnsupportedMessage())
+        return false
+    }
+
     if (!checkIfConversationStarted()) {
         alert(i18n.t('Please start a conversation first'))
         return false
@@ -49,6 +76,12 @@ export async function exportToTavern(fileNameFormat: string) {
 }
 
 export async function exportToOoba(fileNameFormat: string) {
+    const pageContext = getPageContext()
+    if (pageContext.kind !== 'conversation') {
+        alert(getSecurityUnsupportedMessage())
+        return false
+    }
+
     if (!checkIfConversationStarted()) {
         alert(i18n.t('Please start a conversation first'))
         return false

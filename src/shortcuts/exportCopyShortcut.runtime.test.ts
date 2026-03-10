@@ -6,11 +6,16 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
 const exportToTextMock = vi.fn<() => Promise<boolean>>()
+const getExportCapabilitiesMock = vi.fn()
 const getSettingsMock = vi.fn()
 const subscribeSettingsMock = vi.fn()
 
 vi.mock('../exporter/text', () => ({
     exportToText: exportToTextMock,
+}))
+
+vi.mock('../exporter/pageExport', () => ({
+    getExportCapabilities: getExportCapabilitiesMock,
 }))
 
 vi.mock('../settings/service', () => ({
@@ -82,6 +87,9 @@ async function setupRuntimeHarness(
     vi.stubGlobal('CustomEvent', FakeCustomEvent)
 
     getSettingsMock.mockReturnValue(initialSettings)
+    getExportCapabilitiesMock.mockReturnValue({
+        copyShortcutEnabled: true,
+    })
     subscribeSettingsMock.mockImplementation((listener: typeof settingsListener) => {
         settingsListener = listener
         return () => {}
@@ -178,6 +186,22 @@ describe('export copy shortcut runtime', () => {
         await flushMicrotasks()
 
         expect(exportToTextMock).toHaveBeenCalledTimes(1)
+        expect(harness.dispatchEvent).not.toHaveBeenCalled()
+    })
+
+    it('does not run the shortcut on security export pages', async () => {
+        exportToTextMock.mockResolvedValue(true)
+        const harness = await setupRuntimeHarness('Win32')
+        getExportCapabilitiesMock.mockReturnValue({
+            copyShortcutEnabled: false,
+        })
+
+        const event = createKeyboardEvent({ ctrlKey: true })
+        harness.keydownHandler(event)
+        await flushMicrotasks()
+
+        expect(exportToTextMock).not.toHaveBeenCalled()
+        expect(event.preventDefault).not.toHaveBeenCalled()
         expect(harness.dispatchEvent).not.toHaveBeenCalled()
     })
 })

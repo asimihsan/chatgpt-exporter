@@ -4,6 +4,7 @@
  */
 
 import { exportToText } from '../exporter/text'
+import { getExportCapabilities } from '../exporter/pageExport'
 import { getSettings, subscribeSettings } from '../settings/service'
 import { DEFAULT_COPY_TEXT_SHORTCUT, isEditableContext, isMacPlatform, matchesExportCopyShortcut } from './exportCopyShortcutHelpers'
 
@@ -83,6 +84,10 @@ async function handleShortcutKeydown(event: KeyboardEvent, isMac: boolean): Prom
     }
     if (isEditableContext(event.target, document.activeElement)) {
         logShortcut('skip:editable-context', event)
+        return
+    }
+    if (!getExportCapabilities().copyShortcutEnabled) {
+        logShortcut('skip:unsupported-page', event)
         return
     }
 

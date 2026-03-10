@@ -9,6 +9,7 @@ import { fetchConversation, getCurrentChatId, processConversation } from '../api
 import { KEY_TIMESTAMP_24H, KEY_TIMESTAMP_ENABLED, KEY_TIMESTAMP_HTML, baseUrl } from '../constants'
 import i18n from '../i18n'
 import { checkIfConversationStarted, getUserAvatar } from '../page'
+import { getPageContext } from '../pageContext'
 import templateHtml from '../template.html?raw'
 import { downloadFile, getFileNameWithFormat } from '../utils/download'
 import { fromMarkdown, toHtml } from '../utils/markdown'
@@ -17,6 +18,7 @@ import { standardizeLineBreaks } from '../utils/text'
 import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
 import { shouldIncludeMessageForExport } from './messageClassifier'
 import { getExportAuthorLabel } from './messageLabel'
+import { getSecurityFileNameOptions, getSecurityUnsupportedMessage, loadCurrentSecurityDocument, securityDocumentToHtml } from './securityDocument'
 import { dateStr, getColorScheme, timestamp, unixTimestampToISOString } from '../utils/utils'
 import { normalizeReferenceText, replaceReferenceTokens, resolveExportMessage, stripUiTokens } from './shared'
 import { sanitizeLLMText } from './textSanitizer'
@@ -24,6 +26,26 @@ import type { ApiConversationWithId, ConversationNodeMessage, ConversationResult
 import type { ExportMeta } from '../ui/SettingContext'
 
 export async function exportToHtml(fileNameFormat: string, metaList: ExportMeta[]) {
+    const pageContext = getPageContext()
+
+    if (pageContext.kind === 'security-finding' || pageContext.kind === 'security-scan') {
+        const document = await loadCurrentSecurityDocument()
+        if (!document) {
+            alert(getSecurityUnsupportedMessage())
+            return false
+        }
+
+        const html = securityDocumentToHtml(document, metaList)
+        const fileName = getFileNameWithFormat(fileNameFormat, 'html', getSecurityFileNameOptions(document))
+        downloadFile(fileName, 'text/html', standardizeLineBreaks(html))
+        return true
+    }
+
+    if (pageContext.kind !== 'conversation') {
+        alert(getSecurityUnsupportedMessage())
+        return false
+    }
+
     if (!checkIfConversationStarted()) {
         alert(i18n.t('Please start a conversation first'))
         return false
