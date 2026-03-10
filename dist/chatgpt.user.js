@@ -3,7 +3,7 @@
 // @name:zh-CN         ChatGPT Exporter
 // @name:zh-TW         ChatGPT Exporter
 // @namespace          asimihsan
-// @version            2.29.10
+// @version            2.29.11
 // @author             asimihsan
 // @description        Easily export the whole ChatGPT conversation history for further analysis or sharing.
 // @description:zh-CN  轻松导出 ChatGPT 聊天记录，以便进一步分析或分享。
@@ -579,6 +579,18 @@ reset: function() {
     };
     return memorized;
   }
+  class ApiHttpError extends Error {
+    status;
+    statusText;
+    url;
+    constructor(url, response) {
+      super(`${response.status} ${response.statusText}`.trim());
+      this.name = "ApiHttpError";
+      this.status = response.status;
+      this.statusText = response.statusText;
+      this.url = url;
+    }
+  }
   function buildUrl(base, path2, params = {}) {
     const remainingParams = { ...params };
     const resolvedPath = path2.replace(/:([a-z0-9_]+)/gi, (_2, key2) => {
@@ -631,7 +643,7 @@ reset: function() {
       }
     });
     if (!response.ok) {
-      throw new Error(response.statusText);
+      throw new ApiHttpError(url, response);
     }
     return response.json();
   }
@@ -981,14 +993,20 @@ node2.message?.author.role !== "system" && node2.message?.content.content_type !
   async function resolveSecurityScanSelection(repoId, options = {}) {
     const { preferredConfiguredScanId = null, limit = 100 } = options;
     if (preferredConfiguredScanId) {
-      const preferredScan = await fetchSecurityScan(preferredConfiguredScanId);
-      if (preferredScan.scan_input.repo_id !== repoId) {
-        throw new Error(`Preferred scan ${preferredConfiguredScanId} does not belong to repo ${repoId}.`);
+      try {
+        const preferredScan = await fetchSecurityScan(preferredConfiguredScanId);
+        if (preferredScan.scan_input.repo_id !== repoId) {
+          throw new Error(`Preferred scan ${preferredConfiguredScanId} does not belong to repo ${repoId}.`);
+        }
+        return {
+          configuredScanId: preferredScan.id,
+          source: "preferred"
+        };
+      } catch (error) {
+        if (!isRecoverablePreferredScanLookupError(error)) {
+          throw error;
+        }
       }
-      return {
-        configuredScanId: preferredScan.id,
-        source: "preferred"
-      };
     }
     const response = await fetchSecurityScanConfigurations({ repoId, limit });
     const matchingScans = response.items.filter((scan) => scan.scan_input.repo_id === repoId);
@@ -1005,6 +1023,9 @@ node2.message?.author.role !== "system" && node2.message?.content.content_type !
       configuredScanId: matchingScans[0].id,
       source: "list"
     };
+  }
+  function isRecoverablePreferredScanLookupError(error) {
+    return error instanceof ApiHttpError && (error.status === 403 || error.status === 404);
   }
   async function fetchResolvedSecurityScanByRepoId(repoId, options = {}) {
     const selection = await resolveSecurityScanSelection(repoId, options);
