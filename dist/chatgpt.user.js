@@ -3,7 +3,7 @@
 // @name:zh-CN         ChatGPT Exporter
 // @name:zh-TW         ChatGPT Exporter
 // @namespace          asimihsan
-// @version            2.29.13
+// @version            2.29.14
 // @author             asimihsan
 // @description        Easily export the whole ChatGPT conversation history for further analysis or sharing.
 // @description:zh-CN  轻松导出 ChatGPT 聊天记录，以便进一步分析或分享。
@@ -16803,12 +16803,23 @@ self2.previous !== null ||
     const commitAnalysis = asRecord(finding.commit_analysis);
     const description = getString(commitAnalysis?.description);
     const reason = getString(commitAnalysis?.reason);
+    const bugsFoundOrFixed = getString(commitAnalysis?.bugs_found_or_fixed);
+    const criticality = getString(finding.criticality);
+    const status = getString(finding.status);
     const lines = [
       description,
-      reason && (reason !== getTitle(finding) || !description) ? `Reason: ${reason}` : null,
-      getString(commitAnalysis?.bugs_found_or_fixed) ? `Change impact: ${getString(commitAnalysis?.bugs_found_or_fixed)}` : null,
-      getString(finding.criticality) ? `Severity: ${getString(finding.criticality)}` : null,
-      getString(finding.status) ? `Status: ${getString(finding.status)}` : null
+      reason && (reason !== getTitle(finding) || !description) ? `### Reason
+
+${reason}` : null,
+      bugsFoundOrFixed ? `### Change impact
+
+${bugsFoundOrFixed}` : null,
+      criticality ? `### Severity
+
+${criticality}` : null,
+      status ? `### Status
+
+${status}` : null
     ].filter((value) => Boolean(value));
     if (lines.length === 0) return null;
     return {
@@ -16862,10 +16873,14 @@ self2.previous !== null ||
   }
   function buildValidationSection(finding) {
     const commitAnalysis = asRecord(finding.commit_analysis);
-    const validation = getString(commitAnalysis?.validation_str);
+    const validation = getString(commitAnalysis?.validation_report) ?? getString(commitAnalysis?.validation_str);
+    const validationRubric = getString(commitAnalysis?.validation_rubric);
     const validationArtifact = getValidationArtifactSummary(commitAnalysis?.validation_artifact);
     const parts = [
       validation,
+      validationRubric ? `### Checklist
+
+${validationRubric}` : null,
       validationArtifact ? `Validation artifact: ${validationArtifact}` : null
     ].filter((value) => Boolean(value));
     if (parts.length === 0) return null;
@@ -17260,7 +17275,8 @@ ${section.content}`).join("\n\n");
     }
   }
   function securityDocumentToText(document2) {
-    const sections = document2.sections.map((section) => `${section.title}:
+    const sections = document2.sections.map((section) => `## ${section.title}
+
 ${section.content}`).join("\n\n");
     return `Title: ${normalizeSingleLineText(document2.title)}
 Source: ${document2.sourceUrl}
