@@ -5,6 +5,9 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { JSDOM } from 'jsdom'
+import type * as PageContextModule from '../pageContext'
+import type * as DownloadModule from '../utils/download'
+import type * as UtilsModule from '../utils/utils'
 
 const {
     getPageContextMock,
@@ -31,7 +34,7 @@ vi.mock('html2canvas', () => ({
 }))
 
 vi.mock('../pageContext', async () => {
-    const actual = await vi.importActual<typeof import('../pageContext')>('../pageContext')
+    const actual = await vi.importActual<typeof PageContextModule>('../pageContext')
     return {
         ...actual,
         getPageContext: getPageContextMock,
@@ -44,7 +47,7 @@ vi.mock('../page', () => ({
 }))
 
 vi.mock('../utils/download', async () => {
-    const actual = await vi.importActual<typeof import('../utils/download')>('../utils/download')
+    const actual = await vi.importActual<typeof DownloadModule>('../utils/download')
     return {
         ...actual,
         downloadUrl: downloadUrlMock,
@@ -64,7 +67,7 @@ vi.mock('../i18n', () => ({
 }))
 
 vi.mock('../utils/utils', async () => {
-    const actual = await vi.importActual<typeof import('../utils/utils')>('../utils/utils')
+    const actual = await vi.importActual<typeof UtilsModule>('../utils/utils')
     return {
         ...actual,
         sleep: vi.fn(async () => {}),

@@ -4,6 +4,7 @@
  */
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import type * as DownloadModule from '../utils/download'
 
 const {
     getPageContextMock,
@@ -57,7 +58,7 @@ vi.mock('../utils/clipboard', () => ({
 }))
 
 vi.mock('../utils/download', async () => {
-    const actual = await vi.importActual<typeof import('../utils/download')>('../utils/download')
+    const actual = await vi.importActual<typeof DownloadModule>('../utils/download')
     return {
         ...actual,
         downloadFile: downloadFileMock,

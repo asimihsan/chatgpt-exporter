@@ -33,10 +33,22 @@ function escapeSecurityMarkdownSource(input: string): string {
         .replaceAll('>', '&gt;')
 }
 
+function stripAsciiControlAndWhitespace(input: string): string {
+    return Array.from(input)
+        .filter(char => {
+            const codePoint = char.charCodeAt(0)
+            if (codePoint <= 0x1F || codePoint === 0x7F) {
+                return false
+            }
+            return char.trim().length > 0
+        })
+        .join('')
+}
+
 function isUnsafeUrl(url: string): boolean {
-    const normalized = url
-        .replaceAll(/&#(?:x3a|58|X3A|X58);/g, ':')
-        .replaceAll(/[\u0000-\u001F\u007F\s]+/g, '')
+    const normalized = stripAsciiControlAndWhitespace(
+        url.replaceAll(/&#(?:x3a|58|X3A|X58);/g, ':'),
+    )
         .toLowerCase()
 
     return normalized.startsWith('javascript:')
@@ -107,7 +119,7 @@ function normalizeSingleLineText(input: string): string {
 }
 
 function escapeMarkdownInlineText(input: string): string {
-    return input.replaceAll(/([\\`*_{}\[\]()#+\-!.>])/g, '\\$1')
+    return input.replaceAll(/([\\`*_{}[\]()#+\-!.>])/g, '\\$1')
 }
 
 function buildSecurityFrontMatter(document: SecurityDocument<unknown>, metaList?: ExportMeta[]): string {
