@@ -12,6 +12,7 @@ import { exportToHtml } from '../exporter/html'
 import { exportToPng } from '../exporter/image'
 import { exportToJson, exportToOoba, exportToTavern } from '../exporter/json'
 import { exportToMarkdown } from '../exporter/markdown'
+import { getExportCapabilities } from '../exporter/pageExport'
 import { exportToText } from '../exporter/text'
 import { useWindowResize } from '../hooks/useWindowResize'
 import { getHistoryDisabled } from '../page'
@@ -29,7 +30,8 @@ import './Dialog.css'
 
 function MenuInner({ container }: { container: HTMLDivElement }) {
     const { t } = useTranslation()
-    const disabled = getHistoryDisabled()
+    const capabilities = getExportCapabilities()
+    const disabled = capabilities.historyDisabledApplies && getHistoryDisabled()
 
     const [open, setOpen] = useState(false)
     const [jsonOpen, setJsonOpen] = useState(false)
@@ -197,68 +199,80 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                     text={t('Copy Text')}
                     successText={t('Copied!')}
                     icon={IconCopy}
+                    disabled={!capabilities.canExportText}
                     onClick={onClickText}
                 />
                 <MenuItem
                     text={t('Screenshot')}
                     icon={IconCamera}
+                    disabled={!capabilities.canExportPng}
                     onClick={onClickPng}
                 />
                 <MenuItem
                     text={t('Markdown')}
                     icon={IconMarkdown}
+                    disabled={!capabilities.canExportMarkdown}
                     onClick={onClickMarkdown}
                 />
                 <MenuItem
                     text={t('HTML')}
                     icon={FileCode}
+                    disabled={!capabilities.canExportHtml}
                     onClick={onClickHtml}
                 />
-                <Dialog.Root
-                    open={jsonOpen}
-                    onOpenChange={setJsonOpen}
-                >
-                    <Dialog.Trigger asChild>
-                        <MenuItem
-                            text={t('JSON')}
-                            icon={IconJSON}
-                            onClick={onClickJSON}
-                        />
-                    </Dialog.Trigger>
-                    <Dialog.Portal>
-                        <Dialog.Overlay className={EXPORT_DIALOG_CLASS_NAMES.overlay} />
-                        <Dialog.Content className={EXPORT_DIALOG_CLASS_NAMES.content} style={{ width: '320px' }}>
-                            <Dialog.Title className={EXPORT_DIALOG_CLASS_NAMES.title}>{t('JSON')}</Dialog.Title>
+                {capabilities.canExportJson && (
+                    <Dialog.Root
+                        open={jsonOpen}
+                        onOpenChange={setJsonOpen}
+                    >
+                        <Dialog.Trigger asChild>
                             <MenuItem
-                                text={t('OpenAI Official Format')}
-                                icon={IconCopy}
-                                onClick={onClickOfficialJSON}
+                                text={t('JSON')}
+                                icon={IconJSON}
+                                onClick={onClickJSON}
                             />
+                        </Dialog.Trigger>
+                        <Dialog.Portal>
+                            <Dialog.Overlay className={EXPORT_DIALOG_CLASS_NAMES.overlay} />
+                            <Dialog.Content className={EXPORT_DIALOG_CLASS_NAMES.content} style={{ width: '320px' }}>
+                                <Dialog.Title className={EXPORT_DIALOG_CLASS_NAMES.title}>{t('JSON')}</Dialog.Title>
+                                <MenuItem
+                                    text={t('OpenAI Official Format')}
+                                    icon={IconCopy}
+                                    onClick={onClickOfficialJSON}
+                                />
+                                {capabilities.canExportTavern && (
+                                    <MenuItem
+                                        text="JSONL (TavernAI, SillyTavern)"
+                                        icon={IconCopy}
+                                        onClick={onClickTavern}
+                                    />
+                                )}
+                                {capabilities.canExportOoba && (
+                                    <MenuItem
+                                        text="Ooba (text-generation-webui)"
+                                        icon={IconCopy}
+                                        onClick={onClickOoba}
+                                    />
+                                )}
+                            </Dialog.Content>
+                        </Dialog.Portal>
+                    </Dialog.Root>
+                )}
+                {capabilities.canExportAll && (
+                    <ExportDialog
+                        format={format}
+                        open={exportOpen}
+                        onOpenChange={setExportOpen}
+                    >
+                        <div>
                             <MenuItem
-                                text="JSONL (TavernAI, SillyTavern)"
-                                icon={IconCopy}
-                                onClick={onClickTavern}
+                                text={t('Export All')}
+                                icon={IconZip}
                             />
-                            <MenuItem
-                                text="Ooba (text-generation-webui)"
-                                icon={IconCopy}
-                                onClick={onClickOoba}
-                            />
-                        </Dialog.Content>
-                    </Dialog.Portal>
-                </Dialog.Root>
-                <ExportDialog
-                    format={format}
-                    open={exportOpen}
-                    onOpenChange={setExportOpen}
-                >
-                    <div>
-                        <MenuItem
-                            text={t('Export All')}
-                            icon={IconZip}
-                        />
-                    </div>
-                </ExportDialog>
+                        </div>
+                    </ExportDialog>
+                )}
             </div>
 
             {!isMobile && (

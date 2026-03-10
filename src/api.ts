@@ -18,3 +18,26 @@ export {
 export { processConversation } from './api/processing'
 
 export { getTeamAccountId } from './api/http'
+
+export {
+    fetchResolvedSecurityScanByRepoId,
+    fetchSecurityFinding,
+    fetchSecurityRepo,
+    fetchSecurityScan,
+    fetchSecurityScanConfigurations,
+    fetchSecurityScanStats,
+    parseSecurityProjectOverview,
+    resolveSecurityScanSelection,
+} from './api/securityApi'
+
+export type {
+    ApiSecurityFinding,
+    ApiSecurityGithubRepository,
+    ApiSecurityParsedProjectOverview,
+    ApiSecurityScanConfiguration,
+    ApiSecurityScanConfigurationsResponse,
+    ApiSecurityScanInput,
+    ApiSecurityScanStats,
+    ResolvedSecurityScanBundle,
+    ResolvedSecurityScanSelection,
+} from './api/securityTypes'

@@ -62,6 +62,7 @@ export default defineConfig({
                     'https://chat.openai.com/share/*',
                     // support https://chat.openai.com/share/123456789/continue
                     'https://chat.openai.com/share/*/continue',
+                    'https://chat.openai.com/codex/security/*',
 
                     'https://chatgpt.com/',
                     'https://chatgpt.com/?model=*',
@@ -71,6 +72,7 @@ export default defineConfig({
                     'https://chatgpt.com/gpts/*',
                     'https://chatgpt.com/share/*',
                     'https://chatgpt.com/share/*/continue',
+                    'https://chatgpt.com/codex/security/*',
 
                     'https://new.oaifree.com/',
                     'https://new.oaifree.com/?model=*',
@@ -80,6 +82,7 @@ export default defineConfig({
                     'https://new.oaifree.com/gpts/*',
                     'https://new.oaifree.com/share/*',
                     'https://new.oaifree.com/share/*/continue',
+                    'https://new.oaifree.com/codex/security/*',
                 ],
                 'icon': 'https://chat.openai.com/favicon.ico',
                 'grant': [

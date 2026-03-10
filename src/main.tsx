@@ -7,7 +7,10 @@
 import { render } from 'preact'
 import sentinel from 'sentinel-js'
 import { fetchConversation, processConversation } from './api'
+import { type InjectionKind, type InjectionRecord, shouldKeepInjectedContainer } from './menuInjection'
+import { findSecuritySidebarMountTarget } from './menuMount'
 import { getChatIdFromUrl, isSharePage } from './page'
+import { getPageContext, isConversationPageContext, isSecurityExportPageContext } from './pageContext'
 import { registerExportCopyShortcut } from './shortcuts/exportCopyShortcut'
 import { registerSettingsMenuCommand } from './settings/menuCommand'
 import { Menu } from './ui/Menu'
@@ -27,13 +30,15 @@ function main() {
         styleEl.id = 'sentinel-css'
         document.head.append(styleEl)
 
-        const injectionMap = new Map<HTMLElement, HTMLElement>()
+        const injectionMap = new Map<HTMLElement, InjectionRecord>()
 
         const injectNavMenu = (nav: HTMLElement) => {
+            const pageContext = getPageContext()
+            if (!isConversationPageContext(pageContext) || pageContext.isSharePage || pageContext.isShareContinuePage) return
             if (injectionMap.has(nav)) return
 
             const container = getMenuContainer()
-            injectionMap.set(nav, container)
+            injectionMap.set(nav, { container, kind: 'conversation-nav' })
 
             const chatList = nav.querySelector(':scope > div.sticky.bottom-0')
             if (chatList) {
@@ -48,28 +53,64 @@ function main() {
             }
         }
 
+        const injectShareMenu = (target: HTMLElement) => {
+            const pageContext = getPageContext()
+            if (!pageContext.isSharePage || injectionMap.has(target)) return
+
+            const container = getMenuContainer()
+            injectionMap.set(target, { container, kind: 'share-wrapper' })
+            target.prepend(container)
+        }
+
+        const injectSecurityMenu = (target: HTMLElement) => {
+            const pageContext = getPageContext()
+            if (!isSecurityExportPageContext(pageContext) || injectionMap.has(target)) return
+
+            const container = getMenuContainer()
+            injectionMap.set(target, { container, kind: 'security-sidebar' })
+            target.prepend(container)
+        }
+
+        const shouldKeepInjection = (target: HTMLElement, kind: InjectionKind) => {
+            const pageContext = getPageContext()
+            const record = injectionMap.get(target)
+            if (!record || record.kind !== kind) return false
+            return shouldKeepInjectedContainer(target, record, pageContext)
+        }
+
         // Delay DOM injections until the host app has had time to hydrate.
         setTimeout(() => {
             sentinel.on('nav', injectNavMenu)
+            sentinel.on(`div[role="presentation"] > .w-full > div >.flex.w-full`, injectShareMenu)
+            sentinel.on('[role="separator"][aria-label="Resize repository pane"]', () => {
+                const mountTarget = findSecuritySidebarMountTarget()
+                if (mountTarget) {
+                    injectSecurityMenu(mountTarget)
+                }
+            })
 
             setInterval(() => {
-                injectionMap.forEach((container, nav) => {
-                    if (!nav.isConnected) {
-                        container.remove()
-                        injectionMap.delete(nav)
+                injectionMap.forEach((record, target) => {
+                    if (!shouldKeepInjection(target, record.kind)) {
+                        record.container.remove()
+                        injectionMap.delete(target)
                     }
                 })
 
                 const navList = Array.from(document.querySelectorAll('nav')).filter(nav => !injectionMap.has(nav))
                 navList.forEach(injectNavMenu)
-            }, 300)
 
-            // Support for share page
-            if (isSharePage()) {
-                sentinel.on(`div[role="presentation"] > .w-full > div >.flex.w-full`, (target) => {
-                    target.prepend(getMenuContainer())
-                })
-            }
+                if (isSharePage()) {
+                    const shareWrappers = Array.from(document.querySelectorAll<HTMLElement>('div[role="presentation"] > .w-full > div >.flex.w-full'))
+                        .filter(target => !injectionMap.has(target))
+                    shareWrappers.forEach(injectShareMenu)
+                }
+
+                const securityMountTarget = findSecuritySidebarMountTarget()
+                if (securityMountTarget && !injectionMap.has(securityMountTarget)) {
+                    injectSecurityMenu(securityMountTarget)
+                }
+            }, 300)
 
             /** Insert timestamp to the bottom right of each message */
             let chatId = ''

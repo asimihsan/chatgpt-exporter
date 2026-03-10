@@ -126,6 +126,21 @@ export const getProjectsApiUrl = () => buildUrl(apiUrl, '/gizmos/snorlax/sidebar
 export const getProjectConversationsApiUrl = (gizmo: string, offset: number, limit: number) => {
     return buildUrl(apiUrl, '/gizmos/:gizmo/conversations', { gizmo, cursor: offset, limit })
 }
+export const getSecurityFindingApiUrl = (id: string) => buildUrl(apiUrl, '/aardvark/scan-findings/:id', { id })
+export const getSecurityScanConfigurationsApiUrl = (
+    params: {
+        repoId?: string
+        limit?: number
+        cursor?: number | string
+    } = {},
+) => buildUrl(apiUrl, '/aardvark/scan_configurations', {
+    repo_id: params.repoId,
+    limit: params.limit,
+    cursor: params.cursor,
+})
+export const getSecurityScanConfigurationApiUrl = (id: string) => buildUrl(apiUrl, '/aardvark/scan_configurations/:id', { id })
+export const getSecurityScanConfigurationStatsApiUrl = (id: string) => buildUrl(apiUrl, '/aardvark/scan_configurations/:id/stats', { id })
+export const getSecurityRepoApiUrl = (repoId: string) => buildUrl(apiUrl, '/wham/github/repositories/:repoId', { repoId })
 
 export async function fetchApi<T>(url: string, options?: RequestInit): Promise<T> {
     const accessToken = await getAccessToken()
