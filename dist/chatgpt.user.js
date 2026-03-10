@@ -3,7 +3,7 @@
 // @name:zh-CN         ChatGPT Exporter
 // @name:zh-TW         ChatGPT Exporter
 // @namespace          asimihsan
-// @version            2.29.12
+// @version            2.29.13
 // @author             asimihsan
 // @description        Easily export the whole ChatGPT conversation history for further analysis or sharing.
 // @description:zh-CN  轻松导出 ChatGPT 聊天记录，以便进一步分析或分享。
@@ -591,6 +591,9 @@ reset: function() {
       this.url = url;
     }
   }
+  function encodePathSegmentPreservingColons(value) {
+    return encodeURIComponent(value).replaceAll(/%3A/gi, ":");
+  }
   function buildUrl(base, path2, params = {}) {
     const remainingParams = { ...params };
     const resolvedPath = path2.replace(/:([a-z0-9_]+)/gi, (_2, key2) => {
@@ -627,8 +630,12 @@ reset: function() {
     limit: params.limit,
     cursor: params.cursor
   });
-  const getSecurityScanConfigurationApiUrl = (id) => buildUrl(apiUrl, "/aardvark/scan_configurations/:id", { id });
-  const getSecurityScanConfigurationStatsApiUrl = (id) => buildUrl(apiUrl, "/aardvark/scan_configurations/:id/stats", { id });
+  const getSecurityScanConfigurationApiUrl = (id) => {
+    return `${buildUrl(apiUrl, "/aardvark/scan_configurations", {})}/${encodePathSegmentPreservingColons(id)}`;
+  };
+  const getSecurityScanConfigurationStatsApiUrl = (id) => {
+    return `${getSecurityScanConfigurationApiUrl(id)}/stats`;
+  };
   const getSecurityRepoApiUrl = (repoId) => buildUrl(apiUrl, "/wham/github/repositories/:repoId", { repoId });
   async function fetchApi(url, options) {
     const accessToken = await getAccessToken();
@@ -16819,10 +16826,44 @@ self2.previous !== null ||
     if (items.length === 0) return null;
     return items.map((item) => `- ${item}`).join("\n");
   }
+  function getStructuredLevelSummary(value) {
+    if (typeof value === "string" && value.trim() !== "") {
+      return value.trim();
+    }
+    const record = asRecord(value);
+    if (!record) return null;
+    const level = getString(record.level);
+    const why = getString(record.why);
+    if (level && why) {
+      return `${level[0].toUpperCase()}${level.slice(1)} - ${why}`;
+    }
+    if (level) {
+      return `${level[0].toUpperCase()}${level.slice(1)}`;
+    }
+    if (why) {
+      return why;
+    }
+    return null;
+  }
+  function getValidationArtifactSummary(value) {
+    const record = asRecord(value);
+    if (!record) return getString(value);
+    const fileName = getString(record.file_name);
+    const description = getString(record.description);
+    const downloadUrl2 = getString(record.download_url);
+    const sizeBytes = typeof record.size_bytes === "number" ? record.size_bytes : null;
+    const lines = [
+      fileName ? `Artifact: ${fileName}` : null,
+      description ? `Description: ${description}` : null,
+      sizeBytes !== null ? `Size: ${sizeBytes} bytes` : null,
+      downloadUrl2 ? `Download URL: ${downloadUrl2}` : null
+    ].filter((line) => Boolean(line));
+    return lines.length > 0 ? lines.join("\n") : null;
+  }
   function buildValidationSection(finding) {
     const commitAnalysis = asRecord(finding.commit_analysis);
     const validation = getString(commitAnalysis?.validation_str);
-    const validationArtifact = getString(commitAnalysis?.validation_artifact);
+    const validationArtifact = getValidationArtifactSummary(commitAnalysis?.validation_artifact);
     const parts = [
       validation,
       validationArtifact ? `Validation artifact: ${validationArtifact}` : null
@@ -16882,12 +16923,12 @@ ${getString(attackPath?.ascii)}
       narrative && narrative !== summary ? `### Narrative
 
 ${narrative}` : null,
-      getString(attackPathAnalysis?.likelihood) ? `### Likelihood
+      getStructuredLevelSummary(attackPathAnalysis?.likelihood) ? `### Likelihood
 
-${getString(attackPathAnalysis?.likelihood)}` : null,
-      getString(attackPathAnalysis?.impact) ? `### Impact
+${getStructuredLevelSummary(attackPathAnalysis?.likelihood)}` : null,
+      getStructuredLevelSummary(attackPathAnalysis?.impact) ? `### Impact
 
-${getString(attackPathAnalysis?.impact)}` : null,
+${getStructuredLevelSummary(attackPathAnalysis?.impact)}` : null,
       buildMarkdownList(assumptions) ? `### Assumptions
 
 ${buildMarkdownList(assumptions)}` : null,
@@ -16896,7 +16937,10 @@ ${buildMarkdownList(assumptions)}` : null,
 ${buildMarkdownList(controls)}` : null,
       buildMarkdownList(blindspots) ? `### Blindspots
 
-${buildMarkdownList(blindspots)}` : null
+${buildMarkdownList(blindspots)}` : null,
+      buildMarkdownList(asStringList(attackPathAnalysis?.recommendations)) ? `### Recommendations
+
+${buildMarkdownList(asStringList(attackPathAnalysis?.recommendations))}` : null
     ].filter((value) => Boolean(value));
     if (parts.length === 0) return null;
     return {
