@@ -12,6 +12,7 @@ import {
     getProjectConversationsApiUrl,
     getProjectsApiUrl,
     getSecurityFindingApiUrl,
+    getSecurityFindingsApiUrl,
     getSecurityRepoApiUrl,
     getSecurityScanConfigurationApiUrl,
     getSecurityScanConfigurationsApiUrl,
@@ -38,6 +39,15 @@ describe('http api url builders', () => {
 
     it('builds Codex Security API urls with path and query parameters', () => {
         expect(getSecurityFindingApiUrl('finding/id')).toBe(`${apiUrl}/aardvark/scan-findings/finding%2Fid`)
+        expect(getSecurityFindingsApiUrl({
+            repo: 'https://github.com/example/repo',
+            status: 'new,triaged',
+            criticality: 'critical,high',
+            limit: 20,
+            cursor: 0,
+        })).toBe(
+            `${apiUrl}/aardvark/scan-findings?repo=https%3A%2F%2Fgithub.com%2Fexample%2Frepo&status=new%2Ctriaged&criticality=critical%2Chigh&limit=20&cursor=0`,
+        )
         expect(getSecurityScanConfigurationApiUrl('scan:id')).toBe(`${apiUrl}/aardvark/scan_configurations/scan:id`)
         expect(getSecurityScanConfigurationStatsApiUrl('scan:id')).toBe(`${apiUrl}/aardvark/scan_configurations/scan:id/stats`)
         expect(getSecurityScanConfigurationApiUrl('scan:id with spaces')).toBe(`${apiUrl}/aardvark/scan_configurations/scan:id%20with%20spaces`)

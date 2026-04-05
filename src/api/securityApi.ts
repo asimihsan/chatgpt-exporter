@@ -7,6 +7,7 @@ import {
     ApiHttpError,
     fetchApi,
     getSecurityFindingApiUrl,
+    getSecurityFindingsApiUrl,
     getSecurityRepoApiUrl,
     getSecurityScanConfigurationApiUrl,
     getSecurityScanConfigurationsApiUrl,
@@ -14,6 +15,8 @@ import {
 } from './http'
 import type {
     ApiSecurityFinding,
+    ApiSecurityFindingsListParams,
+    ApiSecurityFindingsResponse,
     ApiSecurityGithubRepository,
     ApiSecurityParsedProjectOverview,
     ApiSecurityScanConfiguration,
@@ -22,6 +25,57 @@ import type {
     ResolvedSecurityScanBundle,
     ResolvedSecurityScanSelection,
 } from './securityTypes'
+
+const DEFAULT_SECURITY_FINDINGS_PAGE_SIZE = 100
+
+export async function fetchSecurityFindings(
+    params: ApiSecurityFindingsListParams = {},
+): Promise<ApiSecurityFindingsResponse> {
+    return fetchApi<ApiSecurityFindingsResponse>(getSecurityFindingsApiUrl(params))
+}
+
+export async function fetchAllSecurityFindings(
+    params: Omit<ApiSecurityFindingsListParams, 'cursor' | 'limit'> & { limit?: number } = {},
+    options: {
+        maxItems?: number
+    } = {},
+): Promise<ApiSecurityFinding[]> {
+    const pageSize = params.limit ?? DEFAULT_SECURITY_FINDINGS_PAGE_SIZE
+    const maxItems = options.maxItems
+    const items: ApiSecurityFinding[] = []
+    const seenCursors = new Set<string>()
+    const seenFindingIds = new Set<string>()
+    let cursor: string | number | null = 0
+
+    while (cursor !== null && (maxItems === undefined || items.length < maxItems)) {
+        const cursorKey = String(cursor)
+        if (seenCursors.has(cursorKey)) {
+            throw new Error(`Security findings pagination repeated cursor ${cursorKey}.`)
+        }
+        seenCursors.add(cursorKey)
+
+        const remaining = maxItems === undefined
+            ? pageSize
+            : Math.min(pageSize, Math.max(maxItems - items.length, 0))
+        const response = await fetchSecurityFindings({
+            ...params,
+            limit: remaining,
+            cursor,
+        })
+
+        response.items.forEach((item) => {
+            const findingKey = item.hid || item.id
+            if (!findingKey || seenFindingIds.has(findingKey)) {
+                return
+            }
+            seenFindingIds.add(findingKey)
+            items.push(item)
+        })
+        cursor = response.next_cursor
+    }
+
+    return maxItems === undefined ? items : items.slice(0, maxItems)
+}
 
 export async function fetchSecurityFinding(findingId: string): Promise<ApiSecurityFinding> {
     return fetchApi<ApiSecurityFinding>(getSecurityFindingApiUrl(findingId))

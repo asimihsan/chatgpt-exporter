@@ -145,6 +145,16 @@ export const getProjectConversationsApiUrl = (gizmo: string, offset: number, lim
     return buildUrl(apiUrl, '/gizmos/:gizmo/conversations', { gizmo, cursor: offset, limit })
 }
 export const getSecurityFindingApiUrl = (id: string) => buildUrl(apiUrl, '/aardvark/scan-findings/:id', { id })
+export const getSecurityFindingsApiUrl = (
+    params: {
+        repo?: string
+        status?: string
+        criticality?: string
+        author?: string
+        limit?: number
+        cursor?: number | string
+    } = {},
+) => buildUrl(apiUrl, '/aardvark/scan-findings', params)
 export const getSecurityScanConfigurationsApiUrl = (
     params: {
         repoId?: string

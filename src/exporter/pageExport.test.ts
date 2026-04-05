@@ -37,7 +37,26 @@ describe('getExportCapabilities', () => {
         })
     })
 
-    it('disables conversation-only actions on security detail pages', () => {
+    it('keeps single-item actions and enables bulk export on security finding detail pages', () => {
+        getPageContextMock.mockReturnValue({
+            kind: 'security-finding',
+        })
+
+        expect(getExportCapabilities()).toEqual({
+            canExportText: true,
+            canExportPng: true,
+            canExportMarkdown: true,
+            canExportHtml: true,
+            canExportJson: true,
+            canExportTavern: false,
+            canExportOoba: false,
+            canExportAll: true,
+            historyDisabledApplies: false,
+            copyShortcutEnabled: false,
+        })
+    })
+
+    it('disables bulk export on scan pages', () => {
         getPageContextMock.mockReturnValue({
             kind: 'security-scan',
         })
@@ -56,7 +75,7 @@ describe('getExportCapabilities', () => {
         })
     })
 
-    it('disables all exports on unsupported list pages', () => {
+    it('enables bulk export only on findings list pages', () => {
         getPageContextMock.mockReturnValue({
             kind: 'security-findings-list',
         })
@@ -69,7 +88,7 @@ describe('getExportCapabilities', () => {
             canExportJson: false,
             canExportTavern: false,
             canExportOoba: false,
-            canExportAll: false,
+            canExportAll: true,
             historyDisabledApplies: false,
             copyShortcutEnabled: false,
         })

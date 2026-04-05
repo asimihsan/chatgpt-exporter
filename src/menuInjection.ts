@@ -29,6 +29,8 @@ export function shouldKeepInjectedContainer(
         case 'share-wrapper':
             return pageContext.isSharePage
         case 'security-sidebar':
-            return pageContext.kind === 'security-finding' || pageContext.kind === 'security-scan'
+            return pageContext.kind === 'security-finding'
+                || pageContext.kind === 'security-scan'
+                || pageContext.kind === 'security-findings-list'
     }
 }
