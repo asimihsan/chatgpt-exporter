@@ -92,3 +92,7 @@ export function isConversationPageContext(context: PageContext): boolean {
 export function isSecurityExportPageContext(context: PageContext): boolean {
     return context.kind === 'security-finding' || context.kind === 'security-scan'
 }
+
+export function isSecurityMenuPageContext(context: PageContext): boolean {
+    return isSecurityExportPageContext(context) || context.kind === 'security-findings-list'
+}

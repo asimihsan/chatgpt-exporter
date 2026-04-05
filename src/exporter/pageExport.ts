@@ -4,6 +4,7 @@
  */
 
 import { getPageContext } from '../pageContext'
+import type { PageContext } from '../pageContext'
 
 export interface ExportCapabilities {
     canExportText: boolean
@@ -18,8 +19,7 @@ export interface ExportCapabilities {
     copyShortcutEnabled: boolean
 }
 
-export function getExportCapabilities() : ExportCapabilities {
-    const context = getPageContext()
+export function getExportCapabilities(context: PageContext = getPageContext()) : ExportCapabilities {
 
     switch (context.kind) {
         case 'conversation':
@@ -36,6 +36,18 @@ export function getExportCapabilities() : ExportCapabilities {
                 copyShortcutEnabled: true,
             }
         case 'security-finding':
+            return {
+                canExportText: true,
+                canExportPng: true,
+                canExportMarkdown: true,
+                canExportHtml: true,
+                canExportJson: true,
+                canExportTavern: false,
+                canExportOoba: false,
+                canExportAll: true,
+                historyDisabledApplies: false,
+                copyShortcutEnabled: false,
+            }
         case 'security-scan':
             return {
                 canExportText: true,
@@ -50,6 +62,18 @@ export function getExportCapabilities() : ExportCapabilities {
                 copyShortcutEnabled: false,
             }
         case 'security-findings-list':
+            return {
+                canExportText: false,
+                canExportPng: false,
+                canExportMarkdown: false,
+                canExportHtml: false,
+                canExportJson: false,
+                canExportTavern: false,
+                canExportOoba: false,
+                canExportAll: true,
+                historyDisabledApplies: false,
+                copyShortcutEnabled: false,
+            }
         case 'unsupported':
             return {
                 canExportText: false,

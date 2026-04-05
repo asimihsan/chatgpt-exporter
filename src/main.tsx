@@ -10,7 +10,7 @@ import { fetchConversation, processConversation } from './api'
 import { type InjectionKind, type InjectionRecord, shouldKeepInjectedContainer } from './menuInjection'
 import { findSecuritySidebarMountTarget } from './menuMount'
 import { getChatIdFromUrl, isSharePage } from './page'
-import { getPageContext, isConversationPageContext, isSecurityExportPageContext } from './pageContext'
+import { getPageContext, isConversationPageContext, isSecurityMenuPageContext } from './pageContext'
 import { registerExportCopyShortcut } from './shortcuts/exportCopyShortcut'
 import { registerSettingsMenuCommand } from './settings/menuCommand'
 import { Menu } from './ui/Menu'
@@ -64,7 +64,7 @@ function main() {
 
         const injectSecurityMenu = (target: HTMLElement) => {
             const pageContext = getPageContext()
-            if (!isSecurityExportPageContext(pageContext) || injectionMap.has(target)) return
+            if (!isSecurityMenuPageContext(pageContext) || injectionMap.has(target)) return
 
             const container = getMenuContainer()
             injectionMap.set(target, { container, kind: 'security-sidebar' })

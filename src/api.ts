@@ -20,8 +20,10 @@ export { processConversation } from './api/processing'
 export { getTeamAccountId } from './api/http'
 
 export {
+    fetchAllSecurityFindings,
     fetchResolvedSecurityScanByRepoId,
     fetchSecurityFinding,
+    fetchSecurityFindings,
     fetchSecurityRepo,
     fetchSecurityScan,
     fetchSecurityScanConfigurations,
@@ -32,6 +34,8 @@ export {
 
 export type {
     ApiSecurityFinding,
+    ApiSecurityFindingsListParams,
+    ApiSecurityFindingsResponse,
     ApiSecurityGithubRepository,
     ApiSecurityParsedProjectOverview,
     ApiSecurityScanConfiguration,

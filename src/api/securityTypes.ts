@@ -17,6 +17,21 @@ export interface ApiSecurityFinding {
     [key: string]: unknown
 }
 
+export interface ApiSecurityFindingsListParams {
+    repo?: string
+    status?: string
+    criticality?: string
+    author?: string
+    limit?: number
+    cursor?: number | string
+}
+
+export interface ApiSecurityFindingsResponse {
+    items: ApiSecurityFinding[]
+    next_cursor: string | null
+    total: number
+}
+
 export interface ApiSecurityScanConfigurationsResponse {
     items: ApiSecurityScanConfiguration[]
     next_cursor: string | null

@@ -42,7 +42,7 @@ describe('shouldKeepInjectedContainer', () => {
         })).toBe(false)
     })
 
-    it('drops security sidebar injections on non-exportable findings-list pages', () => {
+    it('keeps security sidebar injections on findings-list pages', () => {
         const target = document.createElement('aside')
         const container = document.createElement('div')
         document.body.append(target)
@@ -58,6 +58,6 @@ describe('shouldKeepInjectedContainer', () => {
             repoId: null,
             isSharePage: false,
             isShareContinuePage: false,
-        })).toBe(false)
+        })).toBe(true)
     })
 })

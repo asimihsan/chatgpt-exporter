@@ -15,6 +15,7 @@ const {
     ApiHttpErrorMock,
     fetchApiMock,
     getSecurityFindingApiUrlMock,
+    getSecurityFindingsApiUrlMock,
     getSecurityRepoApiUrlMock,
     getSecurityScanConfigurationApiUrlMock,
     getSecurityScanConfigurationsApiUrlMock,
@@ -35,6 +36,7 @@ const {
     },
     fetchApiMock: vi.fn(),
     getSecurityFindingApiUrlMock: vi.fn((id: string) => `finding:${id}`),
+    getSecurityFindingsApiUrlMock: vi.fn((params: unknown) => `findings:${JSON.stringify(params)}`),
     getSecurityRepoApiUrlMock: vi.fn((id: string) => `repo:${id}`),
     getSecurityScanConfigurationApiUrlMock: vi.fn((id: string) => `scan:${id}`),
     getSecurityScanConfigurationsApiUrlMock: vi.fn((params: unknown) => `scan-configurations:${JSON.stringify(params)}`),
@@ -45,6 +47,7 @@ vi.mock('./http', () => ({
     ApiHttpError: ApiHttpErrorMock,
     fetchApi: fetchApiMock,
     getSecurityFindingApiUrl: getSecurityFindingApiUrlMock,
+    getSecurityFindingsApiUrl: getSecurityFindingsApiUrlMock,
     getSecurityRepoApiUrl: getSecurityRepoApiUrlMock,
     getSecurityScanConfigurationApiUrl: getSecurityScanConfigurationApiUrlMock,
     getSecurityScanConfigurationsApiUrl: getSecurityScanConfigurationsApiUrlMock,
@@ -52,7 +55,9 @@ vi.mock('./http', () => ({
 }))
 
 import {
+    fetchAllSecurityFindings,
     fetchResolvedSecurityScanByRepoId,
+    fetchSecurityFindings,
     parseSecurityProjectOverview,
     resolveSecurityScanSelection,
 } from './securityApi'
@@ -126,6 +131,145 @@ describe('securityApi', () => {
             focus_files_and_dirs: ['pkg/server', 'cmd'],
             extra: true,
         })
+    })
+
+    it('fetches a findings list page through the findings list endpoint', async () => {
+        fetchApiMock.mockResolvedValueOnce({
+            items: [],
+            next_cursor: null,
+            total: 0,
+        })
+
+        await expect(fetchSecurityFindings({
+            repo: 'https://github.com/example/repo',
+            criticality: 'critical,high',
+            status: 'new,triaged',
+            limit: 20,
+            cursor: 0,
+        })).resolves.toEqual({
+            items: [],
+            next_cursor: null,
+            total: 0,
+        })
+
+        expect(getSecurityFindingsApiUrlMock).toHaveBeenCalledWith({
+            repo: 'https://github.com/example/repo',
+            criticality: 'critical,high',
+            status: 'new,triaged',
+            limit: 20,
+            cursor: 0,
+        })
+        expect(fetchApiMock).toHaveBeenCalledWith('findings:{"repo":"https://github.com/example/repo","criticality":"critical,high","status":"new,triaged","limit":20,"cursor":0}')
+    })
+
+    it('paginates through all findings list pages', async () => {
+        fetchApiMock
+            .mockResolvedValueOnce({
+                items: [{ hid: 'finding-1' }],
+                next_cursor: '1',
+                total: 2,
+            })
+            .mockResolvedValueOnce({
+                items: [{ hid: 'finding-2' }],
+                next_cursor: null,
+                total: 2,
+            })
+
+        await expect(fetchAllSecurityFindings({
+            repo: 'https://github.com/example/repo',
+            criticality: 'critical',
+        })).resolves.toEqual([
+            { hid: 'finding-1' },
+            { hid: 'finding-2' },
+        ])
+
+        expect(getSecurityFindingsApiUrlMock).toHaveBeenNthCalledWith(1, {
+            repo: 'https://github.com/example/repo',
+            criticality: 'critical',
+            limit: 100,
+            cursor: 0,
+        })
+        expect(getSecurityFindingsApiUrlMock).toHaveBeenNthCalledWith(2, {
+            repo: 'https://github.com/example/repo',
+            criticality: 'critical',
+            limit: 100,
+            cursor: '1',
+        })
+    })
+
+    it('honors a max-items ceiling when paginating findings', async () => {
+        fetchApiMock
+            .mockResolvedValueOnce({
+                items: [{ hid: 'finding-1' }],
+                next_cursor: '1',
+                total: 3,
+            })
+            .mockResolvedValueOnce({
+                items: [{ hid: 'finding-2' }],
+                next_cursor: '2',
+                total: 3,
+            })
+
+        await expect(fetchAllSecurityFindings({
+            repo: 'https://github.com/example/repo',
+        }, {
+            maxItems: 2,
+        })).resolves.toEqual([
+            { hid: 'finding-1' },
+            { hid: 'finding-2' },
+        ])
+
+        expect(getSecurityFindingsApiUrlMock).toHaveBeenNthCalledWith(1, {
+            repo: 'https://github.com/example/repo',
+            limit: 2,
+            cursor: 0,
+        })
+        expect(getSecurityFindingsApiUrlMock).toHaveBeenNthCalledWith(2, {
+            repo: 'https://github.com/example/repo',
+            limit: 1,
+            cursor: '1',
+        })
+    })
+
+    it('deduplicates repeated findings across pages', async () => {
+        fetchApiMock
+            .mockResolvedValueOnce({
+                items: [{ hid: 'finding-1' }],
+                next_cursor: '1',
+                total: 3,
+            })
+            .mockResolvedValueOnce({
+                items: [{ hid: 'finding-1' }, { hid: 'finding-2' }],
+                next_cursor: null,
+                total: 3,
+            })
+
+        await expect(fetchAllSecurityFindings({
+            repo: 'https://github.com/example/repo',
+        })).resolves.toEqual([
+            { hid: 'finding-1' },
+            { hid: 'finding-2' },
+        ])
+    })
+
+    it('fails closed when findings pagination repeats a cursor', async () => {
+        fetchApiMock
+            .mockResolvedValueOnce({
+                items: [{ hid: 'finding-1' }],
+                next_cursor: '1',
+                total: 2,
+            })
+            .mockResolvedValueOnce({
+                items: [{ hid: 'finding-2' }],
+                next_cursor: '1',
+                total: 2,
+            })
+
+        await expect(fetchAllSecurityFindings({
+            repo: 'https://github.com/example/repo',
+        }))
+            .rejects
+            .toThrow('Security findings pagination repeated cursor 1.')
     })
 
     it('returns null for malformed project overview JSON', () => {

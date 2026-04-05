@@ -20,10 +20,6 @@ const userscriptDistBaseUrl = `https://raw.githubusercontent.com/${userscriptRep
 
 // https://vitejs.dev/config/
 export default defineConfig({
-    // https://github.com/lisonge/vite-plugin-monkey/issues/10#issuecomment-1207264978
-    esbuild: {
-        charset: 'utf8',
-    },
     plugins: [
         preact({
             devToolsEnabled: false,
@@ -114,7 +110,7 @@ export default defineConfig({
                 },
             },
             server: {
-                open: true,
+                open: false,
             },
         }),
     ],
