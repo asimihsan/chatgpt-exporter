@@ -25,6 +25,7 @@
 // @match              https://chat.openai.com/share/*
 // @match              https://chat.openai.com/share/*/continue
 // @match              https://chat.openai.com/codex/security/*
+// @match              https://chat.openai.com/codex/cloud/security/*
 // @match              https://chatgpt.com/
 // @match              https://chatgpt.com/?model=*
 // @match              https://chatgpt.com/c/*
@@ -34,6 +35,7 @@
 // @match              https://chatgpt.com/share/*
 // @match              https://chatgpt.com/share/*/continue
 // @match              https://chatgpt.com/codex/security/*
+// @match              https://chatgpt.com/codex/cloud/security/*
 // @match              https://new.oaifree.com/
 // @match              https://new.oaifree.com/?model=*
 // @match              https://new.oaifree.com/c/*
@@ -43,6 +45,7 @@
 // @match              https://new.oaifree.com/share/*
 // @match              https://new.oaifree.com/share/*/continue
 // @match              https://new.oaifree.com/codex/security/*
+// @match              https://new.oaifree.com/codex/cloud/security/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js
 // @grant              GM.registerMenuCommand

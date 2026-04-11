@@ -48,8 +48,22 @@ describe('pageContext', () => {
         })
     })
 
+    it('classifies cloud security finding detail routes', () => {
+        expect(getPageContext('/codex/cloud/security/findings/17b5fd57ec1c8191833dd8b866a0bd9e')).toMatchObject({
+            kind: 'security-finding',
+            findingId: '17b5fd57ec1c8191833dd8b866a0bd9e',
+        })
+    })
+
     it('classifies security scan routes', () => {
         expect(getPageContext('/codex/security/scans/github-123456789')).toMatchObject({
+            kind: 'security-scan',
+            repoId: 'github-123456789',
+        })
+    })
+
+    it('classifies cloud security scan routes', () => {
+        expect(getPageContext('/codex/cloud/security/scans/github-123456789')).toMatchObject({
             kind: 'security-scan',
             repoId: 'github-123456789',
         })
@@ -61,14 +75,32 @@ describe('pageContext', () => {
         })
     })
 
+    it('classifies cloud findings list routes as non-exportable list pages', () => {
+        expect(getPageContext('/codex/cloud/security/findings')).toMatchObject({
+            kind: 'security-findings-list',
+        })
+    })
+
     it('fails closed for nested finding routes that are not supported in phase 1', () => {
         expect(getPageContext('/codex/security/findings/abc123/patch')).toMatchObject({
             kind: 'unsupported',
         })
     })
 
+    it('fails closed for nested cloud finding routes that are not supported in phase 1', () => {
+        expect(getPageContext('/codex/cloud/security/findings/abc123/patch')).toMatchObject({
+            kind: 'unsupported',
+        })
+    })
+
     it('fails closed for nested scan routes that are not supported in phase 1', () => {
         expect(getPageContext('/codex/security/scans/github-123456789/threat-model')).toMatchObject({
+            kind: 'unsupported',
+        })
+    })
+
+    it('fails closed for nested cloud scan routes that are not supported in phase 1', () => {
+        expect(getPageContext('/codex/cloud/security/scans/github-123456789/threat-model')).toMatchObject({
             kind: 'unsupported',
         })
     })

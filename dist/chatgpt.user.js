@@ -25,6 +25,7 @@
 // @match              https://chat.openai.com/share/*
 // @match              https://chat.openai.com/share/*/continue
 // @match              https://chat.openai.com/codex/security/*
+// @match              https://chat.openai.com/codex/cloud/security/*
 // @match              https://chatgpt.com/
 // @match              https://chatgpt.com/?model=*
 // @match              https://chatgpt.com/c/*
@@ -34,6 +35,7 @@
 // @match              https://chatgpt.com/share/*
 // @match              https://chatgpt.com/share/*/continue
 // @match              https://chatgpt.com/codex/security/*
+// @match              https://chatgpt.com/codex/cloud/security/*
 // @match              https://new.oaifree.com/
 // @match              https://new.oaifree.com/?model=*
 // @match              https://new.oaifree.com/c/*
@@ -43,6 +45,7 @@
 // @match              https://new.oaifree.com/share/*
 // @match              https://new.oaifree.com/share/*/continue
 // @match              https://new.oaifree.com/codex/security/*
+// @match              https://new.oaifree.com/codex/cloud/security/*
 // @require            https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js
 // @require            https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js
 // @grant              GM.registerMenuCommand
@@ -1053,6 +1056,7 @@ function hasSecuritySidebarMarker(element) {
 		if (markedSidebar) return markedSidebar;
 		return null;
 	}
+	var SECURITY_ROUTE_PREFIX = "/codex(?:/cloud)?/security";
 	function createPageContext(overrides) {
 		return {
 			kind: "unsupported",
@@ -1082,17 +1086,17 @@ function hasSecuritySidebarMarker(element) {
 			kind: "conversation",
 			chatId: conversationMatch[1]
 		});
-		const securityFindingMatch = pathname.match(/^\/codex\/security\/findings\/([a-z0-9]+)\/?$/i);
+		const securityFindingMatch = pathname.match(new RegExp(`^${SECURITY_ROUTE_PREFIX}/findings/([a-z0-9]+)/?$`, "i"));
 		if (securityFindingMatch) return createPageContext({
 			kind: "security-finding",
 			findingId: securityFindingMatch[1]
 		});
-		const securityScanMatch = pathname.match(/^\/codex\/security\/scans\/([a-z0-9-]+)\/?$/i);
+		const securityScanMatch = pathname.match(new RegExp(`^${SECURITY_ROUTE_PREFIX}/scans/([a-z0-9-]+)/?$`, "i"));
 		if (securityScanMatch) return createPageContext({
 			kind: "security-scan",
 			repoId: securityScanMatch[1]
 		});
-		if (/^\/codex\/security\/findings\/?$/i.test(pathname)) return createPageContext({ kind: "security-findings-list" });
+		if (new RegExp(`^${SECURITY_ROUTE_PREFIX}/findings/?$`, "i").test(pathname)) return createPageContext({ kind: "security-findings-list" });
 		return createPageContext({});
 	}
 	function isConversationPageContext(context) {
@@ -15248,7 +15252,7 @@ function toUnixSeconds$1(value) {
 		return getString(commitAnalysis?.title) ?? getString(commitAnalysis?.reason) ?? getString(commitAnalysis?.description)?.split(". ")[0] ?? `Finding ${finding.hid}`;
 	}
 	function buildSourceUrl(finding) {
-		return `${baseUrl}/codex/security/findings/${encodeURIComponent(finding.hid)}`;
+		return `${baseUrl}/codex/cloud/security/findings/${encodeURIComponent(finding.hid)}`;
 	}
 	function buildSummarySection(finding) {
 		const commitAnalysis = asRecord(finding.commit_analysis);
@@ -15521,7 +15525,7 @@ function toUnixSeconds(value) {
 	}
 	function normalizeSecurityScanDocument(bundle) {
 		const title = bundle.repository.repository_full_name || bundle.repoId;
-		const sourceUrl = `${baseUrl}/codex/security/scans/${encodeURIComponent(bundle.repoId)}`;
+		const sourceUrl = `${baseUrl}/codex/cloud/security/scans/${encodeURIComponent(bundle.repoId)}`;
 		const sections = [
 			buildStatusSection(bundle),
 			buildRepositorySection(bundle),

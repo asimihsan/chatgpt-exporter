@@ -179,7 +179,7 @@ describe('securityDocument renderers', () => {
         expect(text).toContain('### Checklist')
         expect(text).toContain('- [x] Confirm device code flow lacks client authentication.')
         expect(markdown).toContain('---')
-        expect(markdown).toContain(`"source": "${baseUrl}/codex/security/findings/finding-123"`)
+        expect(markdown).toContain(`"source": "${baseUrl}/codex/cloud/security/findings/finding-123"`)
         expect(markdown).toContain('"model": ""')
         expect(markdown).toContain('# Device code flow allows client impersonation without secret')
         expect(markdown).toContain('## Summary')

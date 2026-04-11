@@ -126,7 +126,7 @@ function buildFocusFilesSection(bundle: ResolvedSecurityScanBundle): SecurityDoc
 
 export function normalizeSecurityScanDocument(bundle: ResolvedSecurityScanBundle): SecurityScanDocument {
     const title = bundle.repository.repository_full_name || bundle.repoId
-    const sourceUrl = `${baseUrl}/codex/security/scans/${encodeURIComponent(bundle.repoId)}`
+    const sourceUrl = `${baseUrl}/codex/cloud/security/scans/${encodeURIComponent(bundle.repoId)}`
 
     const sections = [
         buildStatusSection(bundle),

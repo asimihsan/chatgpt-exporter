@@ -19,6 +19,8 @@ export interface PageContext {
     isShareContinuePage: boolean
 }
 
+const SECURITY_ROUTE_PREFIX = '/codex(?:/cloud)?/security'
+
 function createPageContext(overrides: Partial<PageContext>): PageContext {
     return {
         kind: 'unsupported',
@@ -60,7 +62,7 @@ export function getPageContext(
         })
     }
 
-    const securityFindingMatch = pathname.match(/^\/codex\/security\/findings\/([a-z0-9]+)\/?$/i)
+    const securityFindingMatch = pathname.match(new RegExp(`^${SECURITY_ROUTE_PREFIX}/findings/([a-z0-9]+)/?$`, 'i'))
     if (securityFindingMatch) {
         return createPageContext({
             kind: 'security-finding',
@@ -68,7 +70,7 @@ export function getPageContext(
         })
     }
 
-    const securityScanMatch = pathname.match(/^\/codex\/security\/scans\/([a-z0-9-]+)\/?$/i)
+    const securityScanMatch = pathname.match(new RegExp(`^${SECURITY_ROUTE_PREFIX}/scans/([a-z0-9-]+)/?$`, 'i'))
     if (securityScanMatch) {
         return createPageContext({
             kind: 'security-scan',
@@ -76,7 +78,7 @@ export function getPageContext(
         })
     }
 
-    if (/^\/codex\/security\/findings\/?$/i.test(pathname)) {
+    if (new RegExp(`^${SECURITY_ROUTE_PREFIX}/findings/?$`, 'i').test(pathname)) {
         return createPageContext({
             kind: 'security-findings-list',
         })

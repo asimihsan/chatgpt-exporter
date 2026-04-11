@@ -94,7 +94,7 @@ function getTitle(finding: ApiSecurityFinding): string {
 }
 
 function buildSourceUrl(finding: ApiSecurityFinding): string {
-    return `${baseUrl}/codex/security/findings/${encodeURIComponent(finding.hid)}`
+    return `${baseUrl}/codex/cloud/security/findings/${encodeURIComponent(finding.hid)}`
 }
 
 function buildSummarySection(finding: ApiSecurityFinding): SecurityDocumentSection | null {
