@@ -9,7 +9,7 @@ package_json_path="${PACKAGE_JSON_PATH:-package.json}"
 tag_name="${USERSCRIPT_TAG_NAME:-${GITHUB_REF_NAME:-}}"
 
 version="$(
-    node -e "const fs=require('node:fs');const p=JSON.parse(fs.readFileSync(process.argv[1], 'utf8'));if(typeof p.version==='string')process.stdout.write(p.version);" "${package_json_path}"
+    sed -nE 's|^[[:space:]]*"version"[[:space:]]*:[[:space:]]*"([^"]+)".*$|\1|p' "${package_json_path}" | head -n 1
 )"
 
 if [[ ! "${version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then

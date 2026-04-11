@@ -9,9 +9,15 @@ tag_prefix="${TAG_PREFIX:-userscript-v}"
 tag_remote="${TAG_REMOTE:-origin}"
 release_branch="${RELEASE_BRANCH:-master}"
 max_attempts="${MAX_ATTEMPTS:-5}"
+js_runtime="$(command -v node || command -v bun || true)"
 
 if [[ -z "${event_sha}" ]]; then
     echo "EVENT_SHA is required." >&2
+    exit 1
+fi
+
+if [[ -z "${js_runtime}" ]]; then
+    echo "Unable to find node or bun runtime." >&2
     exit 1
 fi
 
@@ -27,7 +33,7 @@ while (( attempt < max_attempts )); do
 
     git fetch "${tag_remote}" "${release_branch}" --tags
     git checkout -B release-work "${tag_remote}/${release_branch}"
-    node scripts/release/validate-userscript-tags.mjs
+    "${js_runtime}" scripts/release/validate-userscript-tags.mjs
 
     head_subject="$(git log -1 --format=%s HEAD)"
     if git merge-base --is-ancestor "${event_sha}" HEAD && [[ "${head_subject}" == chore:\ release\ v* ]]; then
@@ -35,7 +41,7 @@ while (( attempt < max_attempts )); do
         exit 0
     fi
 
-    version="$(node scripts/release/prepare-userscript-release.mjs)"
+    version="$("${js_runtime}" scripts/release/prepare-userscript-release.mjs)"
     echo "Prepared release version ${version}"
 
     mise build
