@@ -119,20 +119,20 @@ var __create = Object.create;
 		enumerable: true
 	}) : target, mod));
 	var __toCommonJS = (mod) => __hasOwnProp.call(mod, "module.exports") ? mod["module.exports"] : __copyProps(__defProp({}, "__esModule", { value: true }), mod);
-	function w$3(n, l) {
+	function m$1(n, l) {
 		for (var u in l) n[u] = l[u];
 		return n;
 	}
-	function g$3(n) {
+	function b$2(n) {
 		n && n.parentNode && n.parentNode.removeChild(n);
 	}
-	function _$1(l, u, t) {
+	function k$2(l, u, t) {
 		var i, r, o, e = {};
 		for (o in u) "key" == o ? i = u[o] : "ref" == o ? r = u[o] : e[o] = u[o];
 		if (arguments.length > 2 && (e.children = arguments.length > 3 ? n$1.call(arguments, 2) : t), "function" == typeof l && null != l.defaultProps) for (o in l.defaultProps) void 0 === e[o] && (e[o] = l.defaultProps[o]);
-		return m$1(l, e, i, r, null);
+		return x$2(l, e, i, r, null);
 	}
-	function m$1(n, t, i, r, o) {
+	function x$2(n, t, i, r, o) {
 		var e = {
 			type: n,
 			props: t,
@@ -150,67 +150,70 @@ var __create = Object.create;
 		};
 		return null == o && null != l$2.vnode && l$2.vnode(e), e;
 	}
-	function b$2() {
+	function M$1() {
 		return { current: null };
 	}
-	function k$2(n) {
+	function S$1(n) {
 		return n.children;
 	}
-	function x$2(n, l) {
+	function C$2(n, l) {
 		this.props = n, this.context = l;
 	}
-	function S$1(n, l) {
-		if (null == l) return n.__ ? S$1(n.__, n.__i + 1) : null;
+	function $$1(n, l) {
+		if (null == l) return n.__ ? $$1(n.__, n.__i + 1) : null;
 		for (var u; l < n.__k.length; l++) if (null != (u = n.__k[l]) && null != u.__e) return u.__e;
-		return "function" == typeof n.type ? S$1(n) : null;
+		return "function" == typeof n.type ? $$1(n) : null;
 	}
-	function C$2(n) {
+	function I$2(n) {
 		if (n.__P && n.__d) {
-			var u = n.__v, t = u.__e, i = [], r = [], o = w$3({}, u);
-			o.__v = u.__v + 1, l$2.vnode && l$2.vnode(o), z$2(n.__P, o, u, n.__n, n.__P.namespaceURI, 32 & u.__u ? [t] : null, i, null == t ? S$1(u) : t, !!(32 & u.__u), r), o.__v = u.__v, o.__.__k[o.__i] = o, V$1(i, o, r), u.__e = u.__ = null, o.__e != t && M$1(o);
+			var u = n.__v, t = u.__e, i = [], r = [], o = m$1({}, u);
+			o.__v = u.__v + 1, l$2.vnode && l$2.vnode(o), q$2(n.__P, o, u, n.__n, n.__P.namespaceURI, 32 & u.__u ? [t] : null, i, null == t ? $$1(u) : t, !!(32 & u.__u), r), o.__v = u.__v, o.__.__k[o.__i] = o, D$3(i, o, r), u.__e = u.__ = null, o.__e != t && P$2(o);
 		}
 	}
-	function M$1(n) {
+	function P$2(n) {
 		if (null != (n = n.__) && null != n.__c) return n.__e = n.__c.base = null, n.__k.some(function(l) {
 			if (null != l && null != l.__e) return n.__e = n.__c.base = l.__e;
-		}), M$1(n);
+		}), P$2(n);
 	}
-	function $$1(n) {
-		(!n.__d && (n.__d = !0) && i$3.push(n) && !I$2.__r++ || r$2 != l$2.debounceRendering) && ((r$2 = l$2.debounceRendering) || o$3)(I$2);
+	function A$3(n) {
+		(!n.__d && (n.__d = !0) && i$3.push(n) && !H$1.__r++ || r$2 != l$2.debounceRendering) && ((r$2 = l$2.debounceRendering) || o$3)(H$1);
 	}
-	function I$2() {
-		for (var n, l = 1; i$3.length;) i$3.length > l && i$3.sort(e$2), n = i$3.shift(), l = i$3.length, C$2(n);
-		I$2.__r = 0;
+	function H$1() {
+		try {
+			for (var n, l = 1; i$3.length;) i$3.length > l && i$3.sort(e$2), n = i$3.shift(), l = i$3.length, I$2(n);
+		} finally {
+			i$3.length = H$1.__r = 0;
+		}
 	}
-	function P$2(n, l, u, t, i, r, o, e, f, c, s) {
-		var a, h, y, d, w, g, _, m = t && t.__k || v$2, b = l.length;
-		for (f = A$3(u, l, m, f, b), a = 0; a < b; a++) null != (y = u.__k[a]) && (h = -1 != y.__i && m[y.__i] || p$3, y.__i = a, g = z$2(n, y, h, i, r, o, e, f, c, s), d = y.__e, y.ref && h.ref != y.ref && (h.ref && D$3(h.ref, null, y), s.push(y.ref, y.__c || d, y)), null == w && null != d && (w = d), (_ = !!(4 & y.__u)) || h.__k === y.__k ? f = H$1(y, f, n, _) : "function" == typeof y.type && void 0 !== g ? f = g : d && (f = d.nextSibling), y.__u &= -7);
-		return u.__e = w, f;
+	function L$1(n, l, u, t, i, r, o, e, f, c, s) {
+		var a, h, p, v, y, _, g, m = t && t.__k || w$3, b = l.length;
+		for (f = T$2(u, l, m, f, b), a = 0; a < b; a++) null != (p = u.__k[a]) && (h = -1 != p.__i && m[p.__i] || d$2, p.__i = a, _ = q$2(n, p, h, i, r, o, e, f, c, s), v = p.__e, p.ref && h.ref != p.ref && (h.ref && J$1(h.ref, null, p), s.push(p.ref, p.__c || v, p)), null == y && null != v && (y = v), (g = !!(4 & p.__u)) || h.__k === p.__k ? (f = j$2(p, f, n, g), g && h.__e && (h.__e = null)) : "function" == typeof p.type && void 0 !== _ ? f = _ : v && (f = v.nextSibling), p.__u &= -7);
+		return u.__e = y, f;
 	}
-	function A$3(n, l, u, t, i) {
+	function T$2(n, l, u, t, i) {
 		var r, o, e, f, c, s = u.length, a = s, h = 0;
-		for (n.__k = new Array(i), r = 0; r < i; r++) null != (o = l[r]) && "boolean" != typeof o && "function" != typeof o ? ("string" == typeof o || "number" == typeof o || "bigint" == typeof o || o.constructor == String ? o = n.__k[r] = m$1(null, o, null, null, null) : d$2(o) ? o = n.__k[r] = m$1(k$2, { children: o }, null, null, null) : void 0 === o.constructor && o.__b > 0 ? o = n.__k[r] = m$1(o.type, o.props, o.key, o.ref ? o.ref : null, o.__v) : n.__k[r] = o, f = r + h, o.__ = n, o.__b = n.__b + 1, e = null, -1 != (c = o.__i = T$2(o, u, f, a)) && (a--, (e = u[c]) && (e.__u |= 2)), null == e || null == e.__v ? (-1 == c && (i > s ? h-- : i < s && h++), "function" != typeof o.type && (o.__u |= 4)) : c != f && (c == f - 1 ? h-- : c == f + 1 ? h++ : (c > f ? h-- : h++, o.__u |= 4))) : n.__k[r] = null;
-		if (a) for (r = 0; r < s; r++) null != (e = u[r]) && 0 == (2 & e.__u) && (e.__e == t && (t = S$1(e)), E$1(e, e));
+		for (n.__k = new Array(i), r = 0; r < i; r++) null != (o = l[r]) && "boolean" != typeof o && "function" != typeof o ? ("string" == typeof o || "number" == typeof o || "bigint" == typeof o || o.constructor == String ? o = n.__k[r] = x$2(null, o, null, null, null) : g$3(o) ? o = n.__k[r] = x$2(S$1, { children: o }, null, null, null) : void 0 === o.constructor && o.__b > 0 ? o = n.__k[r] = x$2(o.type, o.props, o.key, o.ref ? o.ref : null, o.__v) : n.__k[r] = o, f = r + h, o.__ = n, o.__b = n.__b + 1, e = null, -1 != (c = o.__i = O$1(o, u, f, a)) && (a--, (e = u[c]) && (e.__u |= 2)), null == e || null == e.__v ? (-1 == c && (i > s ? h-- : i < s && h++), "function" != typeof o.type && (o.__u |= 4)) : c != f && (c == f - 1 ? h-- : c == f + 1 ? h++ : (c > f ? h-- : h++, o.__u |= 4))) : n.__k[r] = null;
+		if (a) for (r = 0; r < s; r++) null != (e = u[r]) && 0 == (2 & e.__u) && (e.__e == t && (t = $$1(e)), K$1(e, e));
 		return t;
 	}
-	function H$1(n, l, u, t) {
+	function j$2(n, l, u, t) {
 		var i, r;
 		if ("function" == typeof n.type) {
-			for (i = n.__k, r = 0; i && r < i.length; r++) i[r] && (i[r].__ = n, l = H$1(i[r], l, u, t));
+			for (i = n.__k, r = 0; i && r < i.length; r++) i[r] && (i[r].__ = n, l = j$2(i[r], l, u, t));
 			return l;
 		}
-		n.__e != l && (t && (l && n.type && !l.parentNode && (l = S$1(n)), u.insertBefore(n.__e, l || null)), l = n.__e);
+		n.__e != l && (t && (l && n.type && !l.parentNode && (l = $$1(n)), u.insertBefore(n.__e, l || null)), l = n.__e);
 		do
 			l = l && l.nextSibling;
 		while (null != l && 8 == l.nodeType);
 		return l;
 	}
-	function L$1(n, l) {
-		return l = l || [], null == n || "boolean" == typeof n || (d$2(n) ? n.some(function(n) {
-			L$1(n, l);
+	function F$2(n, l) {
+		return l = l || [], null == n || "boolean" == typeof n || (g$3(n) ? n.some(function(n) {
+			F$2(n, l);
 		}) : l.push(n)), l;
 	}
-	function T$2(n, l, u, t) {
+	function O$1(n, l, u, t) {
 		var i, r, o, e = n.key, f = n.type, c = l[u], s = null != c && 0 == (2 & c.__u);
 		if (null === c && null == e || s && e == c.key && f == c.type) return u;
 		if (t > (s ? 1 : 0)) {
@@ -218,17 +221,17 @@ var __create = Object.create;
 		}
 		return -1;
 	}
-	function j$2(n, l, u) {
-		"-" == l[0] ? n.setProperty(l, null == u ? "" : u) : n[l] = null == u ? "" : "number" != typeof u || y$2.test(l) ? u : u + "px";
+	function z$2(n, l, u) {
+		"-" == l[0] ? n.setProperty(l, null == u ? "" : u) : n[l] = null == u ? "" : "number" != typeof u || _$1.test(l) ? u : u + "px";
 	}
-	function F$2(n, l, u, t, i) {
+	function N$2(n, l, u, t, i) {
 		var r, o;
 		n: if ("style" == l) if ("string" == typeof u) n.style.cssText = u;
 		else {
-			if ("string" == typeof t && (n.style.cssText = t = ""), t) for (l in t) u && l in u || j$2(n.style, l, "");
-			if (u) for (l in u) t && u[l] == t[l] || j$2(n.style, l, u[l]);
+			if ("string" == typeof t && (n.style.cssText = t = ""), t) for (l in t) u && l in u || z$2(n.style, l, "");
+			if (u) for (l in u) t && u[l] == t[l] || z$2(n.style, l, u[l]);
 		}
-		else if ("o" == l[0] && "n" == l[1]) r = l != (l = l.replace(f$3, "$1")), o = l.toLowerCase(), l = o in n || "onFocusOut" == l || "onFocusIn" == l ? o.slice(2) : l.slice(2), n.l || (n.l = {}), n.l[l + r] = u, u ? t ? u.u = t.u : (u.u = c$1, n.addEventListener(l, r ? a$2 : s$2, r)) : n.removeEventListener(l, r ? a$2 : s$2, r);
+		else if ("o" == l[0] && "n" == l[1]) r = l != (l = l.replace(a$2, "$1")), o = l.toLowerCase(), l = o in n || "onFocusOut" == l || "onFocusIn" == l ? o.slice(2) : l.slice(2), n.l || (n.l = {}), n.l[l + r] = u, u ? t ? u[s$2] = t[s$2] : (u[s$2] = h$2, n.addEventListener(l, r ? v$2 : p$3, r)) : n.removeEventListener(l, r ? v$2 : p$3, r);
 		else {
 			if ("http://www.w3.org/2000/svg" == i) l = l.replace(/xlink(H|:h)/, "h").replace(/sName$/, "s");
 			else if ("width" != l && "height" != l && "href" != l && "list" != l && "form" != l && "tabIndex" != l && "download" != l && "rowSpan" != l && "colSpan" != l && "role" != l && "popover" != l && l in n) try {
@@ -238,57 +241,57 @@ var __create = Object.create;
 			"function" == typeof u || (null == u || !1 === u && "-" != l[4] ? n.removeAttribute(l) : n.setAttribute(l, "popover" == l && 1 == u ? "" : u));
 		}
 	}
-	function O$1(n) {
+	function V$1(n) {
 		return function(u) {
 			if (this.l) {
 				var t = this.l[u.type + n];
-				if (null == u.t) u.t = c$1++;
-				else if (u.t < t.u) return;
+				if (null == u[c$1]) u[c$1] = h$2++;
+				else if (u[c$1] < t[s$2]) return;
 				return t(l$2.event ? l$2.event(u) : u);
 			}
 		};
 	}
-	function z$2(n, u, t, i, r, o, e, f, c, s) {
-		var a, h, p, y, _, m, b, S, C, M, $, I, A, H, L, T = u.type;
+	function q$2(n, u, t, i, r, o, e, f, c, s) {
+		var a, h, p, v, y, d, _, k, x, M, $, I, P, A, H, T = u.type;
 		if (void 0 !== u.constructor) return null;
 		128 & t.__u && (c = !!(32 & t.__u), o = [f = u.__e = t.__e]), (a = l$2.__b) && a(u);
 		n: if ("function" == typeof T) try {
-			if (S = u.props, C = "prototype" in T && T.prototype.render, M = (a = T.contextType) && i[a.__c], $ = a ? M ? M.props.value : a.__ : i, t.__c ? b = (h = u.__c = t.__c).__ = h.__E : (C ? u.__c = h = new T(S, $) : (u.__c = h = new x$2(S, $), h.constructor = T, h.render = G$1), M && M.sub(h), h.state || (h.state = {}), h.__n = i, p = h.__d = !0, h.__h = [], h._sb = []), C && null == h.__s && (h.__s = h.state), C && null != T.getDerivedStateFromProps && (h.__s == h.state && (h.__s = w$3({}, h.__s)), w$3(h.__s, T.getDerivedStateFromProps(S, h.__s))), y = h.props, _ = h.state, h.__v = u, p) C && null == T.getDerivedStateFromProps && null != h.componentWillMount && h.componentWillMount(), C && null != h.componentDidMount && h.__h.push(h.componentDidMount);
+			if (k = u.props, x = T.prototype && T.prototype.render, M = (a = T.contextType) && i[a.__c], $ = a ? M ? M.props.value : a.__ : i, t.__c ? _ = (h = u.__c = t.__c).__ = h.__E : (x ? u.__c = h = new T(k, $) : (u.__c = h = new C$2(k, $), h.constructor = T, h.render = Q$1), M && M.sub(h), h.state || (h.state = {}), h.__n = i, p = h.__d = !0, h.__h = [], h._sb = []), x && null == h.__s && (h.__s = h.state), x && null != T.getDerivedStateFromProps && (h.__s == h.state && (h.__s = m$1({}, h.__s)), m$1(h.__s, T.getDerivedStateFromProps(k, h.__s))), v = h.props, y = h.state, h.__v = u, p) x && null == T.getDerivedStateFromProps && null != h.componentWillMount && h.componentWillMount(), x && null != h.componentDidMount && h.__h.push(h.componentDidMount);
 			else {
-				if (C && null == T.getDerivedStateFromProps && S !== y && null != h.componentWillReceiveProps && h.componentWillReceiveProps(S, $), u.__v == t.__v || !h.__e && null != h.shouldComponentUpdate && !1 === h.shouldComponentUpdate(S, h.__s, $)) {
-					u.__v != t.__v && (h.props = S, h.state = h.__s, h.__d = !1), u.__e = t.__e, u.__k = t.__k, u.__k.some(function(n) {
+				if (x && null == T.getDerivedStateFromProps && k !== v && null != h.componentWillReceiveProps && h.componentWillReceiveProps(k, $), u.__v == t.__v || !h.__e && null != h.shouldComponentUpdate && !1 === h.shouldComponentUpdate(k, h.__s, $)) {
+					u.__v != t.__v && (h.props = k, h.state = h.__s, h.__d = !1), u.__e = t.__e, u.__k = t.__k, u.__k.some(function(n) {
 						n && (n.__ = u);
-					}), v$2.push.apply(h.__h, h._sb), h._sb = [], h.__h.length && e.push(h);
+					}), w$3.push.apply(h.__h, h._sb), h._sb = [], h.__h.length && e.push(h);
 					break n;
 				}
-				null != h.componentWillUpdate && h.componentWillUpdate(S, h.__s, $), C && null != h.componentDidUpdate && h.__h.push(function() {
-					h.componentDidUpdate(y, _, m);
+				null != h.componentWillUpdate && h.componentWillUpdate(k, h.__s, $), x && null != h.componentDidUpdate && h.__h.push(function() {
+					h.componentDidUpdate(v, y, d);
 				});
 			}
-			if (h.context = $, h.props = S, h.__P = n, h.__e = !1, I = l$2.__r, A = 0, C) h.state = h.__s, h.__d = !1, I && I(u), a = h.render(h.props, h.state, h.context), v$2.push.apply(h.__h, h._sb), h._sb = [];
+			if (h.context = $, h.props = k, h.__P = n, h.__e = !1, I = l$2.__r, P = 0, x) h.state = h.__s, h.__d = !1, I && I(u), a = h.render(h.props, h.state, h.context), w$3.push.apply(h.__h, h._sb), h._sb = [];
 			else do
 				h.__d = !1, I && I(u), a = h.render(h.props, h.state, h.context), h.state = h.__s;
-			while (h.__d && ++A < 25);
-			h.state = h.__s, null != h.getChildContext && (i = w$3(w$3({}, i), h.getChildContext())), C && !p && null != h.getSnapshotBeforeUpdate && (m = h.getSnapshotBeforeUpdate(y, _)), H = null != a && a.type === k$2 && null == a.key ? q$2(a.props.children) : a, f = P$2(n, d$2(H) ? H : [H], u, t, i, r, o, e, f, c, s), h.base = u.__e, u.__u &= -161, h.__h.length && e.push(h), b && (h.__E = h.__ = null);
+			while (h.__d && ++P < 25);
+			h.state = h.__s, null != h.getChildContext && (i = m$1(m$1({}, i), h.getChildContext())), x && !p && null != h.getSnapshotBeforeUpdate && (d = h.getSnapshotBeforeUpdate(v, y)), A = null != a && a.type === S$1 && null == a.key ? E$1(a.props.children) : a, f = L$1(n, g$3(A) ? A : [A], u, t, i, r, o, e, f, c, s), h.base = u.__e, u.__u &= -161, h.__h.length && e.push(h), _ && (h.__E = h.__ = null);
 		} catch (n) {
 			if (u.__v = null, c || null != o) if (n.then) {
 				for (u.__u |= c ? 160 : 128; f && 8 == f.nodeType && f.nextSibling;) f = f.nextSibling;
 				o[o.indexOf(f)] = null, u.__e = f;
 			} else {
-				for (L = o.length; L--;) g$3(o[L]);
-				N$2(u);
+				for (H = o.length; H--;) b$2(o[H]);
+				B$3(u);
 			}
-			else u.__e = t.__e, u.__k = t.__k, n.then || N$2(u);
+			else u.__e = t.__e, u.__k = t.__k, n.then || B$3(u);
 			l$2.__e(n, u, t);
 		}
-		else null == o && u.__v == t.__v ? (u.__k = t.__k, u.__e = t.__e) : f = u.__e = B$3(t.__e, u, t, i, r, o, e, c, s);
+		else null == o && u.__v == t.__v ? (u.__k = t.__k, u.__e = t.__e) : f = u.__e = G$1(t.__e, u, t, i, r, o, e, c, s);
 		return (a = l$2.diffed) && a(u), 128 & u.__u ? void 0 : f;
 	}
-	function N$2(n) {
-		n && (n.__c && (n.__c.__e = !0), n.__k && n.__k.some(N$2));
+	function B$3(n) {
+		n && (n.__c && (n.__c.__e = !0), n.__k && n.__k.some(B$3));
 	}
-	function V$1(n, u, t) {
-		for (var i = 0; i < t.length; i++) D$3(t[i], t[++i], t[++i]);
+	function D$3(n, u, t) {
+		for (var i = 0; i < t.length; i++) J$1(t[i], t[++i], t[++i]);
 		l$2.__c && l$2.__c(u, n), n.some(function(u) {
 			try {
 				n = u.__h, u.__h = [], n.some(function(n) {
@@ -299,14 +302,14 @@ var __create = Object.create;
 			}
 		});
 	}
-	function q$2(n) {
-		return "object" != typeof n || null == n || n.__b > 0 ? n : d$2(n) ? n.map(q$2) : w$3({}, n);
+	function E$1(n) {
+		return "object" != typeof n || null == n || n.__b > 0 ? n : g$3(n) ? n.map(E$1) : m$1({}, n);
 	}
-	function B$3(u, t, i, r, o, e, f, c, s) {
-		var a, h, v, y, w, _, m, b = i.props || p$3, k = t.props, x = t.type;
+	function G$1(u, t, i, r, o, e, f, c, s) {
+		var a, h, p, v, y, w, _, m = i.props || d$2, k = t.props, x = t.type;
 		if ("svg" == x ? o = "http://www.w3.org/2000/svg" : "math" == x ? o = "http://www.w3.org/1998/Math/MathML" : o || (o = "http://www.w3.org/1999/xhtml"), null != e) {
-			for (a = 0; a < e.length; a++) if ((w = e[a]) && "setAttribute" in w == !!x && (x ? w.localName == x : 3 == w.nodeType)) {
-				u = w, e[a] = null;
+			for (a = 0; a < e.length; a++) if ((y = e[a]) && "setAttribute" in y == !!x && (x ? y.localName == x : 3 == y.nodeType)) {
+				u = y, e[a] = null;
 				break;
 			}
 		}
@@ -314,18 +317,18 @@ var __create = Object.create;
 			if (null == x) return document.createTextNode(k);
 			u = document.createElementNS(o, x, k.is && k), c && (l$2.__m && l$2.__m(t, e), c = !1), e = null;
 		}
-		if (null == x) b === k || c && u.data == k || (u.data = k);
+		if (null == x) m === k || c && u.data == k || (u.data = k);
 		else {
-			if (e = e && n$1.call(u.childNodes), !c && null != e) for (b = {}, a = 0; a < u.attributes.length; a++) b[(w = u.attributes[a]).name] = w.value;
-			for (a in b) w = b[a], "dangerouslySetInnerHTML" == a ? v = w : "children" == a || a in k || "value" == a && "defaultValue" in k || "checked" == a && "defaultChecked" in k || F$2(u, a, null, w, o);
-			for (a in k) w = k[a], "children" == a ? y = w : "dangerouslySetInnerHTML" == a ? h = w : "value" == a ? _ = w : "checked" == a ? m = w : c && "function" != typeof w || b[a] === w || F$2(u, a, w, b[a], o);
-			if (h) c || v && (h.__html == v.__html || h.__html == u.innerHTML) || (u.innerHTML = h.__html), t.__k = [];
-			else if (v && (u.innerHTML = ""), P$2("template" == t.type ? u.content : u, d$2(y) ? y : [y], t, i, r, "foreignObject" == x ? "http://www.w3.org/1999/xhtml" : o, e, f, e ? e[0] : i.__k && S$1(i, 0), c, s), null != e) for (a = e.length; a--;) g$3(e[a]);
-			c || (a = "value", "progress" == x && null == _ ? u.removeAttribute("value") : null != _ && (_ !== u[a] || "progress" == x && !_ || "option" == x && _ != b[a]) && F$2(u, a, _, b[a], o), a = "checked", null != m && m != u[a] && F$2(u, a, m, b[a], o));
+			if (e = e && n$1.call(u.childNodes), !c && null != e) for (m = {}, a = 0; a < u.attributes.length; a++) m[(y = u.attributes[a]).name] = y.value;
+			for (a in m) y = m[a], "dangerouslySetInnerHTML" == a ? p = y : "children" == a || a in k || "value" == a && "defaultValue" in k || "checked" == a && "defaultChecked" in k || N$2(u, a, null, y, o);
+			for (a in k) y = k[a], "children" == a ? v = y : "dangerouslySetInnerHTML" == a ? h = y : "value" == a ? w = y : "checked" == a ? _ = y : c && "function" != typeof y || m[a] === y || N$2(u, a, y, m[a], o);
+			if (h) c || p && (h.__html == p.__html || h.__html == u.innerHTML) || (u.innerHTML = h.__html), t.__k = [];
+			else if (p && (u.innerHTML = ""), L$1("template" == t.type ? u.content : u, g$3(v) ? v : [v], t, i, r, "foreignObject" == x ? "http://www.w3.org/1999/xhtml" : o, e, f, e ? e[0] : i.__k && $$1(i, 0), c, s), null != e) for (a = e.length; a--;) b$2(e[a]);
+			c || (a = "value", "progress" == x && null == w ? u.removeAttribute("value") : null != w && (w !== u[a] || "progress" == x && !w || "option" == x && w != m[a]) && N$2(u, a, w, m[a], o), a = "checked", null != _ && _ != u[a] && N$2(u, a, _, m[a], o));
 		}
 		return u;
 	}
-	function D$3(n, u, t) {
+	function J$1(n, u, t) {
 		try {
 			if ("function" == typeof n) {
 				var i = "function" == typeof n.__u;
@@ -335,9 +338,9 @@ var __create = Object.create;
 			l$2.__e(n, t);
 		}
 	}
-	function E$1(n, u, t) {
+	function K$1(n, u, t) {
 		var i, r;
-		if (l$2.unmount && l$2.unmount(n), (i = n.ref) && (i.current && i.current != n.__e || D$3(i, null, u)), null != (i = n.__c)) {
+		if (l$2.unmount && l$2.unmount(n), (i = n.ref) && (i.current && i.current != n.__e || J$1(i, null, u)), null != (i = n.__c)) {
 			if (i.componentWillUnmount) try {
 				i.componentWillUnmount();
 			} catch (n) {
@@ -345,25 +348,25 @@ var __create = Object.create;
 			}
 			i.base = i.__P = null;
 		}
-		if (i = n.__k) for (r = 0; r < i.length; r++) i[r] && E$1(i[r], u, t || "function" != typeof n.type);
-		t || g$3(n.__e), n.__c = n.__ = n.__e = void 0;
+		if (i = n.__k) for (r = 0; r < i.length; r++) i[r] && K$1(i[r], u, t || "function" != typeof n.type);
+		t || b$2(n.__e), n.__c = n.__ = n.__e = void 0;
 	}
-	function G$1(n, l, u) {
+	function Q$1(n, l, u) {
 		return this.constructor(n, u);
 	}
-	function J$1(u, t, i) {
+	function R$1(u, t, i) {
 		var r, o, e, f;
-		t == document && (t = document.documentElement), l$2.__ && l$2.__(u, t), o = (r = "function" == typeof i) ? null : i && i.__k || t.__k, e = [], f = [], z$2(t, u = (!r && i || t).__k = _$1(k$2, null, [u]), o || p$3, p$3, t.namespaceURI, !r && i ? [i] : o ? null : t.firstChild ? n$1.call(t.childNodes) : null, e, !r && i ? i : o ? o.__e : t.firstChild, r, f), V$1(e, u, f);
+		t == document && (t = document.documentElement), l$2.__ && l$2.__(u, t), o = (r = "function" == typeof i) ? null : i && i.__k || t.__k, e = [], f = [], q$2(t, u = (!r && i || t).__k = k$2(S$1, null, [u]), o || d$2, d$2, t.namespaceURI, !r && i ? [i] : o ? null : t.firstChild ? n$1.call(t.childNodes) : null, e, !r && i ? i : o ? o.__e : t.firstChild, r, f), D$3(e, u, f);
 	}
-	function K$1(n, l) {
-		J$1(n, l, K$1);
+	function U$1(n, l) {
+		R$1(n, l, U$1);
 	}
-	function Q$1(l, u, t) {
-		var i, r, o, e, f = w$3({}, l.props);
+	function W$1(l, u, t) {
+		var i, r, o, e, f = m$1({}, l.props);
 		for (o in l.type && l.type.defaultProps && (e = l.type.defaultProps), u) "key" == o ? i = u[o] : "ref" == o ? r = u[o] : f[o] = void 0 === u[o] && null != e ? e[o] : u[o];
-		return arguments.length > 2 && (f.children = arguments.length > 3 ? n$1.call(arguments, 2) : t), m$1(l.type, f, i || l.key, r || l.ref, null);
+		return arguments.length > 2 && (f.children = arguments.length > 3 ? n$1.call(arguments, 2) : t), x$2(l.type, f, i || l.key, r || l.ref, null);
 	}
-	function R$1(n) {
+	function X$1(n) {
 		function l(n) {
 			var u, t;
 			return this.getChildContext || (u = new Set(), (t = {})[l.__c] = this, this.getChildContext = function() {
@@ -372,7 +375,7 @@ var __create = Object.create;
 				u = null;
 			}, this.shouldComponentUpdate = function(n) {
 				this.props.value != n.value && u.forEach(function(n) {
-					n.__e = !0, $$1(n);
+					n.__e = !0, A$3(n);
 				});
 			}, this.sub = function(n) {
 				u.add(n);
@@ -382,28 +385,28 @@ var __create = Object.create;
 				};
 			}), n.children;
 		}
-		return l.__c = "__cC" + h$2++, l.__ = n, l.Provider = l.__l = (l.Consumer = function(n, l) {
+		return l.__c = "__cC" + y$2++, l.__ = n, l.Provider = l.__l = (l.Consumer = function(n, l) {
 			return n.children(l);
 		}).contextType = l, l;
 	}
-	var n$1, l$2, u$3, i$3, r$2, o$3, e$2, f$3, c$1, s$2, a$2, h$2, p$3, v$2, y$2, d$2;
+	var n$1, l$2, u$3, i$3, r$2, o$3, e$2, f$3, c$1, s$2, a$2, h$2, p$3, v$2, y$2, d$2, w$3, _$1, g$3;
 	var init_preact_module = __esmMin((() => {
-		p$3 = {}, v$2 = [], y$2 = /acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i, d$2 = Array.isArray;
-		n$1 = v$2.slice, l$2 = { __e: function(n, l, u, t) {
+		d$2 = {}, w$3 = [], _$1 = /acit|ex(?:s|g|n|p|$)|rph|grid|ows|mnc|ntw|ine[ch]|zoo|^ord|itera/i, g$3 = Array.isArray;
+		n$1 = w$3.slice, l$2 = { __e: function(n, l, u, t) {
 			for (var i, r, o; l = l.__;) if ((i = l.__c) && !i.__) try {
 				if ((r = i.constructor) && null != r.getDerivedStateFromError && (i.setState(r.getDerivedStateFromError(n)), o = i.__d), null != i.componentDidCatch && (i.componentDidCatch(n, t || {}), o = i.__d), o) return i.__E = i;
 			} catch (l) {
 				n = l;
 			}
 			throw n;
-		} }, u$3 = 0, x$2.prototype.setState = function(n, l) {
-			var u = null != this.__s && this.__s != this.state ? this.__s : this.__s = w$3({}, this.state);
-			"function" == typeof n && (n = n(w$3({}, u), this.props)), n && w$3(u, n), null != n && this.__v && (l && this._sb.push(l), $$1(this));
-		}, x$2.prototype.forceUpdate = function(n) {
-			this.__v && (this.__e = !0, n && this.__h.push(n), $$1(this));
-		}, x$2.prototype.render = k$2, i$3 = [], o$3 = "function" == typeof Promise ? Promise.prototype.then.bind(Promise.resolve()) : setTimeout, e$2 = function(n, l) {
+		} }, u$3 = 0, C$2.prototype.setState = function(n, l) {
+			var u = null != this.__s && this.__s != this.state ? this.__s : this.__s = m$1({}, this.state);
+			"function" == typeof n && (n = n(m$1({}, u), this.props)), n && m$1(u, n), null != n && this.__v && (l && this._sb.push(l), A$3(this));
+		}, C$2.prototype.forceUpdate = function(n) {
+			this.__v && (this.__e = !0, n && this.__h.push(n), A$3(this));
+		}, C$2.prototype.render = S$1, i$3 = [], o$3 = "function" == typeof Promise ? Promise.prototype.then.bind(Promise.resolve()) : setTimeout, e$2 = function(n, l) {
 			return n.__v.__b - l.__v.__b;
-		}, I$2.__r = 0, f$3 = /(PointerCapture)$|Capture$/i, c$1 = 0, s$2 = O$1(!1), a$2 = O$1(!0), h$2 = 0;
+		}, H$1.__r = 0, f$3 = Math.random().toString(8), c$1 = "__d" + f$3, s$2 = "__a" + f$3, a$2 = /(PointerCapture)$|Capture$/i, h$2 = 0, p$3 = V$1(!1), v$2 = V$1(!0), y$2 = 0;
 	}));
 	var require_sentinel_umd = __commonJSMin(((exports, module) => {
 		(function(root, factory) {
@@ -1474,7 +1477,14 @@ function hasSecuritySidebarMarker(element) {
 	}
 	function keysFromSelector(selector, opts) {
 		const { [PATH_KEY]: path } = selector(createProxy());
-		return path.join(opts?.keySeparator ?? ".");
+		const keySeparator = opts?.keySeparator ?? ".";
+		const nsSeparator = opts?.nsSeparator ?? ":";
+		if (path.length > 1 && nsSeparator) {
+			const ns = opts?.ns;
+			const nsArray = Array.isArray(ns) ? ns : null;
+			if (nsArray && nsArray.length > 1 && nsArray.slice(1).includes(path[0])) return `${path[0]}${nsSeparator}${path.slice(1).join(keySeparator)}`;
+		}
+		return path.join(keySeparator);
 	}
 	var checkedLoadedFor = {};
 	var shouldHandleAsObject = (res) => !isString$1(res) && typeof res !== "boolean" && typeof res !== "number";
@@ -1539,6 +1549,10 @@ function hasSecuritySidebarMarker(element) {
 				...opt
 			});
 			if (!Array.isArray(keys)) keys = [String(keys)];
+			keys = keys.map((k) => typeof k === "function" ? keysFromSelector(k, {
+				...this.options,
+				...opt
+			}) : String(k));
 			const returnDetails = opt.returnDetails !== void 0 ? opt.returnDetails : this.options.returnDetails;
 			const keySeparator = opt.keySeparator !== void 0 ? opt.keySeparator : this.options.keySeparator;
 			const { key, namespaces } = this.extractFromKey(keys[keys.length - 1], opt);
@@ -1739,6 +1753,10 @@ function hasSecuritySidebarMarker(element) {
 			let usedLng;
 			let usedNS;
 			if (isString$1(keys)) keys = [keys];
+			if (Array.isArray(keys)) keys = keys.map((k) => typeof k === "function" ? keysFromSelector(k, {
+				...this.options,
+				...opt
+			}) : k);
 			keys.forEach((k) => {
 				if (this.isValidLookup(found)) return;
 				const extracted = this.extractFromKey(k, opt);
@@ -2547,7 +2565,12 @@ function hasSecuritySidebarMarker(element) {
 		});
 	};
 	var SUPPORT_NOTICE_KEY = "__i18next_supportNoticeShown";
-	var getSupportNoticeShown = () => typeof globalThis !== "undefined" && !!globalThis[SUPPORT_NOTICE_KEY];
+	var getSupportNoticeShown = () => {
+		if (typeof globalThis !== "undefined" && !!globalThis[SUPPORT_NOTICE_KEY]) return true;
+		if (typeof process !== "undefined" && {}.I18NEXT_NO_SUPPORT_NOTICE) return true;
+		if (typeof process !== "undefined" && true) return true;
+		return false;
+	};
 	var setSupportNoticeShown = () => {
 		if (typeof globalThis !== "undefined") globalThis[SUPPORT_NOTICE_KEY] = true;
 	};
@@ -2605,7 +2628,7 @@ function hasSecuritySidebarMarker(element) {
 			if (options.nsSeparator !== void 0) this.options.userDefinedNsSeparator = options.nsSeparator;
 			if (typeof this.options.overloadTranslationOptionHandler !== "function") this.options.overloadTranslationOptionHandler = defOpts.overloadTranslationOptionHandler;
 			if (this.options.showSupportNotice !== false && !usesLocize(this) && !getSupportNoticeShown()) {
-				if (typeof console !== "undefined" && typeof console.info !== "undefined") console.info("🌐 i18next is maintained with support from Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙");
+				if (typeof console !== "undefined" && typeof console.info !== "undefined") console.info("🌐 i18next is made possible by our own product, Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙");
 				setSupportNoticeShown();
 			}
 			const createClassOnDemand = (ClassOrObject) => {
@@ -2823,20 +2846,19 @@ function hasSecuritySidebarMarker(element) {
 				o.lngs = o.lngs || fixedT.lngs;
 				o.ns = o.ns || fixedT.ns;
 				if (o.keyPrefix !== "") o.keyPrefix = o.keyPrefix || keyPrefix || fixedT.keyPrefix;
+				const selectorOpts = {
+					...this.options,
+					...o
+				};
+				if (typeof o.keyPrefix === "function") o.keyPrefix = keysFromSelector(o.keyPrefix, selectorOpts);
 				const keySeparator = this.options.keySeparator || ".";
 				let resultKey;
 				if (o.keyPrefix && Array.isArray(key)) resultKey = key.map((k) => {
-					if (typeof k === "function") k = keysFromSelector(k, {
-						...this.options,
-						...opts
-					});
+					if (typeof k === "function") k = keysFromSelector(k, selectorOpts);
 					return `${o.keyPrefix}${keySeparator}${k}`;
 				});
 				else {
-					if (typeof key === "function") key = keysFromSelector(key, {
-						...this.options,
-						...opts
-					});
+					if (typeof key === "function") key = keysFromSelector(key, selectorOpts);
 					resultKey = o.keyPrefix ? `${o.keyPrefix}${keySeparator}${key}` : key;
 				}
 				return this.t(resultKey, o);
@@ -3253,35 +3275,35 @@ function hasSecuritySidebarMarker(element) {
 		k$1 = "function" == typeof requestAnimationFrame;
 	}));
 	var compat_module_exports = __exportAll({
-		Children: () => O,
-		Component: () => x$2,
-		Fragment: () => k$2,
-		PureComponent: () => N$1,
-		StrictMode: () => Cn,
+		Children: () => L,
+		Component: () => C$2,
+		Fragment: () => S$1,
+		PureComponent: () => M,
+		StrictMode: () => S$1,
 		Suspense: () => P,
 		SuspenseList: () => B$1,
-		__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED: () => hn,
-		cloneElement: () => _n,
-		createContext: () => R$1,
-		createElement: () => _$1,
-		createFactory: () => dn,
+		__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED: () => fn,
+		cloneElement: () => mn,
+		createContext: () => X$1,
+		createElement: () => k$2,
+		createFactory: () => sn,
 		createPortal: () => $,
-		createRef: () => b$2,
-		default: () => xn,
-		findDOMNode: () => Sn,
-		flushSync: () => En,
+		createRef: () => M$1,
+		default: () => gn,
+		findDOMNode: () => yn,
+		flushSync: () => bn,
 		forwardRef: () => D$1,
 		hydrate: () => tn,
-		isElement: () => Rn,
-		isFragment: () => pn,
-		isMemo: () => yn,
-		isValidElement: () => mn,
+		isElement: () => Sn,
+		isFragment: () => vn,
+		isMemo: () => dn,
+		isValidElement: () => hn,
 		lazy: () => z,
-		memo: () => M,
+		memo: () => N$1,
 		render: () => nn,
 		startTransition: () => x,
-		unmountComponentAtNode: () => bn,
-		unstable_batchedUpdates: () => gn,
+		unmountComponentAtNode: () => pn,
+		unstable_batchedUpdates: () => _n,
 		useCallback: () => q$1,
 		useContext: () => x$1,
 		useDebugValue: () => P$1,
@@ -3298,7 +3320,7 @@ function hasSecuritySidebarMarker(element) {
 		useState: () => d$1,
 		useSyncExternalStore: () => C,
 		useTransition: () => k,
-		version: () => vn
+		version: () => an
 	});
 	function g$1(n, t) {
 		for (var e in t) n[e] = t[e];
@@ -3343,18 +3365,18 @@ function hasSecuritySidebarMarker(element) {
 	function k() {
 		return [!1, x];
 	}
-	function N$1(n, t) {
+	function M(n, t) {
 		this.props = n, this.context = t;
 	}
-	function M(n, e) {
+	function N$1(n, e) {
 		function r(n) {
-			var t = this.props.ref, r = t == n.ref;
-			return !r && t && (t.call ? t(null) : t.current = null), e ? !e(this.props, n) || !r : E(this.props, n);
+			var t = this.props.ref;
+			return t != n.ref && t && ("function" == typeof t ? t(null) : t.current = null), e ? !e(this.props, n) || t != n.ref : E(this.props, n);
 		}
 		function u(e) {
-			return this.shouldComponentUpdate = r, _$1(n, e);
+			return this.shouldComponentUpdate = r, k$2(n, e);
 		}
-		return u.displayName = "Memo(" + (n.displayName || n.name) + ")", u.prototype.isReactComponent = !0, u.__f = !0, u.type = n, u;
+		return u.displayName = "Memo(" + (n.displayName || n.name) + ")", u.__f = u.prototype.isReactComponent = !0, u.type = n, u;
 	}
 	function D$1(n) {
 		function t(t) {
@@ -3379,8 +3401,7 @@ function hasSecuritySidebarMarker(element) {
 		this.__u = 0, this.o = null, this.__b = null;
 	}
 	function j(n) {
-		if (!n.__) return null;
-		var t = n.__.__c;
+		var t = n.__ && n.__.__c;
 		return t && t.__a && t.__a(n);
 	}
 	function z(n) {
@@ -3392,7 +3413,7 @@ function hasSecuritySidebarMarker(element) {
 				r = n, u = !0;
 			}), r) throw r;
 			if (!u) throw e;
-			return o ? _$1(o, i) : null;
+			return o ? k$2(o, i) : null;
 		}
 		return i.displayName = "Lazy", i.__f = !0, i;
 	}
@@ -3407,7 +3428,7 @@ function hasSecuritySidebarMarker(element) {
 	function Y(n) {
 		var e = this, r = n.h;
 		if (e.componentWillUnmount = function() {
-			J$1(null, e.v), e.v = null, e.h = null;
+			R$1(null, e.v), e.v = null, e.h = null;
 		}, e.h && e.h !== r && e.componentWillUnmount(), !e.v) {
 			for (var u = e.__v; null !== u && !u.__m && null !== u.__;) u = u.__;
 			e.h = r, e.v = {
@@ -3427,56 +3448,49 @@ function hasSecuritySidebarMarker(element) {
 				}
 			};
 		}
-		J$1(_$1(Z, { context: e.context }, n.__v), e.v);
+		R$1(k$2(Z, { context: e.context }, n.__v), e.v);
 	}
 	function $(n, e) {
-		var r = _$1(Y, {
+		var r = k$2(Y, {
 			__v: n,
 			h: e
 		});
 		return r.containerInfo = e, r;
 	}
 	function nn(n, t, e) {
-		return t.__k ?? (t.textContent = ""), J$1(n, t), "function" == typeof e && e(), n ? n.__c : null;
+		return t.__k ?? (t.textContent = ""), R$1(n, t), "function" == typeof e && e(), n ? n.__c : null;
 	}
 	function tn(n, t, e) {
-		return K$1(n, t), "function" == typeof e && e(), n ? n.__c : null;
+		return U$1(n, t), "function" == typeof e && e(), n ? n.__c : null;
 	}
-	function rn() {}
-	function un() {
-		return this.cancelBubble;
+	function sn(n) {
+		return k$2.bind(null, n);
 	}
-	function on() {
-		return this.defaultPrevented;
-	}
-	function dn(n) {
-		return _$1.bind(null, n);
-	}
-	function mn(n) {
+	function hn(n) {
 		return !!n && n.$$typeof === q;
 	}
+	function vn(n) {
+		return hn(n) && n.type === S$1;
+	}
+	function dn(n) {
+		return !!n && "string" == typeof n.displayName && 0 == n.displayName.indexOf("Memo(");
+	}
+	function mn(n) {
+		return hn(n) ? W$1.apply(null, arguments) : n;
+	}
 	function pn(n) {
-		return mn(n) && n.type === k$2;
+		return !!n.__k && (R$1(null, n), !0);
 	}
 	function yn(n) {
-		return !!n && "string" == typeof n.displayName && n.displayName.startsWith("Memo(");
-	}
-	function _n(n) {
-		return mn(n) ? Q$1.apply(null, arguments) : n;
-	}
-	function bn(n) {
-		return !!n.__k && (J$1(null, n), !0);
-	}
-	function Sn(n) {
 		return n && (n.base || 1 === n.nodeType && n) || null;
 	}
-	var I$1, T, A$1, L, O, U, F, H, q, G, J, K, Q, X, en, ln, cn, fn, an, sn, hn, vn, gn, En, Cn, Rn, xn;
+	var I$1, T, A$1, F, L, O, U, H, q, G, J, K, Q, X, en, rn, un, on, ln, cn, fn, an, _n, bn, Sn, gn;
 	var init_compat_module = __esmMin((() => {
 		init_preact_module();
 		init_hooks_module();
 		init_hooks_module();
 		I$1 = _;
-		(N$1.prototype = new x$2()).isPureReactComponent = !0, N$1.prototype.shouldComponentUpdate = function(n, t) {
+		(M.prototype = new C$2()).isPureReactComponent = !0, M.prototype.shouldComponentUpdate = function(n, t) {
 			return E(this.props, n) || E(this.state, t);
 		};
 		T = l$2.__b;
@@ -3484,32 +3498,32 @@ function hasSecuritySidebarMarker(element) {
 			n.type && n.type.__f && n.ref && (n.props.ref = n.ref, n.ref = null), T && T(n);
 		};
 		A$1 = "undefined" != typeof Symbol && Symbol.for && Symbol.for("react.forward_ref") || 3911;
-		L = function(n, t) {
-			return null == n ? null : L$1(L$1(n).map(t));
-		}, O = {
-			map: L,
-			forEach: L,
+		F = function(n, t) {
+			return null == n ? null : F$2(F$2(n).map(t));
+		}, L = {
+			map: F,
+			forEach: F,
 			count: function(n) {
-				return n ? L$1(n).length : 0;
+				return n ? F$2(n).length : 0;
 			},
 			only: function(n) {
-				var t = L$1(n);
+				var t = F$2(n);
 				if (1 !== t.length) throw "Children.only";
 				return t[0];
 			},
-			toArray: L$1
-		}, U = l$2.__e;
+			toArray: F$2
+		}, O = l$2.__e;
 		l$2.__e = function(n, t, e, r) {
 			if (n.then) {
 				for (var u, o = t; o = o.__;) if ((u = o.__c) && u.__c) return t.__e ?? (t.__e = e.__e, t.__k = e.__k), u.__c(n, t);
 			}
-			U(n, t, e, r);
+			O(n, t, e, r);
 		};
-		F = l$2.unmount;
+		U = l$2.unmount;
 		l$2.unmount = function(n) {
 			var t = n.__c;
-			t && (t.__z = !0), t && t.__R && t.__R(), t && 32 & n.__u && (n.type = null), F && F(n);
-		}, (P.prototype = new x$2()).__c = function(n, t) {
+			t && (t.__z = !0), t && t.__R && t.__R(), t && 32 & n.__u && (n.type = null), U && U(n);
+		}, (P.prototype = new C$2()).__c = function(n, t) {
 			var e = t.__c, r = this;
 			r.o ??= [], r.o.push(e);
 			var u = j(r.__v), o = !1, i = function() {
@@ -3539,8 +3553,8 @@ function hasSecuritySidebarMarker(element) {
 				}
 				this.__b = null;
 			}
-			var i = e.__a && _$1(k$2, null, n.fallback);
-			return i && (i.__u &= -33), [_$1(k$2, null, e.__a ? null : n.children), i];
+			var i = e.__a && k$2(S$1, null, n.fallback);
+			return i && (i.__u &= -33), [k$2(S$1, null, e.__a ? null : n.children), i];
 		};
 		H = function(n, t, e) {
 			if (++e[1] === e[0] && n.l.delete(t), n.props.revealOrder && ("t" !== n.props.revealOrder[0] || !n.l.size)) for (e = n.i; e;) {
@@ -3549,7 +3563,7 @@ function hasSecuritySidebarMarker(element) {
 				n.i = e = e[2];
 			}
 		};
-		(B$1.prototype = new x$2()).__a = function(n) {
+		(B$1.prototype = new C$2()).__a = function(n) {
 			var t = this, e = j(t.__v), r = t.l.get(n);
 			return r[0]++, function(u) {
 				var o = function() {
@@ -3559,7 +3573,7 @@ function hasSecuritySidebarMarker(element) {
 			};
 		}, B$1.prototype.render = function(n) {
 			this.i = null, this.l = new Map();
-			var t = L$1(n.children);
+			var t = F$2(n.children);
 			n.revealOrder && "b" === n.revealOrder[0] && t.reverse();
 			for (var e = t.length; e--;) this.l.set(t[e], this.i = [
 				1,
@@ -3576,12 +3590,12 @@ function hasSecuritySidebarMarker(element) {
 		q = "undefined" != typeof Symbol && Symbol.for && Symbol.for("react.element") || 60103, G = /^(?:accent|alignment|arabic|baseline|cap|clip(?!PathU)|color|dominant|fill|flood|font|glyph(?!R)|horiz|image(!S)|letter|lighting|marker(?!H|W|U)|overline|paint|pointer|shape|stop|strikethrough|stroke|text(?!L)|transform|underline|unicode|units|v|vector|vert|word|writing|x(?!C))[A-Z]/, J = /^on(Ani|Tra|Tou|BeforeInp|Compo)/, K = /[A-Z0-9]/g, Q = "undefined" != typeof document, X = function(n) {
 			return ("undefined" != typeof Symbol && "symbol" == typeof Symbol() ? /fil|che|rad/ : /fil|che|ra/).test(n);
 		};
-		x$2.prototype.isReactComponent = {}, [
+		C$2.prototype.isReactComponent = !0, [
 			"componentWillMount",
 			"componentWillReceiveProps",
 			"componentWillUpdate"
 		].forEach(function(t) {
-			Object.defineProperty(x$2.prototype, t, {
+			Object.defineProperty(C$2.prototype, t, {
 				configurable: !0,
 				get: function() {
 					return this["UNSAFE_" + t];
@@ -3597,18 +3611,21 @@ function hasSecuritySidebarMarker(element) {
 		});
 		en = l$2.event;
 		l$2.event = function(n) {
-			return en && (n = en(n)), n.persist = rn, n.isPropagationStopped = un, n.isDefaultPrevented = on, n.nativeEvent = n;
+			return en && (n = en(n)), n.persist = function() {}, n.isPropagationStopped = function() {
+				return this.cancelBubble;
+			}, n.isDefaultPrevented = function() {
+				return this.defaultPrevented;
+			}, n.nativeEvent = n;
 		};
-		cn = {
-			enumerable: !1,
+		un = {
 			configurable: !0,
 			get: function() {
 				return this.class;
 			}
-		}, fn = l$2.vnode;
+		}, on = l$2.vnode;
 		l$2.vnode = function(n) {
 			"string" == typeof n.type && function(n) {
-				var t = n.props, e = n.type, u = {}, o = -1 === e.indexOf("-");
+				var t = n.props, e = n.type, u = {}, o = -1 == e.indexOf("-");
 				for (var i in t) {
 					var l = t[i];
 					if (!("value" === i && "defaultValue" in t && null == l || Q && "children" === i && "noscript" === e || "class" === i || "className" === i)) {
@@ -3616,26 +3633,26 @@ function hasSecuritySidebarMarker(element) {
 						"defaultValue" === i && "value" in t && null == t.value ? i = "value" : "download" === i && !0 === l ? l = "" : "translate" === c && "no" === l ? l = !1 : "o" === c[0] && "n" === c[1] ? "ondoubleclick" === c ? i = "ondblclick" : "onchange" !== c || "input" !== e && "textarea" !== e || X(t.type) ? "onfocus" === c ? i = "onfocusin" : "onblur" === c ? i = "onfocusout" : J.test(i) && (i = c) : c = i = "oninput" : o && G.test(i) ? i = i.replace(K, "-$&").toLowerCase() : null === l && (l = void 0), "oninput" === c && u[i = c] && (i = "oninputCapture"), u[i] = l;
 					}
 				}
-				"select" == e && u.multiple && Array.isArray(u.value) && (u.value = L$1(t.children).forEach(function(n) {
+				"select" == e && (u.multiple && Array.isArray(u.value) && (u.value = F$2(t.children).forEach(function(n) {
 					n.props.selected = -1 != u.value.indexOf(n.props.value);
-				})), "select" == e && null != u.defaultValue && (u.value = L$1(t.children).forEach(function(n) {
+				})), null != u.defaultValue && (u.value = F$2(t.children).forEach(function(n) {
 					n.props.selected = u.multiple ? -1 != u.defaultValue.indexOf(n.props.value) : u.defaultValue == n.props.value;
-				})), t.class && !t.className ? (u.class = t.class, Object.defineProperty(u, "className", cn)) : t.className && (u.class = u.className = t.className), n.props = u;
-			}(n), n.$$typeof = q, fn && fn(n);
+				}))), t.class && !t.className ? (u.class = t.class, Object.defineProperty(u, "className", un)) : t.className && (u.class = u.className = t.className), n.props = u;
+			}(n), n.$$typeof = q, on && on(n);
 		};
-		an = l$2.__r;
+		ln = l$2.__r;
 		l$2.__r = function(n) {
-			an && an(n), ln = n.__c;
+			ln && ln(n), rn = n.__c;
 		};
-		sn = l$2.diffed;
+		cn = l$2.diffed;
 		l$2.diffed = function(n) {
-			sn && sn(n);
+			cn && cn(n);
 			var t = n.props, e = n.__e;
-			null != e && "textarea" === n.type && "value" in t && t.value !== e.value && (e.value = null == t.value ? "" : t.value), ln = null;
+			null != e && "textarea" === n.type && "value" in t && t.value !== e.value && (e.value = null == t.value ? "" : t.value), rn = null;
 		};
-		hn = { ReactCurrentDispatcher: { current: {
+		fn = { ReactCurrentDispatcher: { current: {
 			readContext: function(n) {
-				return ln.__n[n.__c].props.value;
+				return rn.__n[n.__c].props.value;
 			},
 			useCallback: q$1,
 			useContext: x$1,
@@ -3652,12 +3669,17 @@ function hasSecuritySidebarMarker(element) {
 			useState: d$1,
 			useSyncExternalStore: C,
 			useTransition: k
-		} } }, vn = "18.3.1";
-		gn = function(n, t) {
+		} } }, an = "18.3.1";
+		_n = function(n, t) {
 			return n(t);
-		}, En = function(n, t) {
-			return n(t);
-		}, Cn = k$2, Rn = mn, xn = {
+		}, bn = function(n, t) {
+			var r = l$2.debounceRendering;
+			l$2.debounceRendering = function(n) {
+				return n();
+			};
+			var u = n(t);
+			return l$2.debounceRendering = r, u;
+		}, Sn = hn, gn = {
 			useState: d$1,
 			useId: g$2,
 			useReducer: h$1,
@@ -3675,33 +3697,33 @@ function hasSecuritySidebarMarker(element) {
 			useContext: x$1,
 			useDebugValue: P$1,
 			version: "18.3.1",
-			Children: O,
+			Children: L,
 			render: nn,
 			hydrate: tn,
-			unmountComponentAtNode: bn,
+			unmountComponentAtNode: pn,
 			createPortal: $,
-			createElement: _$1,
-			createContext: R$1,
-			createFactory: dn,
-			cloneElement: _n,
-			createRef: b$2,
-			Fragment: k$2,
-			isValidElement: mn,
-			isElement: Rn,
-			isFragment: pn,
-			isMemo: yn,
-			findDOMNode: Sn,
-			Component: x$2,
-			PureComponent: N$1,
-			memo: M,
+			createElement: k$2,
+			createContext: X$1,
+			createFactory: sn,
+			cloneElement: mn,
+			createRef: M$1,
+			Fragment: S$1,
+			isValidElement: hn,
+			isElement: Sn,
+			isFragment: vn,
+			isMemo: dn,
+			findDOMNode: yn,
+			Component: C$2,
+			PureComponent: M,
+			memo: N$1,
 			forwardRef: D$1,
-			flushSync: En,
-			unstable_batchedUpdates: gn,
-			StrictMode: Cn,
+			flushSync: bn,
+			unstable_batchedUpdates: _n,
+			StrictMode: S$1,
 			Suspense: P,
 			SuspenseList: B$1,
 			lazy: z,
-			__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED: hn
+			__SECRET_INTERNALS_DO_NOT_USE_OR_YOU_WILL_BE_FIRED: fn
 		};
 	}));
 	var warn = (i18n, code, msg, rest) => {
@@ -3818,7 +3840,7 @@ function hasSecuritySidebarMarker(element) {
 		}
 	};
 	init_compat_module();
-	var I18nContext = R$1();
+	var I18nContext = X$1();
 	var ReportNamespaces = class {
 		constructor() {
 			this.usedNamespaces = {};
@@ -3894,7 +3916,12 @@ function hasSecuritySidebarMarker(element) {
 	var notReadyT = (k, optsOrDefaultValue) => {
 		if (isString(optsOrDefaultValue)) return optsOrDefaultValue;
 		if (isObject$1(optsOrDefaultValue) && isString(optsOrDefaultValue.defaultValue)) return optsOrDefaultValue.defaultValue;
-		return Array.isArray(k) ? k[k.length - 1] : k;
+		if (typeof k === "function") return "";
+		if (Array.isArray(k)) {
+			const last = k[k.length - 1];
+			return typeof last === "function" ? "" : last;
+		}
+		return k;
 	};
 	var notReadySnapshot = {
 		t: notReadyT,
@@ -4003,12 +4030,16 @@ function hasSecuritySidebarMarker(element) {
 				wrapperRef.current = i18nWrapper;
 				wrapperLangRef.current = lang;
 			}
+			const effectiveT = !ready && !useSuspense ? (...args) => {
+				warnOnce(i18n, "USE_T_BEFORE_READY", "useTranslation: t was called before ready. When using useSuspense: false, make sure to check the ready flag before using t.");
+				return t(...args);
+			} : t;
 			const arr = [
-				t,
+				effectiveT,
 				i18nWrapper,
 				ready
 			];
-			arr.t = t;
+			arr.t = effectiveT;
 			arr.i18n = i18nWrapper;
 			arr.ready = ready;
 			return arr;
@@ -4027,40 +4058,25 @@ function hasSecuritySidebarMarker(element) {
 		});
 		return ret;
 	};
-	var title$8 = "ChatGPT Exporter";
-	var ExportHelper$8 = "Export";
-	var Setting$8 = "Setting";
-	var Language$8 = "Language";
-	var Screenshot$8 = "Screenshot";
-	var Markdown$8 = "Markdown";
-	var HTML$8 = "HTML";
-	var JSON$9 = "JSON";
-	var Archive$8 = "Archive";
-	var Save$8 = "Save";
-	var Delete$8 = "Delete";
-	var Export$8 = "Export";
-	var Error$9 = "Error";
-	var Loading$8 = "Loading";
-	var Preview$8 = "Preview";
 	var en_default = {
-		title: title$8,
-		ExportHelper: ExportHelper$8,
-		Setting: Setting$8,
-		Language: Language$8,
+		title: "ChatGPT Exporter",
+		ExportHelper: "Export",
+		Setting: "Setting",
+		Language: "Language",
 		"Copy Text": "Copy Text",
 		"Copied!": "Copied!",
-		Screenshot: Screenshot$8,
-		Markdown: Markdown$8,
-		HTML: HTML$8,
-		JSON: JSON$9,
-		Archive: Archive$8,
-		Save: Save$8,
-		Delete: Delete$8,
+		Screenshot: "Screenshot",
+		Markdown: "Markdown",
+		HTML: "HTML",
+		JSON: "JSON",
+		Archive: "Archive",
+		Save: "Save",
+		Delete: "Delete",
 		"Select All": "Select All",
-		Export: Export$8,
-		Error: Error$9,
-		Loading: Loading$8,
-		Preview: Preview$8,
+		Export: "Export",
+		Error: "Error",
+		Loading: "Loading",
+		Preview: "Preview",
 		"File Name": "File Name",
 		"Export All": "Export All",
 		"Exporter Settings": "Exporter Settings",
@@ -4088,40 +4104,25 @@ function hasSecuritySidebarMarker(element) {
 		"Export All Limit": "Export All Limit",
 		"Export All Limit Description": "Set the maximum number of conversations to load in the 'Export All' dialog."
 	};
-	var title$7 = "ChatGPT Exporter";
-	var ExportHelper$7 = "Exportar";
-	var Setting$7 = "Ajustes";
-	var Language$7 = "Idioma";
-	var Screenshot$7 = "Captura De Pantalla";
-	var Markdown$7 = "Markdown";
-	var HTML$7 = "HTML";
-	var JSON$8 = "JSON";
-	var Archive$7 = "Archivo";
-	var Save$7 = "Guardar";
-	var Delete$7 = "Borrar";
-	var Export$7 = "Exportar";
-	var Error$8 = "Error";
-	var Loading$7 = "Cargando";
-	var Preview$7 = "Previsualizar";
 	var es_default = {
-		title: title$7,
-		ExportHelper: ExportHelper$7,
-		Setting: Setting$7,
-		Language: Language$7,
+		title: "ChatGPT Exporter",
+		ExportHelper: "Exportar",
+		Setting: "Ajustes",
+		Language: "Idioma",
 		"Copy Text": "Copiar Texto",
 		"Copied!": "¡Copiado!",
-		Screenshot: Screenshot$7,
-		Markdown: Markdown$7,
-		HTML: HTML$7,
-		JSON: JSON$8,
-		Archive: Archive$7,
-		Save: Save$7,
-		Delete: Delete$7,
+		Screenshot: "Captura De Pantalla",
+		Markdown: "Markdown",
+		HTML: "HTML",
+		JSON: "JSON",
+		Archive: "Archivo",
+		Save: "Guardar",
+		Delete: "Borrar",
 		"Select All": "Seleccionar Todos",
-		Export: Export$7,
-		Error: Error$8,
-		Loading: Loading$7,
-		Preview: Preview$7,
+		Export: "Exportar",
+		Error: "Error",
+		Loading: "Cargando",
+		Preview: "Previsualizar",
 		"File Name": "Nombre del Archivo",
 		"Export All": "Exportar Todos",
 		"Exporter Settings": "Ajustes De Exportación",
@@ -4149,40 +4150,25 @@ function hasSecuritySidebarMarker(element) {
 		"Export All Limit": "Límite de Exportar Todos",
 		"Export All Limit Description": "Establece el número máximo de conversaciones a cargar en el diálogo 'Exportar Todos'."
 	};
-	var title$6 = "Exportateur ChatGPT";
-	var ExportHelper$6 = "Exporter";
-	var Setting$6 = "Paramètre";
-	var Language$6 = "Langue";
-	var Screenshot$6 = "Capture d'écran";
-	var Markdown$6 = "Markdown";
-	var HTML$6 = "HTML";
-	var JSON$7 = "JSON";
-	var Archive$6 = "Archiver";
-	var Save$6 = "Enregistrer";
-	var Delete$6 = "Supprimer";
-	var Export$6 = "Exporter";
-	var Error$7 = "Erreur";
-	var Loading$6 = "Chargement";
-	var Preview$6 = "Aperçu";
 	var fr_default = {
-		title: title$6,
-		ExportHelper: ExportHelper$6,
-		Setting: Setting$6,
-		Language: Language$6,
+		title: "Exportateur ChatGPT",
+		ExportHelper: "Exporter",
+		Setting: "Paramètre",
+		Language: "Langue",
 		"Copy Text": "Copier le texte",
 		"Copied!": "Copié !",
-		Screenshot: Screenshot$6,
-		Markdown: Markdown$6,
-		HTML: HTML$6,
-		JSON: JSON$7,
-		Archive: Archive$6,
-		Save: Save$6,
-		Delete: Delete$6,
+		Screenshot: "Capture d'écran",
+		Markdown: "Markdown",
+		HTML: "HTML",
+		JSON: "JSON",
+		Archive: "Archiver",
+		Save: "Enregistrer",
+		Delete: "Supprimer",
 		"Select All": "Tout sélectionner",
-		Export: Export$6,
-		Error: Error$7,
-		Loading: Loading$6,
-		Preview: Preview$6,
+		Export: "Exporter",
+		Error: "Erreur",
+		Loading: "Chargement",
+		Preview: "Aperçu",
 		"File Name": "Nom du fichier",
 		"Export All": "Tout exporter",
 		"Exporter Settings": "Paramètres de l'exportateur",
@@ -4210,40 +4196,25 @@ function hasSecuritySidebarMarker(element) {
 		"Export All Limit": "Limite d'Exportation Multiple",
 		"Export All Limit Description": "Définit le nombre maximal de conversations à charger dans la boîte de dialogue 'Tout exporter'."
 	};
-	var title$5 = "ChatGPT Exporter";
-	var ExportHelper$5 = "Ekspor";
-	var Setting$5 = "Pengaturan";
-	var Language$5 = "Bahasa";
-	var Screenshot$5 = "Tangkapan Layar";
-	var Markdown$5 = "Markdown";
-	var HTML$5 = "HTML";
-	var JSON$6 = "JSON";
-	var Archive$5 = "Arsip";
-	var Save$5 = "Simpan";
-	var Delete$5 = "Hapus";
-	var Export$5 = "Ekspor";
-	var Error$6 = "Kesalahan";
-	var Loading$5 = "Memuat";
-	var Preview$5 = "Pratinjau";
 	var id_default = {
-		title: title$5,
-		ExportHelper: ExportHelper$5,
-		Setting: Setting$5,
-		Language: Language$5,
+		title: "ChatGPT Exporter",
+		ExportHelper: "Ekspor",
+		Setting: "Pengaturan",
+		Language: "Bahasa",
 		"Copy Text": "Salin Teks",
 		"Copied!": "Disalin!",
-		Screenshot: Screenshot$5,
-		Markdown: Markdown$5,
-		HTML: HTML$5,
-		JSON: JSON$6,
-		Archive: Archive$5,
-		Save: Save$5,
-		Delete: Delete$5,
+		Screenshot: "Tangkapan Layar",
+		Markdown: "Markdown",
+		HTML: "HTML",
+		JSON: "JSON",
+		Archive: "Arsip",
+		Save: "Simpan",
+		Delete: "Hapus",
 		"Select All": "Pilih Semua",
-		Export: Export$5,
-		Error: Error$6,
-		Loading: Loading$5,
-		Preview: Preview$5,
+		Export: "Ekspor",
+		Error: "Kesalahan",
+		Loading: "Memuat",
+		Preview: "Pratinjau",
 		"File Name": "Nama File",
 		"Export All": "Ekspor Semua",
 		"Exporter Settings": "Pengaturan Pengekspor",
@@ -4271,40 +4242,25 @@ function hasSecuritySidebarMarker(element) {
 		"Export All Limit": "Batas Ekspor Semua",
 		"Export All Limit Description": "Atur jumlah maksimum percakapan yang akan dimuat dalam dialog 'Ekspor Semua'."
 	};
-	var title$4 = "ChatGPTエクスポーター";
-	var ExportHelper$4 = "エクスポート";
-	var Setting$4 = "設定";
-	var Language$4 = "言語";
-	var Screenshot$4 = "スクリーンショット";
-	var Markdown$4 = "Markdown";
-	var HTML$4 = "HTML";
-	var JSON$5 = "JSON";
-	var Archive$4 = "アーカイブ";
-	var Save$4 = "保存";
-	var Delete$4 = "削除";
-	var Export$4 = "エクスポート";
-	var Error$5 = "エラー";
-	var Loading$4 = "読み込み中";
-	var Preview$4 = "プレビュー";
 	var jp_default = {
-		title: title$4,
-		ExportHelper: ExportHelper$4,
-		Setting: Setting$4,
-		Language: Language$4,
+		title: "ChatGPTエクスポーター",
+		ExportHelper: "エクスポート",
+		Setting: "設定",
+		Language: "言語",
 		"Copy Text": "テキストをコピー",
 		"Copied!": "コピーしました！",
-		Screenshot: Screenshot$4,
-		Markdown: Markdown$4,
-		HTML: HTML$4,
-		JSON: JSON$5,
-		Archive: Archive$4,
-		Save: Save$4,
-		Delete: Delete$4,
+		Screenshot: "スクリーンショット",
+		Markdown: "Markdown",
+		HTML: "HTML",
+		JSON: "JSON",
+		Archive: "アーカイブ",
+		Save: "保存",
+		Delete: "削除",
 		"Select All": "すべて選択",
-		Export: Export$4,
-		Error: Error$5,
-		Loading: Loading$4,
-		Preview: Preview$4,
+		Export: "エクスポート",
+		Error: "エラー",
+		Loading: "読み込み中",
+		Preview: "プレビュー",
 		"File Name": "ファイル名",
 		"Export All": "すべてエクスポート",
 		"Exporter Settings": "エクスポーター設定",
@@ -4332,40 +4288,25 @@ function hasSecuritySidebarMarker(element) {
 		"Export All Limit": "すべてエクスポートの上限",
 		"Export All Limit Description": "「すべてエクスポート」ダイアログで読み込む会話の最大数を設定します。"
 	};
-	var title$3 = "ChatGPT Exporter";
-	var ExportHelper$3 = "Export";
-	var Setting$3 = "Параметры";
-	var Language$3 = "Язык";
-	var Screenshot$3 = "Скриншот";
-	var Markdown$3 = "Markdown";
-	var HTML$3 = "HTML";
-	var JSON$4 = "JSON";
-	var Archive$3 = "Архивировать";
-	var Save$3 = "Сохранить";
-	var Delete$3 = "Удалить";
-	var Export$3 = "Экспорт";
-	var Error$4 = "Ошибка";
-	var Loading$3 = "Загрузка";
-	var Preview$3 = "Предпросмотр";
 	var ru_default = {
-		title: title$3,
-		ExportHelper: ExportHelper$3,
-		Setting: Setting$3,
-		Language: Language$3,
+		title: "ChatGPT Exporter",
+		ExportHelper: "Export",
+		Setting: "Параметры",
+		Language: "Язык",
 		"Copy Text": "Копировать текст",
 		"Copied!": "Скопировано!",
-		Screenshot: Screenshot$3,
-		Markdown: Markdown$3,
-		HTML: HTML$3,
-		JSON: JSON$4,
-		Archive: Archive$3,
-		Save: Save$3,
-		Delete: Delete$3,
+		Screenshot: "Скриншот",
+		Markdown: "Markdown",
+		HTML: "HTML",
+		JSON: "JSON",
+		Archive: "Архивировать",
+		Save: "Сохранить",
+		Delete: "Удалить",
 		"Select All": "Выбрать все",
-		Export: Export$3,
-		Error: Error$4,
-		Loading: Loading$3,
-		Preview: Preview$3,
+		Export: "Экспорт",
+		Error: "Ошибка",
+		Loading: "Загрузка",
+		Preview: "Предпросмотр",
 		"File Name": "Имя файла",
 		"Export All": "Экспортировать все",
 		"Exporter Settings": "Параметры экспорта",
@@ -4393,38 +4334,25 @@ function hasSecuritySidebarMarker(element) {
 		"Export All Limit": "Лимит экспорта всех",
 		"Export All Limit Description": "Установите максимальное количество бесед для загрузки в диалоге 'Экспортировать все'."
 	};
-	var title$2 = "ChatGPT Exporter";
-	var ExportHelper$2 = "Dışa Aktar";
-	var Setting$2 = "Ayarlar";
-	var Screenshot$2 = "Ekran Alıntısı";
-	var Markdown$2 = "Markdown";
-	var HTML$2 = "HTML";
-	var JSON$3 = "JSON";
-	var Archive$2 = "Arşiv";
-	var Save$2 = "Kaydet";
-	var Export$2 = "Dışa Aktar";
-	var Error$3 = "Hata";
-	var Loading$2 = "Yükleniyor";
-	var Preview$2 = "Önizleme";
 	var tr_default = {
-		title: title$2,
-		ExportHelper: ExportHelper$2,
-		Setting: Setting$2,
+		title: "ChatGPT Exporter",
+		ExportHelper: "Dışa Aktar",
+		Setting: "Ayarlar",
 		Language: "Dil",
 		"Copy Text": "Metni Kopyala",
 		"Copied!": "Kopyalandı!",
-		Screenshot: Screenshot$2,
-		Markdown: Markdown$2,
-		HTML: HTML$2,
-		JSON: JSON$3,
-		Archive: Archive$2,
-		Save: Save$2,
+		Screenshot: "Ekran Alıntısı",
+		Markdown: "Markdown",
+		HTML: "HTML",
+		JSON: "JSON",
+		Archive: "Arşiv",
+		Save: "Kaydet",
 		Delete: "Sil",
 		"Select All": "Tümünü Seç",
-		Export: Export$2,
-		Error: Error$3,
-		Loading: Loading$2,
-		Preview: Preview$2,
+		Export: "Dışa Aktar",
+		Error: "Hata",
+		Loading: "Yükleniyor",
+		Preview: "Önizleme",
 		"File Name": "Dosya Adı",
 		"Export All": "Tümünü Dışa Aktar",
 		"Exporter Settings": "Dışa Aktarma Ayarları",
@@ -4452,40 +4380,25 @@ function hasSecuritySidebarMarker(element) {
 		"Export All Limit": "Tümünü Dışa Aktarma Limiti",
 		"Export All Limit Description": "'Tümünü Dışa Aktar' iletişim kutusunda yüklenecek maksimum konuşma sayısını ayarlayın."
 	};
-	var title$1 = "ChatGPT Exporter";
-	var ExportHelper$1 = "导出助手";
-	var Setting$1 = "设置";
-	var Language$1 = "语言";
-	var Screenshot$1 = "截屏";
-	var Markdown$1 = "Markdown";
-	var HTML$1 = "HTML";
-	var JSON$2 = "JSON";
-	var Archive$1 = "归档";
-	var Save$1 = "保存";
-	var Delete$1 = "删除";
-	var Export$1 = "导出";
-	var Error$2 = "错误";
-	var Loading$1 = "加载中";
-	var Preview$1 = "预览";
 	var zh_Hans_default = {
-		title: title$1,
-		ExportHelper: ExportHelper$1,
-		Setting: Setting$1,
-		Language: Language$1,
+		title: "ChatGPT Exporter",
+		ExportHelper: "导出助手",
+		Setting: "设置",
+		Language: "语言",
 		"Copy Text": "复制文字",
 		"Copied!": "已复制!",
-		Screenshot: Screenshot$1,
-		Markdown: Markdown$1,
-		HTML: HTML$1,
-		JSON: JSON$2,
-		Archive: Archive$1,
-		Save: Save$1,
-		Delete: Delete$1,
+		Screenshot: "截屏",
+		Markdown: "Markdown",
+		HTML: "HTML",
+		JSON: "JSON",
+		Archive: "归档",
+		Save: "保存",
+		Delete: "删除",
 		"Select All": "全选",
-		Export: Export$1,
-		Error: Error$2,
-		Loading: Loading$1,
-		Preview: Preview$1,
+		Export: "导出",
+		Error: "错误",
+		Loading: "加载中",
+		Preview: "预览",
 		"File Name": "文件名",
 		"Export All": "批量导出",
 		"Exporter Settings": "导出设置",
@@ -4513,40 +4426,25 @@ function hasSecuritySidebarMarker(element) {
 		"Export All Limit": "批量导出上限",
 		"Export All Limit Description": "设置“批量导出”对话框中加载的最大对话数量。"
 	};
-	var title = "ChatGPT Exporter";
-	var ExportHelper = "Export";
-	var Setting = "設定";
-	var Language = "語言";
-	var Screenshot = "截圖";
-	var Markdown = "Markdown";
-	var HTML = "HTML";
-	var JSON$1 = "JSON";
-	var Archive = "封存";
-	var Save = "保存";
-	var Delete = "刪除";
-	var Export = "匯出";
-	var Error$1 = "錯誤";
-	var Loading = "載入中";
-	var Preview = "預覽";
 	var zh_Hant_default = {
-		title,
-		ExportHelper,
-		Setting,
-		Language,
+		title: "ChatGPT Exporter",
+		ExportHelper: "Export",
+		Setting: "設定",
+		Language: "語言",
 		"Copy Text": "複製文字",
 		"Copied!": "已複製!",
-		Screenshot,
-		Markdown,
-		HTML,
-		JSON: JSON$1,
-		Archive,
-		Save,
-		Delete,
+		Screenshot: "截圖",
+		Markdown: "Markdown",
+		HTML: "HTML",
+		JSON: "JSON",
+		Archive: "封存",
+		Save: "保存",
+		Delete: "刪除",
 		"Select All": "全選",
-		Export,
-		Error: Error$1,
-		Loading,
-		Preview,
+		Export: "匯出",
+		Error: "錯誤",
+		Loading: "載入中",
+		Preview: "預覽",
 		"File Name": "檔案名稱",
 		"Export All": "批量匯出",
 		"Exporter Settings": "設定",
@@ -11575,7 +11473,7 @@ let key;
 		if (extension.extensions) while (++index < extension.extensions.length) configure(base, extension.extensions[index]);
 		for (key in extension) if (own$1.call(extension, key)) switch (key) {
 			case "extensions": break;
-			case "unsafe":
+case "unsafe":
 				list$2(base[key], extension[key]);
 				break;
 			case "join":
@@ -17081,7 +16979,7 @@ var registered = false;
 	}
 	init_compat_module();
 	function createContext2(rootComponentName, defaultContext) {
-		const Context = R$1(defaultContext);
+		const Context = X$1(defaultContext);
 		const Provider = (props) => {
 			const { children, ...context } = props;
 			const value = T$1(() => context, Object.values(context));
@@ -17102,7 +17000,7 @@ var registered = false;
 	function createContextScope(scopeName, createContextScopeDeps = []) {
 		let defaultContexts = [];
 		function createContext3(rootComponentName, defaultContext) {
-			const BaseContext = R$1(defaultContext);
+			const BaseContext = X$1(defaultContext);
 			const index = defaultContexts.length;
 			defaultContexts = [...defaultContexts, defaultContext];
 			const Provider = (props) => {
@@ -17125,7 +17023,7 @@ var registered = false;
 		}
 		const createScope = () => {
 			const scopeContexts = defaultContexts.map((defaultContext) => {
-				return R$1(defaultContext);
+				return X$1(defaultContext);
 			});
 			return function useScope(scope) {
 				const contexts = scope?.[scopeName] || scopeContexts;
@@ -17228,20 +17126,20 @@ function createSlot(ownerName) {
 		const SlotClone = createSlotClone(ownerName);
 		const Slot2 = D$1((props, forwardedRef) => {
 			const { children, ...slotProps } = props;
-			const childrenArray = O.toArray(children);
+			const childrenArray = L.toArray(children);
 			const slottable = childrenArray.find(isSlottable);
 			if (slottable) {
 				const newElement = slottable.props.children;
 				const newChildren = childrenArray.map((child) => {
 					if (child === slottable) {
-						if (O.count(newElement) > 1) return O.only(null);
-						return mn(newElement) ? newElement.props.children : null;
+						if (L.count(newElement) > 1) return L.only(null);
+						return hn(newElement) ? newElement.props.children : null;
 					} else return child;
 				});
 				return u$1(SlotClone, {
 					...slotProps,
 					ref: forwardedRef,
-					children: mn(newElement) ? _n(newElement, void 0, newChildren) : null
+					children: hn(newElement) ? mn(newElement, void 0, newChildren) : null
 				});
 			}
 			return u$1(SlotClone, {
@@ -17256,20 +17154,20 @@ function createSlot(ownerName) {
 function createSlotClone(ownerName) {
 		const SlotClone = D$1((props, forwardedRef) => {
 			const { children, ...slotProps } = props;
-			if (mn(children)) {
+			if (hn(children)) {
 				const childrenRef = getElementRef$1(children);
 				const props2 = mergeProps(slotProps, children.props);
-				if (children.type !== k$2) props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
-				return _n(children, props2);
+				if (children.type !== S$1) props2.ref = forwardedRef ? composeRefs(forwardedRef, childrenRef) : childrenRef;
+				return mn(children, props2);
 			}
-			return O.count(children) > 1 ? O.only(null) : null;
+			return L.count(children) > 1 ? L.only(null) : null;
 		});
 		SlotClone.displayName = `${ownerName}.SlotClone`;
 		return SlotClone;
 	}
 	var SLOTTABLE_IDENTIFIER = Symbol("radix.slottable");
 	function isSlottable(child) {
-		return mn(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
+		return hn(child) && typeof child.type === "function" && "__radixId" in child.type && child.type.__radixId === SLOTTABLE_IDENTIFIER;
 	}
 	function mergeProps(slotProps, childProps) {
 		const overrideProps = { ...childProps };
@@ -17340,7 +17238,7 @@ function createSlotClone(ownerName) {
 		};
 	}, {});
 	function dispatchDiscreteCustomEvent(target, event) {
-		if (target) En(() => target.dispatchEvent(event));
+		if (target) bn(() => target.dispatchEvent(event));
 	}
 	init_compat_module();
 	function useCallbackRef$1(callback) {
@@ -17367,7 +17265,7 @@ function createSlotClone(ownerName) {
 	var POINTER_DOWN_OUTSIDE = "dismissableLayer.pointerDownOutside";
 	var FOCUS_OUTSIDE = "dismissableLayer.focusOutside";
 	var originalBodyPointerEvents;
-	var DismissableLayerContext = R$1({
+	var DismissableLayerContext = X$1({
 		layers: new Set(),
 		layersWithOutsidePointerEventsDisabled: new Set(),
 		branches: new Set()
@@ -17729,7 +17627,7 @@ function createSlotClone(ownerName) {
 		const [mounted, setMounted] = d$1(false);
 		useLayoutEffect2(() => setMounted(true), []);
 		const container = containerProp || mounted && globalThis?.document?.body;
-		return container ? xn.createPortal( u$1(Primitive.div, {
+		return container ? gn.createPortal( u$1(Primitive.div, {
 			...portalProps,
 			ref: forwardedRef
 		}), container) : null;
@@ -17744,9 +17642,9 @@ function createSlotClone(ownerName) {
 	var Presence = (props) => {
 		const { present, children } = props;
 		const presence = usePresence(present);
-		const child = typeof children === "function" ? children({ present: presence.isPresent }) : O.only(children);
+		const child = typeof children === "function" ? children({ present: presence.isPresent }) : L.only(children);
 		const ref = useComposedRefs(presence.ref, getElementRef(child));
-		return typeof children === "function" || presence.isPresent ? _n(child, { ref }) : null;
+		return typeof children === "function" || presence.isPresent ? mn(child, { ref }) : null;
 	};
 	Presence.displayName = "Presence";
 	function usePresence(present) {
@@ -18026,7 +17924,7 @@ function useMergeRefs(refs, defaultValue) {
 		if (!sideCar) throw new Error("Sidecar: please provide `sideCar` property to import the right car");
 		var Target = sideCar.read();
 		if (!Target) throw new Error("Sidecar medium not found");
-		return _$1(Target, __assign({}, rest));
+		return k$2(Target, __assign({}, rest));
 	};
 	SideCar.isSideCarExport = true;
 	function exportSidecar(medium, exported) {
@@ -18061,7 +17959,7 @@ var RemoveScroll = D$1(function(props, parentRef) {
 		var SideCar = sideCar;
 		var containerRef = useMergeRefs([ref, parentRef]);
 		var containerProps = __assign(__assign({}, rest), callbacks);
-		return _$1(k$2, null, enabled && _$1(SideCar, {
+		return k$2(S$1, null, enabled && k$2(SideCar, {
 			sideCar: effectCar,
 			removeScrollBar,
 			shards,
@@ -18072,7 +17970,7 @@ var RemoveScroll = D$1(function(props, parentRef) {
 			allowPinchZoom: !!allowPinchZoom,
 			lockRef: ref,
 			gapMode
-		}), forwardProps ? _n(O.only(children), __assign(__assign({}, containerProps), { ref: containerRef })) : _$1(Container, __assign({}, containerProps, {
+		}), forwardProps ? mn(L.only(children), __assign(__assign({}, containerProps), { ref: containerRef })) : k$2(Container, __assign({}, containerProps, {
 			className,
 			ref: containerRef
 		}), children));
@@ -18211,7 +18109,7 @@ var styleSingleton = function() {
 var RemoveScrollBar = function(_a) {
 		var noRelative = _a.noRelative, noImportant = _a.noImportant, _b = _a.gapMode, gapMode = _b === void 0 ? "margin" : _b;
 		useLockAttribute();
-		return _$1(Style, { styles: getStyles(T$1(function() {
+		return k$2(Style, { styles: getStyles(T$1(function() {
 			return getGapWidth(gapMode);
 		}, [gapMode]), !noRelative, gapMode, !noImportant ? "!important" : "") });
 	};
@@ -18441,7 +18339,7 @@ return axis === "h" && direction === "rtl" ? -1 : 1;
 			};
 		}, []);
 		var removeScrollBar = props.removeScrollBar, inert = props.inert;
-		return _$1(k$2, null, inert ? _$1(Style, { styles: generateStyle(id) }) : null, removeScrollBar ? _$1(RemoveScrollBar, {
+		return k$2(S$1, null, inert ? k$2(Style, { styles: generateStyle(id) }) : null, removeScrollBar ? k$2(RemoveScrollBar, {
 			noRelative: props.noRelative,
 			gapMode: props.gapMode
 		}) : null);
@@ -18460,7 +18358,7 @@ return axis === "h" && direction === "rtl" ? -1 : 1;
 	var sidecar_default = exportSidecar(effectCar, RemoveScrollSideCar);
 	init_compat_module();
 	var ReactRemoveScroll = D$1(function(props, ref) {
-		return _$1(RemoveScroll, __assign({}, props, {
+		return k$2(RemoveScroll, __assign({}, props, {
 			ref,
 			sideCar: sidecar_default
 		}));
@@ -18609,7 +18507,7 @@ var hideOthers = function(originalTarget, parentNode, markerName) {
 		return u$1(PortalProvider$1, {
 			scope: __scopeDialog,
 			forceMount,
-			children: O.map(children, (child) => u$1(Presence, {
+			children: L.map(children, (child) => u$1(Presence, {
 				present: forceMount || context.open,
 				children: u$1(Portal$2, {
 					asChild: true,
@@ -18731,7 +18629,7 @@ var hideOthers = function(originalTarget, parentNode, markerName) {
 		const contentRef = A$2(null);
 		const composedRefs = useComposedRefs(forwardedRef, contentRef);
 		useFocusGuards();
-		return u$1(k$2, { children: [ u$1(FocusScope, {
+		return u$1(S$1, { children: [ u$1(FocusScope, {
 			asChild: true,
 			loop: true,
 			trapped: trapFocus,
@@ -18747,7 +18645,7 @@ var hideOthers = function(originalTarget, parentNode, markerName) {
 				ref: composedRefs,
 				onDismiss: () => context.onOpenChange(false)
 			})
-		}), u$1(k$2, { children: [ u$1(TitleWarning, { titleId: context.titleId }), u$1(DescriptionWarning, {
+		}), u$1(S$1, { children: [ u$1(TitleWarning, { titleId: context.titleId }), u$1(DescriptionWarning, {
 			contentRef,
 			descriptionId: context.descriptionId
 		})] })] });
@@ -20184,7 +20082,7 @@ function useFloating(options) {
 				};
 				if (isMountedRef.current && !deepEqual(dataRef.current, fullData)) {
 					dataRef.current = fullData;
-					En(() => {
+					bn(() => {
 						setData(fullData);
 					});
 				}
@@ -20887,10 +20785,16 @@ var truncate = require_browser();
 		var controlRe = /[\x00-\x1f\x80-\x9f]/g;
 		var reservedRe = /^\.+$/;
 		var windowsReservedRe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
-		var windowsTrailingRe = /[\. ]+$/;
+function replaceTrailingDotsAndSpaces(str, replacement) {
+			var end = str.length;
+			while (end > 0 && (str[end - 1] === "." || str[end - 1] === " ")) end--;
+			return end < str.length ? str.slice(0, end) + replacement : str;
+		}
 		function sanitize(input, replacement) {
 			if (typeof input !== "string") throw new Error("Input must be string");
-			return truncate(input.replace(illegalRe, replacement).replace(controlRe, replacement).replace(reservedRe, replacement).replace(windowsReservedRe, replacement).replace(windowsTrailingRe, replacement), 255);
+			var sanitized = input.replace(illegalRe, replacement).replace(controlRe, replacement).replace(reservedRe, replacement).replace(windowsReservedRe, replacement);
+			sanitized = replaceTrailingDotsAndSpaces(sanitized, replacement);
+			return truncate(sanitized, 255);
 		}
 		module.exports = function(input, options) {
 			var replacement = options && options.replacement || "";
@@ -22084,7 +21988,7 @@ u$1("path", {
 	}
 	init_compat_module();
 	init_hooks_module();
-	var SettingContext = R$1({
+	var SettingContext = X$1({
 		...DEFAULT_EXPORTER_SETTINGS,
 		exportMetaList: [...DEFAULT_EXPORT_META_LIST],
 		setFormat: () => {},
@@ -22191,7 +22095,7 @@ init_hooks_module();
 	};
 	var ConversationSelect = ({ conversations, selected, setSelected, disabled, loading, error }) => {
 		const { t } = useTranslation();
-		return u$1(k$2, { children: [ u$1("div", {
+		return u$1(S$1, { children: [ u$1("div", {
 			className: "SelectToolbar",
 			children: u$1(CheckBox, {
 				label: t("Select All"),
@@ -22445,7 +22349,7 @@ init_hooks_module();
 				setError(err.message || "Failed to load conversations");
 			}).finally(() => setLoading(false));
 		}, [selectedProject, exportAllLimit]);
-		return u$1(k$2, { children: [
+		return u$1(S$1, { children: [
 u$1(Title, {
 				className: EXPORT_DIALOG_CLASS_NAMES.title,
 				children: t("Export Dialog Title")
@@ -22522,7 +22426,7 @@ u$1("button", {
 					})
 				]
 			}),
-			processing && u$1(k$2, { children: [ u$1("div", {
+			processing && u$1(S$1, { children: [ u$1("div", {
 				className: "mt-2 mb-1 justify-between flex",
 				children: [ u$1("span", {
 					className: "truncate mr-8",
@@ -22610,7 +22514,7 @@ u$1(Close, {
 			children: loading ? u$1("div", {
 				className: "flex justify-center items-center w-full h-full",
 				children: u$1(IconLoading, { className: "w-4 h-4" })
-			}) : u$1(k$2, { children: [Icon && u$1(Icon, {}), succeed && successText ? successText : text] })
+			}) : u$1(S$1, { children: [Icon && u$1(Icon, {}), succeed && successText ? successText : text] })
 		});
 	};
 	"stream" in Blob.prototype || Object.defineProperty(Blob.prototype, "stream", { value() {
@@ -23166,7 +23070,7 @@ init_hooks_module();
 			matchingTotal,
 			metaList
 		]);
-		return u$1(k$2, { children: [
+		return u$1(S$1, { children: [
 u$1(Title, {
 				className: EXPORT_DIALOG_CLASS_NAMES.title,
 				children: "Export Matching Findings"
@@ -23242,7 +23146,7 @@ u$1("button", {
 					})
 				]
 			}),
-			processing && u$1(k$2, { children: [ u$1("div", {
+			processing && u$1(S$1, { children: [ u$1("div", {
 				className: "mt-2 mb-1 justify-between flex",
 				children: [ u$1("span", {
 					className: "truncate mr-8",
@@ -23408,7 +23312,7 @@ u$1(MenuItem, {
 						icon: IconSetting,
 						onClick: onClickSetting
 					}),
-					hasSingleItemExports && u$1(k$2, { children: [
+					hasSingleItemExports && u$1(S$1, { children: [
 u$1(MenuItem, {
 							text: t("Copy Text"),
 							successText: t("Copied!"),
@@ -23499,7 +23403,7 @@ u$1(MenuItem, {
 				}
 			})]
 		});
-		return u$1(k$2, { children: [
+		return u$1(S$1, { children: [
 			isMobile && open && u$1("div", {
 				className: "dropdown-backdrop ce-animate-fade-in",
 				onClick: () => setOpen(false)
@@ -23642,7 +23546,7 @@ let chatId = "";
 	function getMenuContainer() {
 		const container = document.createElement("div");
 		container.style.zIndex = "99";
-		J$1( u$1(Menu, { container }), container);
+		R$1( u$1(Menu, { container }), container);
 		return container;
 	}
 })(JSZip, html2canvas);
