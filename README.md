@@ -249,11 +249,8 @@ Click the button to perform the action you want.
 ## 📄 Licensing
 
 - Root license: `MPL-2.0` in [`LICENSE`](./LICENSE).
-- Upstream MIT text is preserved verbatim in [`LICENSE-MIT`](./LICENSE-MIT).
-- SPDX file headers are managed relative to upstream ancestry:
-  - New fork files: `MPL-2.0`
-  - Modified upstream-derived files: `MPL-2.0 AND MIT`
-  - Unchanged upstream-derived files: `MIT`
+- Upstream MIT text is preserved verbatim in [`LICENSE-MIT`](./LICENSE-MIT), with fork attribution in [`NOTICE`](./NOTICE).
+- SPDX file headers use `MPL-2.0` for source, script, and configuration files in this fork.
 - Local automation:
   - Apply headers: `mise run license-apply`
   - Verify headers: `mise run license-check`

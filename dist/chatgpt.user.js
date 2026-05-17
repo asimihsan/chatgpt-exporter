@@ -8,7 +8,7 @@
 // @description        Easily export the whole ChatGPT conversation history for further analysis or sharing.
 // @description:zh-CN  轻松导出 ChatGPT 聊天记录，以便进一步分析或分享。
 // @description:zh-TW  輕鬆匯出 ChatGPT 聊天紀錄，以便進一步分析或分享。
-// @license            MPL-2.0 AND MIT
+// @license            MPL-2.0
 // @icon               https://chat.openai.com/favicon.ico
 // @homepage           https://github.com/asimihsan/chatgpt-exporter
 // @homepageURL        https://github.com/asimihsan/chatgpt-exporter
@@ -58,7 +58,8 @@
 // ==/UserScript==
 
 (function(jszip, html2canvas) {
-var __create$1 = Object.create;
+  'use strict';
+	var __create$1 = Object.create;
 	var __defProp$1 = Object.defineProperty;
 	var __getOwnPropDesc$1 = Object.getOwnPropertyDescriptor;
 	var __getOwnPropNames$1 = Object.getOwnPropertyNames;
@@ -78,26 +79,30 @@ var __create$1 = Object.create;
 		value: mod,
 		enumerable: true
 	}) : target, mod));
-jszip = __toESM$1(jszip);
+	jszip = __toESM$1(jszip);
 	html2canvas = __toESM$1(html2canvas);
-var n$2 = new Set();
-	var _virtual_monkey_css_side_effects_default = async (t) => {
-		n$2.has(t) || (n$2.add(t), ((d) => {
-			const e = document.createElement("style");
-			e.textContent = d, document.head.append(e), setInterval(() => {
-				e.isConnected || document.head.append(e);
+	var s$3 = new Set();
+	var _css = async (t) => {
+		if (s$3.has(t)) return;
+		s$3.add(t);
+		((css) => {
+			const styleElement = document.createElement("style");
+			styleElement.textContent = css;
+			document.head.append(styleElement);
+			setInterval(() => {
+				if (styleElement.isConnected) return;
+				document.head.append(styleElement);
 			}, 300);
-		})(t));
+		})(t);
 	};
-
-var __create = Object.create;
+	var __create = Object.create;
 	var __defProp = Object.defineProperty;
 	var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
 	var __getOwnPropNames = Object.getOwnPropertyNames;
 	var __getProtoOf = Object.getPrototypeOf;
 	var __hasOwnProp = Object.prototype.hasOwnProperty;
 	var __esmMin = (fn, res) => () => (fn && (res = fn(fn = 0)), res);
-	var __commonJSMin = (cb, mod) => () => (mod || cb((mod = { exports: {} }).exports, mod), mod.exports);
+	var __commonJSMin = (cb, mod) => () => (mod || (cb((mod = { exports: {} }).exports, mod), cb = null), mod.exports);
 	var __exportAll = (all, no_symbols) => {
 		let target = {};
 		for (var name in all) __defProp(target, name, {
@@ -479,7 +484,7 @@ var __create = Object.create;
 	var _GM = typeof GM != "undefined" ? GM : void 0;
 	var _GM_registerMenuCommand = typeof GM_registerMenuCommand != "undefined" ? GM_registerMenuCommand : void 0;
 	var _unsafeWindow = typeof unsafeWindow != "undefined" ? unsafeWindow : void 0;
-var API_MAPPING = {
+	var API_MAPPING = {
 		"https://chat.openai.com": "https://chat.openai.com/backend-api",
 		"https://chatgpt.com": "https://chatgpt.com/backend-api",
 		"https://new.oaifree.com": "https://new.oaifree.com/backend-api"
@@ -503,7 +508,7 @@ var API_MAPPING = {
 	var KEY_COPY_TEXT_SHORTCUT_ENABLED = "exporter:enable_copy_text_shortcut";
 	var KEY_COPY_TEXT_SHORTCUT = "exporter:copy_text_shortcut";
 	var KEY_OAI_HISTORY_DISABLED = "oai/apps/historyDisabled";
-function getBase64FromImg(el) {
+	function getBase64FromImg(el) {
 		const canvas = document.createElement("canvas");
 		canvas.width = el.naturalWidth;
 		canvas.height = el.naturalHeight;
@@ -532,7 +537,7 @@ function getBase64FromImg(el) {
 			reader.readAsDataURL(blob);
 		});
 	}
-function getHistoryDisabled() {
+	function getHistoryDisabled() {
 		return localStorage.getItem(KEY_OAI_HISTORY_DISABLED) === "\"true\"";
 	}
 	function getPageAccessToken() {
@@ -575,7 +580,7 @@ function getHistoryDisabled() {
 	function checkIfConversationStarted() {
 		return !!document.querySelector("[data-testid^=\"conversation-turn-\"]");
 	}
-var generateKey = (args) => JSON.stringify(args);
+	var generateKey = (args) => JSON.stringify(args);
 	function memorize(fn) {
 		const cache = new Map();
 		const memorized = (...args) => {
@@ -587,7 +592,7 @@ var generateKey = (args) => JSON.stringify(args);
 		};
 		return memorized;
 	}
-var ApiHttpError = class extends Error {
+	var ApiHttpError = class extends Error {
 		status;
 		statusText;
 		url;
@@ -648,7 +653,13 @@ var ApiHttpError = class extends Error {
 		offset,
 		limit
 	});
-	var getFileDownloadApiUrl = (id) => buildUrl(apiUrl, "/files/:id/download", { id });
+	var getFileDownloadApiUrl = (id, options = {}) => buildUrl(apiUrl, "/files/download/:id", {
+		id,
+		post_id: options.postId ?? "",
+		conversation_id: options.conversationId,
+		inline: options.inline ?? false
+	});
+	var getLegacyFileDownloadApiUrl = (id) => buildUrl(apiUrl, "/files/:id/download", { id });
 	var getProjectsApiUrl = () => buildUrl(apiUrl, "/gizmos/snorlax/sidebar", { conversations_per_gizmo: 0 });
 	var getProjectConversationsApiUrl = (gizmo, offset, limit) => {
 		return buildUrl(apiUrl, "/gizmos/:gizmo/conversations", {
@@ -717,13 +728,26 @@ var ApiHttpError = class extends Error {
 		}
 		return null;
 	}
-function isImageAssetPointer(part) {
+	function isImageAssetPointer(part) {
 		if (typeof part !== "object" || part === null) return false;
 		const candidate = part;
 		return candidate.content_type === "image_asset_pointer" && typeof candidate.asset_pointer === "string" && typeof candidate.fovea === "number" && typeof candidate.height === "number" && typeof candidate.size_bytes === "number" && typeof candidate.width === "number" && candidate.asset_pointer.startsWith("file-service://");
 	}
+	function getReferencedFileId(ref) {
+		return ref.file_id || ref.cite_key || null;
+	}
+	function getFileSourceReferences(metadata, fileId) {
+		return metadata?.content_references_by_file?.[fileId] ?? metadata?.n7jupd_crefs_by_file?.[fileId] ?? [];
+	}
+	async function fetchFileDownloadDetails(fileId, options = {}) {
+		try {
+			const primaryDetails = await fetchApi(getFileDownloadApiUrl(fileId, { conversationId: options.conversationId }));
+			if (primaryDetails.status === "success") return primaryDetails;
+		} catch {}
+		return fetchApi(getLegacyFileDownloadApiUrl(fileId));
+	}
 	async function fetchImageFromPointer(uri) {
-		const imageDetails = await fetchApi(getFileDownloadApiUrl(uri.replace("file-service://", "")));
+		const imageDetails = await fetchFileDownloadDetails(uri.replace("file-service://", ""));
 		if (imageDetails.status === "error") {
 			console.error("Failed to fetch image asset", imageDetails.error_code, imageDetails.error_message);
 			return null;
@@ -731,8 +755,119 @@ function isImageAssetPointer(part) {
 		const image = await fetch(imageDetails.download_url);
 		return (await blobToDataURL(await image.blob())).replace(/^data:.*?;/, `data:${image.headers.get("content-type")};`);
 	}
-
-async function replaceImageAssets(conversation) {
+	function isInlineableTextFile(fileName, contentType) {
+		const lowerFileName = fileName.toLowerCase();
+		const lowerContentType = contentType?.toLowerCase() ?? "";
+		return lowerContentType.startsWith("text/") || lowerContentType.includes("markdown") || lowerFileName.endsWith(".md") || lowerFileName.endsWith(".markdown");
+	}
+	function escapeMarkdownLinkText(input) {
+		return input.replaceAll("\\", "\\\\").replaceAll("[", "\\[").replaceAll("]", "\\]");
+	}
+	function escapeMarkdownUrl(input) {
+		return input.replaceAll(">", "%3E").replaceAll("\n", "");
+	}
+	function getSourceKey(ref) {
+		return ref.url || ref.title || ref.matched_text || "";
+	}
+	function getSourceTitle(ref) {
+		return (ref.title || ref.source_name || ref.attribution || ref.url || "Source").trim();
+	}
+	function getUniqueSources(refs) {
+		const sources = [];
+		const seen = new Set();
+		for (const ref of refs) {
+			const key = getSourceKey(ref);
+			if (!key || seen.has(key)) continue;
+			seen.add(key);
+			sources.push(ref);
+		}
+		return sources;
+	}
+	function renderSourceLink(ref) {
+		const title = escapeMarkdownLinkText(getSourceTitle(ref));
+		if (!ref.url) return title;
+		return `[${title}](<${escapeMarkdownUrl(ref.url)}>)`;
+	}
+	function isValidSourceSpan(fileText, ref) {
+		return Number.isInteger(ref.start_idx) && Number.isInteger(ref.end_idx) && ref.start_idx >= 0 && ref.end_idx > ref.start_idx && ref.end_idx <= fileText.length && fileText.slice(ref.start_idx, ref.end_idx) === ref.matched_text;
+	}
+	function renderInlineSourceMarker(ref, sourceNumber) {
+		if (ref.url) return `[[${sourceNumber}]](<${escapeMarkdownUrl(ref.url)}>)`;
+		return `[${sourceNumber}]`;
+	}
+	function replaceSourceRefsBySpan(fileText, sourceRefs, sourceNumberByKey) {
+		const spanRefs = sourceRefs.filter((ref) => {
+			return ref.matched_text && sourceNumberByKey.has(getSourceKey(ref)) && isValidSourceSpan(fileText, ref);
+		}).sort((a, b) => b.start_idx - a.start_idx);
+		if (spanRefs.length === 0) return null;
+		let content = fileText;
+		for (const ref of spanRefs) {
+			const sourceNumber = sourceNumberByKey.get(getSourceKey(ref));
+			if (!sourceNumber) continue;
+			content = [
+				content.slice(0, ref.start_idx),
+				renderInlineSourceMarker(ref, sourceNumber),
+				content.slice(ref.end_idx)
+			].join("");
+		}
+		return content;
+	}
+	function replaceSourceRefsByMarker(fileText, sourceRefs, sourceNumberByKey) {
+		const sortedRefs = [...sourceRefs].sort((a, b) => (b.matched_text?.length || 0) - (a.matched_text?.length || 0));
+		let content = fileText;
+		for (const ref of sortedRefs) {
+			if (!ref.matched_text) continue;
+			const sourceNumber = sourceNumberByKey.get(getSourceKey(ref));
+			if (!sourceNumber) continue;
+			content = content.replaceAll(ref.matched_text, renderInlineSourceMarker(ref, sourceNumber));
+		}
+		return content;
+	}
+	function renderFileContentWithSources(fileText, fileName, sourceRefs) {
+		const sources = getUniqueSources(sourceRefs.filter((ref) => ref.type === "webpage_extended" && getSourceKey(ref)));
+		if (sources.length === 0) return fileText;
+		const sourceNumberByKey = new Map(sources.map((source, index) => [getSourceKey(source), index + 1]));
+		return `${replaceSourceRefsBySpan(fileText, sourceRefs, sourceNumberByKey) ?? replaceSourceRefsByMarker(fileText, sourceRefs, sourceNumberByKey)}\n\n### Sources for ${fileName}\n\n${sources.map((source, index) => `${index + 1}. ${renderSourceLink(source)}`).join("\n")}`;
+	}
+	async function fetchGeneratedTextFile(fileRef, sourceRefs, options = {}) {
+		const fileId = getReferencedFileId(fileRef);
+		if (!fileId) return null;
+		const fileDetails = await fetchFileDownloadDetails(fileId, options);
+		if (fileDetails.status === "error") {
+			console.error("Failed to fetch generated file", fileDetails.error_code, fileDetails.error_message);
+			return null;
+		}
+		const fileResponse = await fetch(fileDetails.download_url);
+		if (!fileResponse.ok) {
+			console.error("Failed to download generated file", fileResponse.status, fileResponse.statusText);
+			return null;
+		}
+		const contentType = fileResponse.headers.get("content-type") || fileDetails.mime_type || null;
+		if (!isInlineableTextFile(fileDetails.file_name, contentType)) return null;
+		return renderFileContentWithSources(await fileResponse.text(), fileDetails.file_name, sourceRefs);
+	}
+	async function replaceGeneratedFileReferences(message, options = {}) {
+		if (message.content.content_type !== "text") return;
+		const fileRefs = message.metadata?.n7jupd_crefs?.filter((ref) => {
+			return ref.type === "file" && !!ref.matched_text && !!getReferencedFileId(ref);
+		}) ?? [];
+		if (fileRefs.length === 0) return;
+		for (const fileRef of fileRefs) try {
+			const fileId = getReferencedFileId(fileRef);
+			const matchedText = fileRef.matched_text;
+			if (!fileId || !matchedText) continue;
+			const fileText = await fetchGeneratedTextFile(fileRef, getFileSourceReferences(message.metadata, fileId), options);
+			if (!fileText) continue;
+			message.content.parts = message.content.parts.map((part) => part.replaceAll(matchedText, fileText));
+		} catch (error) {
+			console.error("Failed to inline generated file", error);
+		}
+	}
+	async function inlineGeneratedTextFiles(conversation, options = {}) {
+		const messages = Object.values(conversation.mapping).map((node) => node.message).filter((message) => !!message);
+		await Promise.all(messages.map((message) => replaceGeneratedFileReferences(message, options)));
+	}
+	async function replaceImageAssets(conversation, options = {}) {
 		const imageAssets = Object.values(conversation.mapping).flatMap((node) => {
 			if (!node.message) return [];
 			if (node.message.content.content_type !== "multimodal_text") return [];
@@ -744,23 +879,27 @@ async function replaceImageAssets(conversation) {
 			if (!node.message.metadata?.aggregate_result?.messages) return [];
 			return node.message.metadata.aggregate_result.messages.filter((msg) => msg.message_type === "image");
 		});
-		await Promise.all([...imageAssets.map(async (asset) => {
-			try {
-				const newAssetPointer = await fetchImageFromPointer(asset.asset_pointer);
-				if (newAssetPointer) asset.asset_pointer = newAssetPointer;
-			} catch (error) {
-				console.error("Failed to fetch image asset", error);
-			}
-		}), ...executionOutputs.map(async (msg) => {
-			try {
-				const newImageUrl = await fetchImageFromPointer(msg.image_url);
-				if (newImageUrl) msg.image_url = newImageUrl;
-			} catch (error) {
-				console.error("Failed to fetch image asset", error);
-			}
-		})]);
+		await Promise.all([
+			inlineGeneratedTextFiles(conversation, options),
+			...imageAssets.map(async (asset) => {
+				try {
+					const newAssetPointer = await fetchImageFromPointer(asset.asset_pointer);
+					if (newAssetPointer) asset.asset_pointer = newAssetPointer;
+				} catch (error) {
+					console.error("Failed to fetch image asset", error);
+				}
+			}),
+			...executionOutputs.map(async (msg) => {
+				try {
+					const newImageUrl = await fetchImageFromPointer(msg.image_url);
+					if (newImageUrl) msg.image_url = newImageUrl;
+				} catch (error) {
+					console.error("Failed to fetch image asset", error);
+				}
+			})
+		]);
 	}
-function getCurrentShareConversationId() {
+	function getCurrentShareConversationId() {
 		const currentShareId = getChatIdFromUrl();
 		if (!currentShareId) return null;
 		return getConversationFromSharePage() ? currentShareId : null;
@@ -784,14 +923,14 @@ function getCurrentShareConversationId() {
 		if (shareConversationId) {
 			const shareConversation = getConversationFromSharePage();
 			if (!shareConversation) throw new Error(`Shared conversation data was not found for id: ${shareConversationId}`);
-			if (shouldReplaceAssets) await replaceImageAssets(shareConversation);
+			if (shouldReplaceAssets) await replaceImageAssets(shareConversation, { conversationId: shareConversation.conversation_id ?? shareConversationId });
 			return {
 				id: shareConversationId,
 				...shareConversation
 			};
 		}
 		const conversation = await fetchApi(getConversationApiUrl(chatId));
-		if (shouldReplaceAssets) await replaceImageAssets(conversation);
+		if (shouldReplaceAssets) await replaceImageAssets(conversation, { conversationId: conversation.conversation_id ?? chatId });
 		return {
 			id: chatId,
 			...conversation
@@ -903,7 +1042,7 @@ function getCurrentShareConversationId() {
 		}
 		return result;
 	}
-function mergeContinuationNodes(nodes) {
+	function mergeContinuationNodes(nodes) {
 		const result = [];
 		for (const node of nodes) {
 			const prevNode = result[result.length - 1];
@@ -914,7 +1053,7 @@ function mergeContinuationNodes(nodes) {
 		}
 		return result;
 	}
-var DEFAULT_SECURITY_FINDINGS_PAGE_SIZE = 100;
+	var DEFAULT_SECURITY_FINDINGS_PAGE_SIZE = 100;
 	async function fetchSecurityFindings(params = {}) {
 		return fetchApi(getSecurityFindingsApiUrl(params));
 	}
@@ -1043,7 +1182,7 @@ var DEFAULT_SECURITY_FINDINGS_PAGE_SIZE = 100;
 			case "security-sidebar": return pageContext.kind === "security-finding" || pageContext.kind === "security-scan" || pageContext.kind === "security-findings-list";
 		}
 	}
-function hasSecuritySidebarMarker(element) {
+	function hasSecuritySidebarMarker(element) {
 		return element.style.getPropertyValue("--codex-security-left-pane-width") !== "" || element.getAttribute("style")?.includes("--codex-security-left-pane-width") === true;
 	}
 	function isLikelySecuritySidebar(element) {
@@ -1122,7 +1261,7 @@ function hasSecuritySidebarMarker(element) {
 	};
 	var makeString = (object) => {
 		if (object == null) return "";
-		return "" + object;
+		return String(object);
 	};
 	var copy = (a, s, t) => {
 		a.forEach((m) => {
@@ -1130,7 +1269,7 @@ function hasSecuritySidebarMarker(element) {
 		});
 	};
 	var lastOfPathSeparatorRegExp = /###/g;
-	var cleanKey = (key) => key && key.indexOf("###") > -1 ? key.replace(lastOfPathSeparatorRegExp, ".") : key;
+	var cleanKey = (key) => key && key.includes("###") ? key.replace(lastOfPathSeparatorRegExp, ".") : key;
 	var canNotTraverseDeeper = (object) => !object || isString$1(object);
 	var getLastOfPath = (object, path, Empty) => {
 		const stack = !isString$1(path) ? path : path.split(".");
@@ -1229,7 +1368,7 @@ function hasSecuritySidebarMarker(element) {
 	var looksLikeObjectPath = (key, nsSeparator, keySeparator) => {
 		nsSeparator = nsSeparator || "";
 		keySeparator = keySeparator || "";
-		const possibleChars = chars.filter((c) => nsSeparator.indexOf(c) < 0 && keySeparator.indexOf(c) < 0);
+		const possibleChars = chars.filter((c) => !nsSeparator.includes(c) && !keySeparator.includes(c));
 		if (possibleChars.length === 0) return true;
 		const r = looksLikeObjectPathRegExpCache.getRegExp(`(${possibleChars.map((c) => c === "?" ? "\\?" : c).join("|")})`);
 		let matched = !r.test(key);
@@ -1260,7 +1399,7 @@ function hasSecuritySidebarMarker(element) {
 						"string",
 						"number",
 						"boolean"
-					].indexOf(typeof next) > -1 && j < tokens.length - 1) continue;
+					].includes(typeof next) && j < tokens.length - 1) continue;
 					i += j - i + 1;
 					break;
 				}
@@ -1309,6 +1448,7 @@ function hasSecuritySidebarMarker(element) {
 		}
 		forward(args, lvl, prefix, debugOnly) {
 			if (debugOnly && !this.debug) return null;
+			args = args.map((a) => isString$1(a) ? a.replace(/[\r\n\x00-\x1F\x7F]/g, " ") : a);
 			if (isString$1(args[0])) args[0] = `${prefix}${this.prefix} ${args[0]}`;
 			return this.logger[lvl](args);
 		}
@@ -1344,12 +1484,20 @@ function hasSecuritySidebarMarker(element) {
 			}
 			this.observers[event].delete(listener);
 		}
+		once(event, listener) {
+			const wrapper = (...args) => {
+				listener(...args);
+				this.off(event, wrapper);
+			};
+			this.on(event, wrapper);
+			return this;
+		}
 		emit(event, ...args) {
 			if (this.observers[event]) Array.from(this.observers[event].entries()).forEach(([observer, numTimesAdded]) => {
 				for (let i = 0; i < numTimesAdded; i++) observer(...args);
 			});
 			if (this.observers["*"]) Array.from(this.observers["*"].entries()).forEach(([observer, numTimesAdded]) => {
-				for (let i = 0; i < numTimesAdded; i++) observer.apply(observer, [event, ...args]);
+				for (let i = 0; i < numTimesAdded; i++) observer(event, ...args);
 			});
 		}
 	};
@@ -1365,7 +1513,7 @@ function hasSecuritySidebarMarker(element) {
 			if (this.options.ignoreJSONStructure === void 0) this.options.ignoreJSONStructure = true;
 		}
 		addNamespaces(ns) {
-			if (this.options.ns.indexOf(ns) < 0) this.options.ns.push(ns);
+			if (!this.options.ns.includes(ns)) this.options.ns.push(ns);
 		}
 		removeNamespaces(ns) {
 			const index = this.options.ns.indexOf(ns);
@@ -1375,7 +1523,7 @@ function hasSecuritySidebarMarker(element) {
 			const keySeparator = options.keySeparator !== void 0 ? options.keySeparator : this.options.keySeparator;
 			const ignoreJSONStructure = options.ignoreJSONStructure !== void 0 ? options.ignoreJSONStructure : this.options.ignoreJSONStructure;
 			let path;
-			if (lng.indexOf(".") > -1) path = lng.split(".");
+			if (lng.includes(".")) path = lng.split(".");
 			else {
 				path = [lng, ns];
 				if (key) if (Array.isArray(key)) path.push(...key);
@@ -1383,7 +1531,7 @@ function hasSecuritySidebarMarker(element) {
 				else path.push(key);
 			}
 			const result = getPath(this.data, path);
-			if (!result && !ns && !key && lng.indexOf(".") > -1) {
+			if (!result && !ns && !key && lng.includes(".")) {
 				lng = path[0];
 				ns = path[1];
 				key = path.slice(2).join(".");
@@ -1395,7 +1543,7 @@ function hasSecuritySidebarMarker(element) {
 			const keySeparator = options.keySeparator !== void 0 ? options.keySeparator : this.options.keySeparator;
 			let path = [lng, ns];
 			if (key) path = path.concat(keySeparator ? key.split(keySeparator) : key);
-			if (lng.indexOf(".") > -1) {
+			if (lng.includes(".")) {
 				path = lng.split(".");
 				value = ns;
 				ns = path[1];
@@ -1413,7 +1561,7 @@ function hasSecuritySidebarMarker(element) {
 			skipCopy: false
 		}) {
 			let path = [lng, ns];
-			if (lng.indexOf(".") > -1) {
+			if (lng.includes(".")) {
 				path = lng.split(".");
 				deep = resources;
 				resources = ns;
@@ -1490,7 +1638,6 @@ function hasSecuritySidebarMarker(element) {
 		}
 		return path.join(keySeparator);
 	}
-	var checkedLoadedFor = {};
 	var shouldHandleAsObject = (res) => !isString$1(res) && typeof res !== "boolean" && typeof res !== "number";
 	var Translator = class Translator extends EventEmitter {
 		constructor(services, options = {}) {
@@ -1507,6 +1654,7 @@ function hasSecuritySidebarMarker(element) {
 			this.options = options;
 			if (this.options.keySeparator === void 0) this.options.keySeparator = ".";
 			this.logger = baseLogger.create("translator");
+			this.checkedLoadedFor = {};
 		}
 		changeLanguage(lng) {
 			if (lng) this.language = lng;
@@ -1525,7 +1673,7 @@ function hasSecuritySidebarMarker(element) {
 			if (nsSeparator === void 0) nsSeparator = ":";
 			const keySeparator = opt.keySeparator !== void 0 ? opt.keySeparator : this.options.keySeparator;
 			let namespaces = opt.ns || this.options.defaultNS || [];
-			const wouldCheckForNsInKey = nsSeparator && key.indexOf(nsSeparator) > -1;
+			const wouldCheckForNsInKey = nsSeparator && key.includes(nsSeparator);
 			const seemsNaturalLanguage = !this.options.userDefinedKeySeparator && !opt.keySeparator && !this.options.userDefinedNsSeparator && !opt.nsSeparator && !looksLikeObjectPath(key, nsSeparator, keySeparator);
 			if (wouldCheckForNsInKey && !seemsNaturalLanguage) {
 				const m = key.match(this.interpolator.nestingRegexp);
@@ -1534,7 +1682,7 @@ function hasSecuritySidebarMarker(element) {
 					namespaces: isString$1(namespaces) ? [namespaces] : namespaces
 				};
 				const parts = key.split(nsSeparator);
-				if (nsSeparator !== keySeparator || nsSeparator === keySeparator && this.options.ns.indexOf(parts[0]) > -1) namespaces = parts.shift();
+				if (nsSeparator !== keySeparator || nsSeparator === keySeparator && this.options.ns.includes(parts[0])) namespaces = parts.shift();
 				key = parts.join(keySeparator);
 			}
 			return {
@@ -1608,7 +1756,7 @@ function hasSecuritySidebarMarker(element) {
 			if (handleAsObjectInI18nFormat && !res && hasDefaultValue) resForObjHndl = defaultValue;
 			const handleAsObject = shouldHandleAsObject(resForObjHndl);
 			const resType = Object.prototype.toString.apply(resForObjHndl);
-			if (handleAsObjectInI18nFormat && resForObjHndl && handleAsObject && noObject.indexOf(resType) < 0 && !(isString$1(joinArrays) && Array.isArray(resForObjHndl))) {
+			if (handleAsObjectInI18nFormat && resForObjHndl && handleAsObject && !noObject.includes(resType) && !(isString$1(joinArrays) && Array.isArray(resForObjHndl))) {
 				if (!opt.returnObjects && !this.options.returnObjects) {
 					if (!this.options.returnedObjectHandler) this.logger.warn("accessing an object - but returnObjects options is not enabled!");
 					const r = this.options.returnedObjectHandler ? this.options.returnedObjectHandler(resUsedKey, resForObjHndl, {
@@ -1660,7 +1808,7 @@ function hasSecuritySidebarMarker(element) {
 				const resForMissing = (opt.missingKeyNoValueFallbackToKey || this.options.missingKeyNoValueFallbackToKey) && usedKey ? void 0 : res;
 				const updateMissing = hasDefaultValue && defaultValue !== res && this.options.updateMissing;
 				if (usedKey || usedDefault || updateMissing) {
-					this.logger.log(updateMissing ? "updateKey" : "missingKey", lng, namespace, key, updateMissing ? defaultValue : res);
+					this.logger.log(updateMissing ? "updateKey" : "missingKey", lng, namespace, needsPluralHandling && !updateMissing ? `${key}${this.pluralResolver.getSuffix(lng, opt.count, opt)}` : key, updateMissing ? defaultValue : res);
 					if (keySeparator) {
 						const fk = this.resolve(key, {
 							...opt,
@@ -1681,7 +1829,7 @@ function hasSecuritySidebarMarker(element) {
 					};
 					if (this.options.saveMissing) if (this.options.saveMissingPlurals && needsPluralHandling) lngs.forEach((language) => {
 						const suffixes = this.pluralResolver.getSuffixes(language, opt);
-						if (needsZeroSuffixLookup && opt[`defaultValue${this.options.pluralSeparator}zero`] && suffixes.indexOf(`${this.options.pluralSeparator}zero`) < 0) suffixes.push(`${this.options.pluralSeparator}zero`);
+						if (needsZeroSuffixLookup && opt[`defaultValue${this.options.pluralSeparator}zero`] && !suffixes.includes(`${this.options.pluralSeparator}zero`)) suffixes.push(`${this.options.pluralSeparator}zero`);
 						suffixes.forEach((suffix) => {
 							send([language], key + suffix, opt[`defaultValue${suffix}`] || defaultValue);
 						});
@@ -1775,8 +1923,8 @@ function hasSecuritySidebarMarker(element) {
 				namespaces.forEach((ns) => {
 					if (this.isValidLookup(found)) return;
 					usedNS = ns;
-					if (!checkedLoadedFor[`${codes[0]}-${ns}`] && this.utils?.hasLoadedNamespace && !this.utils?.hasLoadedNamespace(usedNS)) {
-						checkedLoadedFor[`${codes[0]}-${ns}`] = true;
+					if (!this.checkedLoadedFor[`${codes[0]}-${ns}`] && this.utils?.hasLoadedNamespace && !this.utils?.hasLoadedNamespace(usedNS)) {
+						this.checkedLoadedFor[`${codes[0]}-${ns}`] = true;
 						this.logger.warn(`key "${usedKey}" for languages "${codes.join(", ")}" won't get resolved as namespace "${usedNS}" was not yet loaded`, "This means something IS WRONG in your setup. You access the t function before i18next.init / i18next.loadNamespace / i18next.changeLanguage was done. Wait for the callback or Promise to resolve before accessing it!!!");
 					}
 					codes.forEach((code) => {
@@ -1790,7 +1938,7 @@ function hasSecuritySidebarMarker(element) {
 							const zeroSuffix = `${this.options.pluralSeparator}zero`;
 							const ordinalPrefix = `${this.options.pluralSeparator}ordinal${this.options.pluralSeparator}`;
 							if (needsPluralHandling) {
-								if (opt.ordinal && pluralSuffix.indexOf(ordinalPrefix) === 0) finalKeys.push(key + pluralSuffix.replace(ordinalPrefix, this.options.pluralSeparator));
+								if (opt.ordinal && pluralSuffix.startsWith(ordinalPrefix)) finalKeys.push(key + pluralSuffix.replace(ordinalPrefix, this.options.pluralSeparator));
 								finalKeys.push(key + pluralSuffix);
 								if (needsZeroSuffixLookup) finalKeys.push(key + zeroSuffix);
 							}
@@ -1798,7 +1946,7 @@ function hasSecuritySidebarMarker(element) {
 								const contextKey = `${key}${this.options.contextSeparator || "_"}${opt.context}`;
 								finalKeys.push(contextKey);
 								if (needsPluralHandling) {
-									if (opt.ordinal && pluralSuffix.indexOf(ordinalPrefix) === 0) finalKeys.push(contextKey + pluralSuffix.replace(ordinalPrefix, this.options.pluralSeparator));
+									if (opt.ordinal && pluralSuffix.startsWith(ordinalPrefix)) finalKeys.push(contextKey + pluralSuffix.replace(ordinalPrefix, this.options.pluralSeparator));
 									finalKeys.push(contextKey + pluralSuffix);
 									if (needsZeroSuffixLookup) finalKeys.push(contextKey + zeroSuffix);
 								}
@@ -1860,7 +2008,7 @@ function hasSecuritySidebarMarker(element) {
 		}
 		static hasDefaultValue(options) {
 			const prefix = "defaultValue";
-			for (const option in options) if (Object.prototype.hasOwnProperty.call(options, option) && prefix === option.substring(0, 12) && void 0 !== options[option]) return true;
+			for (const option in options) if (Object.prototype.hasOwnProperty.call(options, option) && option.startsWith(prefix) && void 0 !== options[option]) return true;
 			return false;
 		}
 	};
@@ -1872,7 +2020,7 @@ function hasSecuritySidebarMarker(element) {
 		}
 		getScriptPartFromCode(code) {
 			code = getCleanedCode(code);
-			if (!code || code.indexOf("-") < 0) return null;
+			if (!code || !code.includes("-")) return null;
 			const p = code.split("-");
 			if (p.length === 2) return null;
 			p.pop();
@@ -1881,12 +2029,12 @@ function hasSecuritySidebarMarker(element) {
 		}
 		getLanguagePartFromCode(code) {
 			code = getCleanedCode(code);
-			if (!code || code.indexOf("-") < 0) return code;
+			if (!code || !code.includes("-")) return code;
 			const p = code.split("-");
 			return this.formatLanguageCode(p[0]);
 		}
 		formatLanguageCode(code) {
-			if (isString$1(code) && code.indexOf("-") > -1) {
+			if (isString$1(code) && code.includes("-")) {
 				let formattedCode;
 				try {
 					formattedCode = Intl.getCanonicalLocales(code)[0];
@@ -1900,7 +2048,7 @@ function hasSecuritySidebarMarker(element) {
 		}
 		isSupportedCode(code) {
 			if (this.options.load === "languageOnly" || this.options.nonExplicitSupportedLngs) code = this.getLanguagePartFromCode(code);
-			return !this.supportedLngs || !this.supportedLngs.length || this.supportedLngs.indexOf(code) > -1;
+			return !this.supportedLngs || !this.supportedLngs.length || this.supportedLngs.includes(code);
 		}
 		getBestMatchFromCodes(codes) {
 			if (!codes) return null;
@@ -1917,10 +2065,11 @@ function hasSecuritySidebarMarker(element) {
 				const lngOnly = this.getLanguagePartFromCode(code);
 				if (this.isSupportedCode(lngOnly)) return found = lngOnly;
 				found = this.options.supportedLngs.find((supportedLng) => {
-					if (supportedLng === lngOnly) return supportedLng;
-					if (supportedLng.indexOf("-") < 0 && lngOnly.indexOf("-") < 0) return;
-					if (supportedLng.indexOf("-") > 0 && lngOnly.indexOf("-") < 0 && supportedLng.substring(0, supportedLng.indexOf("-")) === lngOnly) return supportedLng;
-					if (supportedLng.indexOf(lngOnly) === 0 && lngOnly.length > 1) return supportedLng;
+					if (supportedLng === lngOnly) return true;
+					if (!supportedLng.includes("-") && !lngOnly.includes("-")) return false;
+					if (supportedLng.includes("-") && !lngOnly.includes("-") && supportedLng.slice(0, supportedLng.indexOf("-")) === lngOnly) return true;
+					if (supportedLng.startsWith(lngOnly) && lngOnly.length > 1) return true;
+					return false;
 				});
 			});
 			if (!found) found = this.getFallbackCodes(this.options.fallbackLng)[0];
@@ -1947,13 +2096,13 @@ function hasSecuritySidebarMarker(element) {
 				if (this.isSupportedCode(c)) codes.push(c);
 				else this.logger.warn(`rejecting language code not found in supportedLngs: ${c}`);
 			};
-			if (isString$1(code) && (code.indexOf("-") > -1 || code.indexOf("_") > -1)) {
+			if (isString$1(code) && (code.includes("-") || code.includes("_"))) {
 				if (this.options.load !== "languageOnly") addCode(this.formatLanguageCode(code));
 				if (this.options.load !== "languageOnly" && this.options.load !== "currentOnly") addCode(this.getScriptPartFromCode(code));
 				if (this.options.load !== "currentOnly") addCode(this.getLanguagePartFromCode(code));
 			} else if (isString$1(code)) addCode(this.formatLanguageCode(code));
 			fallbackCodes.forEach((fc) => {
-				if (codes.indexOf(fc) < 0) addCode(this.formatLanguageCode(fc));
+				if (!codes.includes(fc)) addCode(this.formatLanguageCode(fc));
 			});
 			return codes;
 		}
@@ -2049,8 +2198,8 @@ function hasSecuritySidebarMarker(element) {
 			this.prefix = prefix ? regexEscape(prefix) : prefixEscaped || "{{";
 			this.suffix = suffix ? regexEscape(suffix) : suffixEscaped || "}}";
 			this.formatSeparator = formatSeparator || ",";
-			this.unescapePrefix = unescapeSuffix ? "" : unescapePrefix || "-";
-			this.unescapeSuffix = this.unescapePrefix ? "" : unescapeSuffix || "";
+			this.unescapePrefix = unescapeSuffix ? "" : unescapePrefix ? regexEscape(unescapePrefix) : "-";
+			this.unescapeSuffix = this.unescapePrefix ? "" : unescapeSuffix ? regexEscape(unescapeSuffix) : "";
 			this.nestingPrefix = nestingPrefix ? regexEscape(nestingPrefix) : nestingPrefixEscaped || regexEscape("$t(");
 			this.nestingSuffix = nestingSuffix ? regexEscape(nestingSuffix) : nestingSuffixEscaped || regexEscape(")");
 			this.nestingOptionsSeparator = nestingOptionsSeparator || ",";
@@ -2079,7 +2228,7 @@ function hasSecuritySidebarMarker(element) {
 			let replaces;
 			const defaultData = this.options && this.options.interpolation && this.options.interpolation.defaultVariables || {};
 			const handleFormat = (key) => {
-				if (key.indexOf(this.formatSeparator) < 0) {
+				if (!key.includes(this.formatSeparator)) {
 					const path = deepFindWithDefaults(data, defaultData, key, this.options.keySeparator, this.options.ignoreJSONStructure);
 					return this.alwaysFormat ? this.format(path, void 0, lng, {
 						...options,
@@ -2097,6 +2246,7 @@ function hasSecuritySidebarMarker(element) {
 				});
 			};
 			this.resetRegExp();
+			if (!this.escapeValue && typeof str === "string" && /\$t\([^)]*\{[^}]*\{\{/.test(str)) this.logger.warn("nesting options string contains interpolated variables with escapeValue: false — if any of those values are attacker-controlled they can inject additional nesting options (e.g. redirect lng/ns). Sanitise untrusted input before passing it to t(), or keep escapeValue: true.");
 			const missingInterpolationHandler = options?.missingInterpolationHandler || this.options.missingInterpolationHandler;
 			const skipOnVariables = options?.interpolation?.skipOnVariables !== void 0 ? options.interpolation.skipOnVariables : this.options.interpolation.skipOnVariables;
 			[{
@@ -2140,7 +2290,7 @@ function hasSecuritySidebarMarker(element) {
 			let clonedOptions;
 			const handleHasOptions = (key, inheritedOptions) => {
 				const sep = this.nestingOptionsSeparator;
-				if (key.indexOf(sep) < 0) return key;
+				if (!key.includes(sep)) return key;
 				const c = key.split(new RegExp(`${regexEscape(sep)}[ ]*{`));
 				let optionsString = `{${c[1]}`;
 				key = c[0];
@@ -2158,7 +2308,7 @@ function hasSecuritySidebarMarker(element) {
 					this.logger.warn(`failed parsing options string in nesting for key ${key}`, e);
 					return `${key}${sep}${optionsString}`;
 				}
-				if (clonedOptions.defaultValue && clonedOptions.defaultValue.indexOf(this.prefix) > -1) delete clonedOptions.defaultValue;
+				if (clonedOptions.defaultValue && clonedOptions.defaultValue.includes(this.prefix)) delete clonedOptions.defaultValue;
 				return key;
 			};
 			while (match = this.nestingRegexp.exec(str)) {
@@ -2192,13 +2342,13 @@ function hasSecuritySidebarMarker(element) {
 	var parseFormatStr = (formatStr) => {
 		let formatName = formatStr.toLowerCase().trim();
 		const formatOptions = {};
-		if (formatStr.indexOf("(") > -1) {
+		if (formatStr.includes("(")) {
 			const p = formatStr.split("(");
 			formatName = p[0].toLowerCase().trim();
-			const optStr = p[1].substring(0, p[1].length - 1);
-			if (formatName === "currency" && optStr.indexOf(":") < 0) {
+			const optStr = p[1].slice(0, -1);
+			if (formatName === "currency" && !optStr.includes(":")) {
 				if (!formatOptions.currency) formatOptions.currency = optStr.trim();
-			} else if (formatName === "relativetime" && optStr.indexOf(":") < 0) {
+			} else if (formatName === "relativetime" && !optStr.includes(":")) {
 				if (!formatOptions.range) formatOptions.range = optStr.trim();
 			} else optStr.split(";").forEach((opt) => {
 				if (opt) {
@@ -2277,9 +2427,11 @@ function hasSecuritySidebarMarker(element) {
 			this.formats[name.toLowerCase().trim()] = createCachedFormatter(fc);
 		}
 		format(value, format, lng, options = {}) {
+			if (!format) return value;
+			if (value == null) return value;
 			const formats = format.split(this.formatSeparator);
-			if (formats.length > 1 && formats[0].indexOf("(") > 1 && formats[0].indexOf(")") < 0 && formats.find((f) => f.indexOf(")") > -1)) {
-				const lastIndex = formats.findIndex((f) => f.indexOf(")") > -1);
+			if (formats.length > 1 && formats[0].indexOf("(") > 1 && !formats[0].includes(")") && formats.find((f) => f.includes(")"))) {
+				const lastIndex = formats.findIndex((f) => f.includes(")"));
 				formats[0] = [formats[0], ...formats.splice(1, lastIndex)].join(this.formatSeparator);
 			}
 			return formats.reduce((mem, f) => {
@@ -2415,7 +2567,7 @@ function hasSecuritySidebarMarker(element) {
 				}
 				if (err && data && tried < this.maxRetries) {
 					setTimeout(() => {
-						this.read.call(this, lng, ns, fcName, tried + 1, wait * 2, callback);
+						this.read(lng, ns, fcName, tried + 1, wait * 2, callback);
 					}, wait);
 					return;
 				}
@@ -2504,7 +2656,6 @@ function hasSecuritySidebarMarker(element) {
 		nonExplicitSupportedLngs: false,
 		load: "all",
 		preload: false,
-		simplifyPluralSuffix: true,
 		keySeparator: ".",
 		nsSeparator: ":",
 		pluralSeparator: "_",
@@ -2541,7 +2692,6 @@ function hasSecuritySidebarMarker(element) {
 		},
 		interpolation: {
 			escapeValue: true,
-			format: (value) => value,
 			prefix: "{{",
 			suffix: "}}",
 			formatSeparator: ",",
@@ -2558,8 +2708,7 @@ function hasSecuritySidebarMarker(element) {
 		if (isString$1(options.ns)) options.ns = [options.ns];
 		if (isString$1(options.fallbackLng)) options.fallbackLng = [options.fallbackLng];
 		if (isString$1(options.fallbackNS)) options.fallbackNS = [options.fallbackNS];
-		if (options.supportedLngs?.indexOf?.("cimode") < 0) options.supportedLngs = options.supportedLngs.concat(["cimode"]);
-		if (typeof options.initImmediate === "boolean") options.initAsync = options.initImmediate;
+		if (options.supportedLngs && !options.supportedLngs.includes("cimode")) options.supportedLngs = options.supportedLngs.concat(["cimode"]);
 		return options;
 	};
 	var noop = () => {};
@@ -2567,28 +2716,6 @@ function hasSecuritySidebarMarker(element) {
 		Object.getOwnPropertyNames(Object.getPrototypeOf(inst)).forEach((mem) => {
 			if (typeof inst[mem] === "function") inst[mem] = inst[mem].bind(inst);
 		});
-	};
-	var SUPPORT_NOTICE_KEY = "__i18next_supportNoticeShown";
-	var getSupportNoticeShown = () => {
-		if (typeof globalThis !== "undefined" && !!globalThis[SUPPORT_NOTICE_KEY]) return true;
-		if (typeof process !== "undefined" && {}.I18NEXT_NO_SUPPORT_NOTICE) return true;
-		if (typeof process !== "undefined" && true) return true;
-		return false;
-	};
-	var setSupportNoticeShown = () => {
-		if (typeof globalThis !== "undefined") globalThis[SUPPORT_NOTICE_KEY] = true;
-	};
-	var usesLocize = (inst) => {
-		if (inst?.modules?.backend?.name?.indexOf("Locize") > 0) return true;
-		if (inst?.modules?.backend?.constructor?.name?.indexOf("Locize") > 0) return true;
-		if (inst?.options?.backend?.backends) {
-			if (inst.options.backend.backends.some((b) => b?.name?.indexOf("Locize") > 0 || b?.constructor?.name?.indexOf("Locize") > 0)) return true;
-		}
-		if (inst?.options?.backend?.projectId) return true;
-		if (inst?.options?.backend?.backendOptions) {
-			if (inst.options.backend.backendOptions.some((b) => b?.projectId)) return true;
-		}
-		return false;
 	};
 	var instance = class I18n extends EventEmitter {
 		constructor(options = {}, callback) {
@@ -2616,7 +2743,7 @@ function hasSecuritySidebarMarker(element) {
 			}
 			if (options.defaultNS == null && options.ns) {
 				if (isString$1(options.ns)) options.defaultNS = options.ns;
-				else if (options.ns.indexOf("translation") < 0) options.defaultNS = options.ns[0];
+				else if (!options.ns.includes("translation")) options.defaultNS = options.ns[0];
 			}
 			const defOpts = get();
 			this.options = {
@@ -2631,10 +2758,6 @@ function hasSecuritySidebarMarker(element) {
 			if (options.keySeparator !== void 0) this.options.userDefinedKeySeparator = options.keySeparator;
 			if (options.nsSeparator !== void 0) this.options.userDefinedNsSeparator = options.nsSeparator;
 			if (typeof this.options.overloadTranslationOptionHandler !== "function") this.options.overloadTranslationOptionHandler = defOpts.overloadTranslationOptionHandler;
-			if (this.options.showSupportNotice !== false && !usesLocize(this) && !getSupportNoticeShown()) {
-				if (typeof console !== "undefined" && typeof console.info !== "undefined") console.info("🌐 i18next is made possible by our own product, Locize — consider powering your project with managed localization (AI, CDN, integrations): https://locize.com 💙");
-				setSupportNoticeShown();
-			}
 			const createClassOnDemand = (ClassOrObject) => {
 				if (!ClassOrObject) return null;
 				if (typeof ClassOrObject === "function") return new ClassOrObject();
@@ -2652,12 +2775,8 @@ function hasSecuritySidebarMarker(element) {
 				s.logger = baseLogger;
 				s.resourceStore = this.store;
 				s.languageUtils = lu;
-				s.pluralResolver = new PluralResolver(lu, {
-					prepend: this.options.pluralSeparator,
-					simplifyPluralSuffix: this.options.simplifyPluralSuffix
-				});
-				if (this.options.interpolation.format && this.options.interpolation.format !== defOpts.interpolation.format) this.logger.deprecate(`init: you are still using the legacy format function, please use the new approach: https://www.i18next.com/translation-function/formatting`);
-				if (formatter && (!this.options.interpolation.format || this.options.interpolation.format === defOpts.interpolation.format)) {
+				s.pluralResolver = new PluralResolver(lu, { prepend: this.options.pluralSeparator });
+				if (formatter) {
 					s.formatter = createClassOnDemand(formatter);
 					if (s.formatter.init) s.formatter.init(s, this.options);
 					this.options.interpolation.format = s.formatter.format.bind(s.formatter);
@@ -2721,7 +2840,7 @@ function hasSecuritySidebarMarker(element) {
 					deferred.resolve(t);
 					callback(err, t);
 				};
-				if (this.languages && !this.isInitialized) return finish(null, this.t.bind(this));
+				if ((this.languages || this.isLanguageChangingTo) && !this.isInitialized) return finish(null, this.t.bind(this));
 				this.changeLanguage(this.options.lng, finish);
 			};
 			if (this.options.resources || !this.options.initAsync) load();
@@ -2740,7 +2859,7 @@ function hasSecuritySidebarMarker(element) {
 					if (lng === "cimode") return;
 					this.services.languageUtils.toResolveHierarchy(lng).forEach((l) => {
 						if (l === "cimode") return;
-						if (toLoad.indexOf(l) < 0) toLoad.push(l);
+						if (!toLoad.includes(l)) toLoad.push(l);
 					});
 				};
 				if (!usedLng) this.services.languageUtils.getFallbackCodes(this.options.fallbackLng).forEach((l) => append(l));
@@ -2785,16 +2904,16 @@ function hasSecuritySidebarMarker(element) {
 		}
 		setResolvedLanguage(l) {
 			if (!l || !this.languages) return;
-			if (["cimode", "dev"].indexOf(l) > -1) return;
+			if (["cimode", "dev"].includes(l)) return;
 			for (let li = 0; li < this.languages.length; li++) {
 				const lngInLngs = this.languages[li];
-				if (["cimode", "dev"].indexOf(lngInLngs) > -1) continue;
+				if (["cimode", "dev"].includes(lngInLngs)) continue;
 				if (this.store.hasLanguageSomeTranslations(lngInLngs)) {
 					this.resolvedLanguage = lngInLngs;
 					break;
 				}
 			}
-			if (!this.resolvedLanguage && this.languages.indexOf(l) < 0 && this.store.hasLanguageSomeTranslations(l)) {
+			if (!this.resolvedLanguage && !this.languages.includes(l) && this.store.hasLanguageSomeTranslations(l)) {
 				this.resolvedLanguage = l;
 				this.languages.unshift(l);
 			}
@@ -2841,19 +2960,22 @@ function hasSecuritySidebarMarker(element) {
 			else setLng(lng);
 			return deferred;
 		}
-		getFixedT(lng, ns, keyPrefix) {
+		getFixedT(lng, ns, keyPrefix, fixedOpts) {
+			const scopeNs = fixedOpts?.scopeNs;
 			const fixedT = (key, opts, ...rest) => {
 				let o;
 				if (typeof opts !== "object") o = this.options.overloadTranslationOptionHandler([key, opts].concat(rest));
 				else o = { ...opts };
 				o.lng = o.lng || fixedT.lng;
 				o.lngs = o.lngs || fixedT.lngs;
+				const explicitCallNs = o.ns !== void 0 && o.ns !== null;
 				o.ns = o.ns || fixedT.ns;
 				if (o.keyPrefix !== "") o.keyPrefix = o.keyPrefix || keyPrefix || fixedT.keyPrefix;
 				const selectorOpts = {
 					...this.options,
 					...o
 				};
+				if (Array.isArray(scopeNs) && !explicitCallNs) selectorOpts.ns = scopeNs;
 				if (typeof o.keyPrefix === "function") o.keyPrefix = keysFromSelector(o.keyPrefix, selectorOpts);
 				const keySeparator = this.options.keySeparator || ".";
 				let resultKey;
@@ -2916,7 +3038,7 @@ function hasSecuritySidebarMarker(element) {
 			}
 			if (isString$1(ns)) ns = [ns];
 			ns.forEach((n) => {
-				if (this.options.ns.indexOf(n) < 0) this.options.ns.push(n);
+				if (!this.options.ns.includes(n)) this.options.ns.push(n);
 			});
 			this.loadResources((err) => {
 				deferred.resolve();
@@ -2928,7 +3050,7 @@ function hasSecuritySidebarMarker(element) {
 			const deferred = defer();
 			if (isString$1(lngs)) lngs = [lngs];
 			const preloaded = this.options.preload || [];
-			const newLngs = lngs.filter((lng) => preloaded.indexOf(lng) < 0 && this.services.languageUtils.isSupportedCode(lng));
+			const newLngs = lngs.filter((lng) => !preloaded.includes(lng) && this.services.languageUtils.isSupportedCode(lng));
 			if (!newLngs.length) {
 				if (callback) callback();
 				return Promise.resolve();
@@ -3016,7 +3138,7 @@ function hasSecuritySidebarMarker(element) {
 			];
 			const languageUtils = this.services?.languageUtils || new LanguageUtil(get());
 			if (lng.toLowerCase().indexOf("-latn") > 1) return "ltr";
-			return rtlLngs.indexOf(languageUtils.getLanguagePartFromCode(lng)) > -1 || lng.toLowerCase().indexOf("-arab") > 1 ? "rtl" : "ltr";
+			return rtlLngs.includes(languageUtils.getLanguagePartFromCode(lng)) || lng.toLowerCase().indexOf("-arab") > 1 ? "rtl" : "ltr";
 		}
 		static createInstance(options = {}, callback) {
 			const instance = new I18n(options, callback);
@@ -3858,15 +3980,6 @@ function hasSecuritySidebarMarker(element) {
 			return Object.keys(this.usedNamespaces);
 		}
 	};
-	/**
-	* @license React
-	* use-sync-external-store-shim.production.js
-	*
-	* Copyright (c) Meta Platforms, Inc. and affiliates.
-	*
-	* This source code is licensed under the MIT license found in the
-	* LICENSE file in the root directory of this source tree.
-	*/
 	var require_use_sync_external_store_shim_production = __commonJSMin(((exports) => {
 		var React = (init_compat_module(), __toCommonJS(compat_module_exports));
 		function is(x, y) {
@@ -3972,7 +4085,7 @@ function hasSecuritySidebarMarker(element) {
 			const lastSnapshot = snapshotRef.current;
 			if (lastSnapshot && lastSnapshot.ready === calculatedReady && lastSnapshot.lng === currentLng && lastSnapshot.keyPrefix === keyPrefix && lastSnapshot.revision === currentRevision) return lastSnapshot;
 			const newSnapshot = {
-				t: i18n.getFixedT(currentLng, i18nOptions.nsMode === "fallback" ? namespaces : namespaces[0], keyPrefix),
+				t: i18n.getFixedT(currentLng, i18nOptions.nsMode === "fallback" ? namespaces : namespaces[0], keyPrefix, { scopeNs: namespaces }),
 				ready: calculatedReady,
 				lng: currentLng,
 				keyPrefix,
@@ -4477,7 +4590,7 @@ function hasSecuritySidebarMarker(element) {
 		"Export All Limit Description": "設定「批量匯出」對話方塊中載入的最大對話數量。"
 	};
 	var runtime = globalThis;
-var GMStorage = class {
+	var GMStorage = class {
 		static get supported() {
 			return typeof runtime.GM_getValue === "function" && typeof runtime.GM_setValue === "function" && typeof runtime.GM_deleteValue === "function";
 		}
@@ -4565,7 +4678,7 @@ var GMStorage = class {
 			return MemoryStorage.delete(key);
 		}
 	};
-var EN_US = {
+	var EN_US = {
 		name: "English",
 		code: "en-US",
 		resource: en_default
@@ -4689,7 +4802,7 @@ var EN_US = {
 		ScriptStorage.set(KEY_LANGUAGE, lng);
 	});
 	var i18n_default = instance;
-async function copyToClipboard(text) {
+	async function copyToClipboard(text) {
 		try {
 			await navigator.clipboard.writeText(text);
 		} catch {
@@ -4701,7 +4814,7 @@ async function copyToClipboard(text) {
 			document.body.removeChild(textarea);
 		}
 	}
-var htmlVoidElements = [
+	var htmlVoidElements = [
 		"area",
 		"base",
 		"basefont",
@@ -4723,9 +4836,8 @@ var htmlVoidElements = [
 		"track",
 		"wbr"
 	];
-
-var Schema = class {
-constructor(property, normal, space) {
+	var Schema = class {
+		constructor(property, normal, space) {
 			this.normal = normal;
 			this.property = property;
 			if (space) this.space = space;
@@ -4734,22 +4846,20 @@ constructor(property, normal, space) {
 	Schema.prototype.normal = {};
 	Schema.prototype.property = {};
 	Schema.prototype.space = void 0;
-
-function merge(definitions, space) {
-const property = {};
-const normal = {};
+	function merge(definitions, space) {
+		const property = {};
+		const normal = {};
 		for (const definition of definitions) {
 			Object.assign(property, definition.property);
 			Object.assign(normal, definition.normal);
 		}
 		return new Schema(property, normal, space);
 	}
-function normalize(value) {
+	function normalize(value) {
 		return value.toLowerCase();
 	}
-
-var Info = class {
-constructor(property, attribute) {
+	var Info = class {
+		constructor(property, attribute) {
 			this.attribute = attribute;
 			this.property = property;
 		}
@@ -4786,9 +4896,9 @@ constructor(property, attribute) {
 	function increment() {
 		return 2 ** ++powers;
 	}
-var checks = Object.keys(types_exports);
+	var checks = Object.keys(types_exports);
 	var DefinedInfo = class extends Info {
-constructor(property, attribute, mask, space) {
+		constructor(property, attribute, mask, space) {
 			let index = -1;
 			super(property, attribute);
 			mark(this, "space", space);
@@ -4799,15 +4909,12 @@ constructor(property, attribute, mask, space) {
 		}
 	};
 	DefinedInfo.prototype.defined = true;
-function mark(values, key, value) {
+	function mark(values, key, value) {
 		if (value) values[key] = value;
 	}
-
-
-
-function create(definition) {
-const properties = {};
-const normals = {};
+	function create(definition) {
+		const properties = {};
+		const normals = {};
 		for (const [property, value] of Object.entries(definition.properties)) {
 			const info = new DefinedInfo(property, definition.transform(definition.attributes || {}, property), value, definition.space);
 			if (definition.mustUseProperty && definition.mustUseProperty.includes(property)) info.mustUseProperty = true;
@@ -4873,10 +4980,10 @@ const normals = {};
 			return property === "role" ? property : "aria-" + property.slice(4).toLowerCase();
 		}
 	});
-function caseSensitiveTransform(attributes, attribute) {
+	function caseSensitiveTransform(attributes, attribute) {
 		return attribute in attributes ? attributes[attribute] : attribute;
 	}
-function caseInsensitiveTransform(attributes, property) {
+	function caseInsensitiveTransform(attributes, property) {
 		return caseSensitiveTransform(attributes, property.toLowerCase());
 	}
 	var html$5 = create({
@@ -5780,10 +5887,10 @@ function caseInsensitiveTransform(attributes, property) {
 			return "xml:" + property.slice(3).toLowerCase();
 		}
 	});
-var cap = /[A-Z]/g;
+	var cap = /[A-Z]/g;
 	var dash = /-[a-z]/g;
 	var valid = /^data[-\w.:]+$/i;
-function find(schema, value) {
+	function find(schema, value) {
 		const normal = normalize(value);
 		let property = value;
 		let Type = Info;
@@ -5804,10 +5911,10 @@ function find(schema, value) {
 		}
 		return new Type(property, value);
 	}
-function kebab($0) {
+	function kebab($0) {
 		return "-" + $0.toLowerCase();
 	}
-function camelcase($0) {
+	function camelcase($0) {
 		return $0.charAt(1).toUpperCase();
 	}
 	var html$4 = merge([
@@ -5824,14 +5931,11 @@ function camelcase($0) {
 		xmlns,
 		xml
 	], "svg");
-
-
-
-var own$5 = {}.hasOwnProperty;
-function zwitch(key, options) {
+	var own$5 = {}.hasOwnProperty;
+	function zwitch(key, options) {
 		const settings = options || {};
-function one(value, ...parameters) {
-let fn = one.invalid;
+		function one(value, ...parameters) {
+			let fn = one.invalid;
 			const handlers = one.handlers;
 			if (value && own$5.call(value, key)) {
 				const id = String(value[key]);
@@ -5844,23 +5948,23 @@ let fn = one.invalid;
 		one.unknown = settings.unknown;
 		return one;
 	}
-var defaultSubsetRegex = /["&'<>`]/g;
+	var defaultSubsetRegex = /["&'<>`]/g;
 	var surrogatePairsRegex = /[\uD800-\uDBFF][\uDC00-\uDFFF]/g;
 	var controlCharactersRegex = /[\x01-\t\v\f\x0E-\x1F\x7F\x81\x8D\x8F\x90\x9D\xA0-\uFFFF]/g;
 	var regexEscapeRegex = /[|\\{}()[\]^$+*?.]/g;
-var subsetToRegexCache = new WeakMap();
-function core(value, options) {
+	var subsetToRegexCache = new WeakMap();
+	function core(value, options) {
 		value = value.replace(options.subset ? charactersToExpressionCached(options.subset) : defaultSubsetRegex, basic);
 		if (options.subset || options.escapeOnly) return value;
 		return value.replace(surrogatePairsRegex, surrogate).replace(controlCharactersRegex, basic);
-function surrogate(pair, index, all) {
+		function surrogate(pair, index, all) {
 			return options.format((pair.charCodeAt(0) - 55296) * 1024 + pair.charCodeAt(1) - 56320 + 65536, all.charCodeAt(index + 2), options);
 		}
-function basic(character, index, all) {
+		function basic(character, index, all) {
 			return options.format(character.charCodeAt(0), all.charCodeAt(index + 1), options);
 		}
 	}
-function charactersToExpressionCached(subset) {
+	function charactersToExpressionCached(subset) {
 		let cached = subsetToRegexCache.get(subset);
 		if (!cached) {
 			cached = charactersToExpression(subset);
@@ -5868,23 +5972,23 @@ function charactersToExpressionCached(subset) {
 		}
 		return cached;
 	}
-function charactersToExpression(subset) {
-const groups = [];
+	function charactersToExpression(subset) {
+		const groups = [];
 		let index = -1;
 		while (++index < subset.length) groups.push(subset[index].replace(regexEscapeRegex, "\\$&"));
 		return new RegExp("(?:" + groups.join("|") + ")", "g");
 	}
 	var hexadecimalRegex = /[\dA-Fa-f]/;
-function toHexadecimal(code, next, omit) {
+	function toHexadecimal(code, next, omit) {
 		const value = "&#x" + code.toString(16).toUpperCase();
 		return omit && next && !hexadecimalRegex.test(String.fromCharCode(next)) ? value : value + ";";
 	}
 	var decimalRegex = /\d/;
-function toDecimal(code, next, omit) {
+	function toDecimal(code, next, omit) {
 		const value = "&#" + String(code);
 		return omit && next && !decimalRegex.test(String.fromCharCode(next)) ? value : value + ";";
 	}
-var characterEntitiesLegacy = [
+	var characterEntitiesLegacy = [
 		"AElig",
 		"AMP",
 		"Aacute",
@@ -5992,7 +6096,7 @@ var characterEntitiesLegacy = [
 		"yen",
 		"yuml"
 	];
-var characterEntitiesHtml4 = {
+	var characterEntitiesHtml4 = {
 		nbsp: "\xA0",
 		iexcl: "¡",
 		cent: "¢",
@@ -6246,7 +6350,7 @@ var characterEntitiesHtml4 = {
 		rsaquo: "›",
 		euro: "€"
 	};
-var dangerous = [
+	var dangerous = [
 		"cent",
 		"copy",
 		"divide",
@@ -6257,11 +6361,11 @@ var dangerous = [
 		"times"
 	];
 	var own$4 = {}.hasOwnProperty;
-var characters = {};
-var key;
+	var characters = {};
+	var key;
 	for (key in characterEntitiesHtml4) if (own$4.call(characterEntitiesHtml4, key)) characters[characterEntitiesHtml4[key]] = key;
 	var notAlphanumericRegex = /[^\dA-Za-z]/;
-function toNamed(code, next, omit, attribute) {
+	function toNamed(code, next, omit, attribute) {
 		const character = String.fromCharCode(code);
 		if (own$4.call(characters, character)) {
 			const name = characters[character];
@@ -6271,10 +6375,9 @@ function toNamed(code, next, omit, attribute) {
 		}
 		return "";
 	}
-
-function formatSmart(code, next, options) {
+	function formatSmart(code, next, options) {
 		let numeric = toHexadecimal(code, next, options.omitOptionalSemicolons);
-let named;
+		let named;
 		if (options.useNamedReferences || options.useShortestReferences) named = toNamed(code, next, options.omitOptionalSemicolons, options.attribute);
 		if ((options.useShortestReferences || !named) && options.useShortestReferences) {
 			const decimal = toDecimal(code, next, options.omitOptionalSemicolons);
@@ -6282,24 +6385,22 @@ let named;
 		}
 		return named && (!options.useShortestReferences || named.length < numeric.length) ? named : numeric;
 	}
-
-function stringifyEntities(value, options) {
+	function stringifyEntities(value, options) {
 		return core(value, Object.assign({ format: formatSmart }, options));
 	}
-var htmlCommentRegex = /^>|^->|<!--|-->|--!>|<!-$/g;
+	var htmlCommentRegex = /^>|^->|<!--|-->|--!>|<!-$/g;
 	var bogusCommentEntitySubset = [">"];
 	var commentEntitySubset = ["<", ">"];
-function comment(node, _1, _2, state) {
+	function comment(node, _1, _2, state) {
 		return state.settings.bogusComments ? "<?" + stringifyEntities(node.value, Object.assign({}, state.settings.characterReferences, { subset: bogusCommentEntitySubset })) + ">" : "<!--" + node.value.replace(htmlCommentRegex, encode) + "-->";
-function encode($0) {
+		function encode($0) {
 			return stringifyEntities($0, Object.assign({}, state.settings.characterReferences, { subset: commentEntitySubset }));
 		}
 	}
-
-function doctype(_1, _2, _3, state) {
+	function doctype(_1, _2, _3, state) {
 		return "<!" + (state.settings.upperDoctype ? "DOCTYPE" : "doctype") + (state.settings.tightDoctype ? "" : " ") + "html>";
 	}
-function ccount(value, character) {
+	function ccount(value, character) {
 		const source = String(value);
 		if (typeof character !== "string") throw new TypeError("Expected character");
 		let count = 0;
@@ -6310,26 +6411,26 @@ function ccount(value, character) {
 		}
 		return count;
 	}
-function stringify$1(values, options) {
+	function stringify$1(values, options) {
 		const settings = options || {};
 		return (values[values.length - 1] === "" ? [...values, ""] : values).join((settings.padRight ? " " : "") + "," + (settings.padLeft === false ? "" : " ")).trim();
 	}
-function stringify(values) {
+	function stringify(values) {
 		return values.join(" ").trim();
 	}
-var re = /[ \t\n\f\r]/g;
-function whitespace(thing) {
+	var re = /[ \t\n\f\r]/g;
+	function whitespace(thing) {
 		return typeof thing === "object" ? thing.type === "text" ? empty$1(thing.value) : false : empty$1(thing);
 	}
-function empty$1(value) {
+	function empty$1(value) {
 		return value.replace(re, "") === "";
 	}
-var siblingAfter = siblings(1);
+	var siblingAfter = siblings(1);
 	var siblingBefore = siblings(-1);
-var emptyChildren$1 = [];
-function siblings(increment) {
+	var emptyChildren$1 = [];
+	function siblings(increment) {
 		return sibling;
-function sibling(parent, index, includeWhitespace) {
+		function sibling(parent, index, includeWhitespace) {
 			const siblings = parent ? parent.children : emptyChildren$1;
 			let offset = (index || 0) + increment;
 			let next = siblings[offset];
@@ -6340,15 +6441,14 @@ function sibling(parent, index, includeWhitespace) {
 			return next;
 		}
 	}
-
-var own$3 = {}.hasOwnProperty;
-function omission(handlers) {
+	var own$3 = {}.hasOwnProperty;
+	function omission(handlers) {
 		return omit;
-function omit(node, index, parent) {
+		function omit(node, index, parent) {
 			return own$3.call(handlers, node.tagName) && handlers[node.tagName](node, index, parent);
 		}
 	}
-var closing = omission({
+	var closing = omission({
 		body: body$1,
 		caption: headOrColgroupOrCaption,
 		colgroup: headOrColgroupOrCaption,
@@ -6369,78 +6469,78 @@ var closing = omission({
 		thead,
 		tr
 	});
-function headOrColgroupOrCaption(_, index, parent) {
+	function headOrColgroupOrCaption(_, index, parent) {
 		const next = siblingAfter(parent, index, true);
 		return !next || next.type !== "comment" && !(next.type === "text" && whitespace(next.value.charAt(0)));
 	}
-function html$3(_, index, parent) {
+	function html$3(_, index, parent) {
 		const next = siblingAfter(parent, index);
 		return !next || next.type !== "comment";
 	}
-function body$1(_, index, parent) {
+	function body$1(_, index, parent) {
 		const next = siblingAfter(parent, index);
 		return !next || next.type !== "comment";
 	}
-function p$1(_, index, parent) {
+	function p$1(_, index, parent) {
 		const next = siblingAfter(parent, index);
 		return next ? next.type === "element" && (next.tagName === "address" || next.tagName === "article" || next.tagName === "aside" || next.tagName === "blockquote" || next.tagName === "details" || next.tagName === "div" || next.tagName === "dl" || next.tagName === "fieldset" || next.tagName === "figcaption" || next.tagName === "figure" || next.tagName === "footer" || next.tagName === "form" || next.tagName === "h1" || next.tagName === "h2" || next.tagName === "h3" || next.tagName === "h4" || next.tagName === "h5" || next.tagName === "h6" || next.tagName === "header" || next.tagName === "hgroup" || next.tagName === "hr" || next.tagName === "main" || next.tagName === "menu" || next.tagName === "nav" || next.tagName === "ol" || next.tagName === "p" || next.tagName === "pre" || next.tagName === "section" || next.tagName === "table" || next.tagName === "ul") : !parent || !(parent.type === "element" && (parent.tagName === "a" || parent.tagName === "audio" || parent.tagName === "del" || parent.tagName === "ins" || parent.tagName === "map" || parent.tagName === "noscript" || parent.tagName === "video"));
 	}
-function li(_, index, parent) {
+	function li(_, index, parent) {
 		const next = siblingAfter(parent, index);
 		return !next || next.type === "element" && next.tagName === "li";
 	}
-function dt(_, index, parent) {
+	function dt(_, index, parent) {
 		const next = siblingAfter(parent, index);
 		return Boolean(next && next.type === "element" && (next.tagName === "dt" || next.tagName === "dd"));
 	}
-function dd(_, index, parent) {
+	function dd(_, index, parent) {
 		const next = siblingAfter(parent, index);
 		return !next || next.type === "element" && (next.tagName === "dt" || next.tagName === "dd");
 	}
-function rubyElement(_, index, parent) {
+	function rubyElement(_, index, parent) {
 		const next = siblingAfter(parent, index);
 		return !next || next.type === "element" && (next.tagName === "rp" || next.tagName === "rt");
 	}
-function optgroup(_, index, parent) {
+	function optgroup(_, index, parent) {
 		const next = siblingAfter(parent, index);
 		return !next || next.type === "element" && next.tagName === "optgroup";
 	}
-function option(_, index, parent) {
+	function option(_, index, parent) {
 		const next = siblingAfter(parent, index);
 		return !next || next.type === "element" && (next.tagName === "option" || next.tagName === "optgroup");
 	}
-function thead(_, index, parent) {
+	function thead(_, index, parent) {
 		const next = siblingAfter(parent, index);
 		return Boolean(next && next.type === "element" && (next.tagName === "tbody" || next.tagName === "tfoot"));
 	}
-function tbody$1(_, index, parent) {
+	function tbody$1(_, index, parent) {
 		const next = siblingAfter(parent, index);
 		return !next || next.type === "element" && (next.tagName === "tbody" || next.tagName === "tfoot");
 	}
-function tfoot(_, index, parent) {
+	function tfoot(_, index, parent) {
 		return !siblingAfter(parent, index);
 	}
-function tr(_, index, parent) {
+	function tr(_, index, parent) {
 		const next = siblingAfter(parent, index);
 		return !next || next.type === "element" && next.tagName === "tr";
 	}
-function cells(_, index, parent) {
+	function cells(_, index, parent) {
 		const next = siblingAfter(parent, index);
 		return !next || next.type === "element" && (next.tagName === "td" || next.tagName === "th");
 	}
-var opening = omission({
+	var opening = omission({
 		body,
 		colgroup,
 		head,
 		html: html$2,
 		tbody
 	});
-function html$2(node) {
+	function html$2(node) {
 		const head = siblingAfter(node, -1);
 		return !head || head.type !== "comment";
 	}
-function head(node) {
-const seen = new Set();
+	function head(node) {
+		const seen = new Set();
 		for (const child of node.children) if (child.type === "element" && (child.tagName === "base" || child.tagName === "title")) {
 			if (seen.has(child.tagName)) return false;
 			seen.add(child.tagName);
@@ -6448,35 +6548,34 @@ const seen = new Set();
 		const child = node.children[0];
 		return !child || child.type === "element";
 	}
-function body(node) {
+	function body(node) {
 		const head = siblingAfter(node, -1, true);
 		return !head || head.type !== "comment" && !(head.type === "text" && whitespace(head.value.charAt(0))) && !(head.type === "element" && (head.tagName === "meta" || head.tagName === "link" || head.tagName === "script" || head.tagName === "style" || head.tagName === "template"));
 	}
-function colgroup(node, index, parent) {
+	function colgroup(node, index, parent) {
 		const previous = siblingBefore(parent, index);
 		const head = siblingAfter(node, -1, true);
 		if (parent && previous && previous.type === "element" && previous.tagName === "colgroup" && closing(previous, parent.children.indexOf(previous), parent)) return false;
 		return Boolean(head && head.type === "element" && head.tagName === "col");
 	}
-function tbody(node, index, parent) {
+	function tbody(node, index, parent) {
 		const previous = siblingBefore(parent, index);
 		const head = siblingAfter(node, -1);
 		if (parent && previous && previous.type === "element" && (previous.tagName === "thead" || previous.tagName === "tbody") && closing(previous, parent.children.indexOf(previous), parent)) return false;
 		return Boolean(head && head.type === "element" && head.tagName === "tr");
 	}
-
-var constants = {
+	var constants = {
 		name: [["	\n\f\r &/=>".split(""), "	\n\f\r \"&'/=>`".split("")], ["\0	\n\f\r \"&'/<=>".split(""), "\0	\n\f\r \"&'/<=>`".split("")]],
 		unquoted: [["	\n\f\r &>".split(""), "\0	\n\f\r \"&'<=>`".split("")], ["\0	\n\f\r \"&'<=>`".split(""), "\0	\n\f\r \"&'<=>`".split("")]],
 		single: [["&'".split(""), "\"&'`".split("")], ["\0&'".split(""), "\0\"&'`".split("")]],
 		double: [["\"&".split(""), "\"&'`".split("")], ["\0\"&".split(""), "\0\"&'`".split("")]]
 	};
-function element$1(node, index, parent, state) {
+	function element$1(node, index, parent, state) {
 		const schema = state.schema;
 		const omit = schema.space === "svg" ? false : state.settings.omitOptionalTags;
 		let selfClosing = schema.space === "svg" ? state.settings.closeEmptyElements : state.settings.voids.includes(node.tagName.toLowerCase());
-const parts = [];
-let last;
+		const parts = [];
+		let last;
 		if (schema.space === "html" && node.tagName === "svg") state.schema = svg;
 		const attributes = serializeAttributes(state, node.properties);
 		const content = state.all(schema.space === "html" && node.tagName === "template" ? node.content : node);
@@ -6495,10 +6594,10 @@ let last;
 		if (!selfClosing && (!omit || !closing(node, index, parent))) parts.push("</" + node.tagName + ">");
 		return parts.join("");
 	}
-function serializeAttributes(state, properties) {
-const values = [];
+	function serializeAttributes(state, properties) {
+		const values = [];
 		let index = -1;
-let key;
+		let key;
 		if (properties) {
 			for (key in properties) if (properties[key] !== null && properties[key] !== void 0) {
 				const value = serializeAttribute(state, key, properties[key]);
@@ -6511,12 +6610,12 @@ let key;
 		}
 		return values.join("");
 	}
-function serializeAttribute(state, key, value) {
+	function serializeAttribute(state, key, value) {
 		const info = find(state.schema, key);
 		const x = state.settings.allowParseErrors && state.schema.space === "html" ? 0 : 1;
 		const y = state.settings.allowDangerousCharacters ? 0 : 1;
 		let quote = state.quote;
-let result;
+		let result;
 		if (info.overloadedBoolean && (value === info.attribute || value === "")) value = true;
 		else if ((info.boolean || info.overloadedBoolean) && (typeof value !== "string" || value === info.attribute || value === "")) value = Boolean(value);
 		if (value === null || value === void 0 || value === false || typeof value === "number" && Number.isNaN(value)) return "";
@@ -6537,20 +6636,17 @@ let result;
 		}
 		return name + (result ? "=" + result : result);
 	}
-var textEntitySubset = ["<", "&"];
-function text$5(node, _, parent, state) {
+	var textEntitySubset = ["<", "&"];
+	function text$5(node, _, parent, state) {
 		return parent && parent.type === "element" && (parent.tagName === "script" || parent.tagName === "style") ? node.value : stringifyEntities(node.value, Object.assign({}, state.settings.characterReferences, { subset: textEntitySubset }));
 	}
-
-function raw(node, index, parent, state) {
+	function raw(node, index, parent, state) {
 		return state.settings.allowDangerousHtml ? node.value : text$5(node, index, parent, state);
 	}
-
-function root$2(node, _1, _2, state) {
+	function root$2(node, _1, _2, state) {
 		return state.all(node);
 	}
-
-var handle$1 = zwitch("type", {
+	var handle$1 = zwitch("type", {
 		invalid: invalid$1,
 		unknown: unknown$1,
 		handlers: {
@@ -6562,18 +6658,16 @@ var handle$1 = zwitch("type", {
 			text: text$5
 		}
 	});
-function invalid$1(node) {
+	function invalid$1(node) {
 		throw new Error("Expected node, not `" + node + "`");
 	}
-function unknown$1(node_) {
+	function unknown$1(node_) {
 		throw new Error("Cannot compile unknown node `" + node_.type + "`");
 	}
-
-
-var emptyOptions$2 = {};
-var emptyCharacterReferences = {};
-var emptyChildren = [];
-function toHtml$1(tree, options) {
+	var emptyOptions$2 = {};
+	var emptyCharacterReferences = {};
+	var emptyChildren = [];
+	function toHtml$1(tree, options) {
 		const options_ = options || emptyOptions$2;
 		const quote = options_.quote || "\"";
 		const alternative = quote === "\"" ? "'" : "\"";
@@ -6608,23 +6702,22 @@ function toHtml$1(tree, options) {
 			children: tree
 		} : tree, void 0, void 0);
 	}
-function one$1(node, index, parent) {
+	function one$1(node, index, parent) {
 		return handle$1(node, index, parent, this);
 	}
-function all$1(parent) {
-const results = [];
+	function all$1(parent) {
+		const results = [];
 		const children = parent && parent.children || emptyChildren;
 		let index = -1;
 		while (++index < children.length) results[index] = this.one(children[index], index, parent);
 		return results.join("");
 	}
-
-var emptyOptions$1 = {};
-function toString$1(value, options) {
+	var emptyOptions$1 = {};
+	function toString$1(value, options) {
 		const settings = options || emptyOptions$1;
 		return one(value, typeof settings.includeImageAlt === "boolean" ? settings.includeImageAlt : true, typeof settings.includeHtml === "boolean" ? settings.includeHtml : true);
 	}
-function one(value, includeImageAlt, includeHtml) {
+	function one(value, includeImageAlt, includeHtml) {
 		if (node(value)) {
 			if ("value" in value) return value.type === "html" && !includeHtml ? "" : value.value;
 			if (includeImageAlt && "alt" in value && value.alt) return value.alt;
@@ -6633,27 +6726,27 @@ function one(value, includeImageAlt, includeHtml) {
 		if (Array.isArray(value)) return all(value, includeImageAlt, includeHtml);
 		return "";
 	}
-function all(values, includeImageAlt, includeHtml) {
-const result = [];
+	function all(values, includeImageAlt, includeHtml) {
+		const result = [];
 		let index = -1;
 		while (++index < values.length) result[index] = one(values[index], includeImageAlt, includeHtml);
 		return result.join("");
 	}
-function node(value) {
+	function node(value) {
 		return Boolean(value && typeof value === "object");
 	}
 	var element = document.createElement("i");
-function decodeNamedCharacterReference(value) {
+	function decodeNamedCharacterReference(value) {
 		const characterReference = "&" + value + ";";
 		element.innerHTML = characterReference;
 		const character = element.textContent;
 		if (character.charCodeAt(character.length - 1) === 59 && value !== "semi") return false;
 		return character === characterReference ? false : character;
 	}
-function splice(list, start, remove, items) {
+	function splice(list, start, remove, items) {
 		const end = list.length;
 		let chunkStart = 0;
-let parameters;
+		let parameters;
 		if (start < 0) start = -start > end ? 0 : end + start;
 		else start = start > end ? end : start;
 		remove = remove > 0 ? remove : 0;
@@ -6672,26 +6765,26 @@ let parameters;
 			}
 		}
 	}
-function push(list, items) {
+	function push(list, items) {
 		if (list.length > 0) {
 			splice(list, list.length, 0, items);
 			return list;
 		}
 		return items;
 	}
-var hasOwnProperty = {}.hasOwnProperty;
-function combineExtensions(extensions) {
-const all = {};
+	var hasOwnProperty = {}.hasOwnProperty;
+	function combineExtensions(extensions) {
+		const all = {};
 		let index = -1;
 		while (++index < extensions.length) syntaxExtension(all, extensions[index]);
 		return all;
 	}
-function syntaxExtension(all, extension) {
-let hook;
+	function syntaxExtension(all, extension) {
+		let hook;
 		for (hook in extension) {
-const left = (hasOwnProperty.call(all, hook) ? all[hook] : void 0) || (all[hook] = {});
-const right = extension[hook];
-let code;
+			const left = (hasOwnProperty.call(all, hook) ? all[hook] : void 0) || (all[hook] = {});
+			const right = extension[hook];
+			let code;
 			if (right) for (code in right) {
 				if (!hasOwnProperty.call(left, code)) left[code] = [];
 				const value = right[code];
@@ -6699,55 +6792,54 @@ let code;
 			}
 		}
 	}
-function constructs(existing, list) {
+	function constructs(existing, list) {
 		let index = -1;
-const before = [];
+		const before = [];
 		while (++index < list.length) (list[index].add === "after" ? existing : before).push(list[index]);
 		splice(existing, 0, 0, before);
 	}
-function decodeNumericCharacterReference(value, base) {
+	function decodeNumericCharacterReference(value, base) {
 		const code = Number.parseInt(value, base);
 		if (code < 9 || code === 11 || code > 13 && code < 32 || code > 126 && code < 160 || code > 55295 && code < 57344 || code > 64975 && code < 65008 || (code & 65535) === 65535 || (code & 65535) === 65534 || code > 1114111) return "�";
 		return String.fromCodePoint(code);
 	}
-function normalizeIdentifier(value) {
+	function normalizeIdentifier(value) {
 		return value.replace(/[\t\n\r ]+/g, " ").replace(/^ | $/g, "").toLowerCase().toUpperCase();
 	}
-
-var asciiAlpha = regexCheck(/[A-Za-z]/);
-var asciiAlphanumeric = regexCheck(/[\dA-Za-z]/);
-var asciiAtext = regexCheck(/[#-'*+\--9=?A-Z^-~]/);
-function asciiControl(code) {
+	var asciiAlpha = regexCheck(/[A-Za-z]/);
+	var asciiAlphanumeric = regexCheck(/[\dA-Za-z]/);
+	var asciiAtext = regexCheck(/[#-'*+\--9=?A-Z^-~]/);
+	function asciiControl(code) {
 		return code !== null && (code < 32 || code === 127);
 	}
-var asciiDigit = regexCheck(/\d/);
-var asciiHexDigit = regexCheck(/[\dA-Fa-f]/);
-var asciiPunctuation = regexCheck(/[!-/:-@[-`{-~]/);
-function markdownLineEnding(code) {
+	var asciiDigit = regexCheck(/\d/);
+	var asciiHexDigit = regexCheck(/[\dA-Fa-f]/);
+	var asciiPunctuation = regexCheck(/[!-/:-@[-`{-~]/);
+	function markdownLineEnding(code) {
 		return code !== null && code < -2;
 	}
-function markdownLineEndingOrSpace(code) {
+	function markdownLineEndingOrSpace(code) {
 		return code !== null && (code < 0 || code === 32);
 	}
-function markdownSpace(code) {
+	function markdownSpace(code) {
 		return code === -2 || code === -1 || code === 32;
 	}
-var unicodePunctuation = regexCheck(/\p{P}|\p{S}/u);
-var unicodeWhitespace = regexCheck(/\s/);
-function regexCheck(regex) {
+	var unicodePunctuation = regexCheck(/\p{P}|\p{S}/u);
+	var unicodeWhitespace = regexCheck(/\s/);
+	function regexCheck(regex) {
 		return check;
-function check(code) {
+		function check(code) {
 			return code !== null && code > -1 && regex.test(String.fromCharCode(code));
 		}
 	}
-function normalizeUri(value) {
-const result = [];
+	function normalizeUri(value) {
+		const result = [];
 		let index = -1;
 		let start = 0;
 		let skip = 0;
 		while (++index < value.length) {
 			const code = value.charCodeAt(index);
-let replace = "";
+			let replace = "";
 			if (code === 37 && asciiAlphanumeric(value.charCodeAt(index + 1)) && asciiAlphanumeric(value.charCodeAt(index + 2))) skip = 2;
 			else if (code < 128) {
 				if (!/[!#$&-;=?-Z_a-z~]/.test(String.fromCharCode(code))) replace = String.fromCharCode(code);
@@ -6770,19 +6862,18 @@ let replace = "";
 		}
 		return result.join("") + value.slice(start);
 	}
-
-function factorySpace(effects, ok, type, max) {
+	function factorySpace(effects, ok, type, max) {
 		const limit = max ? max - 1 : Number.POSITIVE_INFINITY;
 		let size = 0;
 		return start;
-function start(code) {
+		function start(code) {
 			if (markdownSpace(code)) {
 				effects.enter(type);
 				return prefix(code);
 			}
 			return ok(code);
 		}
-function prefix(code) {
+		function prefix(code) {
 			if (markdownSpace(code) && size++ < limit) {
 				effects.consume(code);
 				return prefix;
@@ -6791,13 +6882,12 @@ function prefix(code) {
 			return ok(code);
 		}
 	}
-
-var content$1 = { tokenize: initializeContent };
-function initializeContent(effects) {
+	var content$1 = { tokenize: initializeContent };
+	function initializeContent(effects) {
 		const contentStart = effects.attempt(this.parser.constructs.contentInitial, afterContentStartConstruct, paragraphInitial);
-let previous;
+		let previous;
 		return contentStart;
-function afterContentStartConstruct(code) {
+		function afterContentStartConstruct(code) {
 			if (code === null) {
 				effects.consume(code);
 				return;
@@ -6807,11 +6897,11 @@ function afterContentStartConstruct(code) {
 			effects.exit("lineEnding");
 			return factorySpace(effects, contentStart, "linePrefix");
 		}
-function paragraphInitial(code) {
+		function paragraphInitial(code) {
 			effects.enter("paragraph");
 			return lineStart(code);
 		}
-function lineStart(code) {
+		function lineStart(code) {
 			const token = effects.enter("chunkText", {
 				contentType: "text",
 				previous
@@ -6820,7 +6910,7 @@ function lineStart(code) {
 			previous = token;
 			return data(code);
 		}
-function data(code) {
+		function data(code) {
 			if (code === null) {
 				effects.exit("chunkText");
 				effects.exit("paragraph");
@@ -6836,19 +6926,17 @@ function data(code) {
 			return data;
 		}
 	}
-
-
-var document$2 = { tokenize: initializeDocument };
-var containerConstruct = { tokenize: tokenizeContainer };
-function initializeDocument(effects) {
+	var document$2 = { tokenize: initializeDocument };
+	var containerConstruct = { tokenize: tokenizeContainer };
+	function initializeDocument(effects) {
 		const self = this;
-const stack = [];
+		const stack = [];
 		let continued = 0;
-let childFlow;
-let childToken;
-let lineStartOffset;
+		let childFlow;
+		let childToken;
+		let lineStartOffset;
 		return start;
-function start(code) {
+		function start(code) {
 			if (continued < stack.length) {
 				const item = stack[continued];
 				self.containerState = item[1];
@@ -6856,14 +6944,14 @@ function start(code) {
 			}
 			return checkNewContainers(code);
 		}
-function documentContinue(code) {
+		function documentContinue(code) {
 			continued++;
 			if (self.containerState._closeFlow) {
 				self.containerState._closeFlow = void 0;
 				if (childFlow) closeFlow();
 				const indexBeforeExits = self.events.length;
 				let indexBeforeFlow = indexBeforeExits;
-let point;
+				let point;
 				while (indexBeforeFlow--) if (self.events[indexBeforeFlow][0] === "exit" && self.events[indexBeforeFlow][1].type === "chunkFlow") {
 					point = self.events[indexBeforeFlow][1].end;
 					break;
@@ -6880,7 +6968,7 @@ let point;
 			}
 			return start(code);
 		}
-function checkNewContainers(code) {
+		function checkNewContainers(code) {
 			if (continued === stack.length) {
 				if (!childFlow) return documentContinued(code);
 				if (childFlow.currentConstruct && childFlow.currentConstruct.concrete) return flowStart(code);
@@ -6889,26 +6977,26 @@ function checkNewContainers(code) {
 			self.containerState = {};
 			return effects.check(containerConstruct, thereIsANewContainer, thereIsNoNewContainer)(code);
 		}
-function thereIsANewContainer(code) {
+		function thereIsANewContainer(code) {
 			if (childFlow) closeFlow();
 			exitContainers(continued);
 			return documentContinued(code);
 		}
-function thereIsNoNewContainer(code) {
+		function thereIsNoNewContainer(code) {
 			self.parser.lazy[self.now().line] = continued !== stack.length;
 			lineStartOffset = self.now().offset;
 			return flowStart(code);
 		}
-function documentContinued(code) {
+		function documentContinued(code) {
 			self.containerState = {};
 			return effects.attempt(containerConstruct, containerContinue, flowStart)(code);
 		}
-function containerContinue(code) {
+		function containerContinue(code) {
 			continued++;
 			stack.push([self.currentConstruct, self.containerState]);
 			return documentContinued(code);
 		}
-function flowStart(code) {
+		function flowStart(code) {
 			if (code === null) {
 				if (childFlow) closeFlow();
 				exitContainers(0);
@@ -6923,7 +7011,7 @@ function flowStart(code) {
 			});
 			return flowContinue(code);
 		}
-function flowContinue(code) {
+		function flowContinue(code) {
 			if (code === null) {
 				writeToChild(effects.exit("chunkFlow"), true);
 				exitContainers(0);
@@ -6940,7 +7028,7 @@ function flowContinue(code) {
 			effects.consume(code);
 			return flowContinue;
 		}
-function writeToChild(token, endOfFile) {
+		function writeToChild(token, endOfFile) {
 			const stream = self.sliceStream(token);
 			if (endOfFile) stream.push(null);
 			token.previous = childToken;
@@ -6953,8 +7041,8 @@ function writeToChild(token, endOfFile) {
 				while (index--) if (childFlow.events[index][1].start.offset < lineStartOffset && (!childFlow.events[index][1].end || childFlow.events[index][1].end.offset > lineStartOffset)) return;
 				const indexBeforeExits = self.events.length;
 				let indexBeforeFlow = indexBeforeExits;
-let seen;
-let point;
+				let seen;
+				let point;
 				while (indexBeforeFlow--) if (self.events[indexBeforeFlow][0] === "exit" && self.events[indexBeforeFlow][1].type === "chunkFlow") {
 					if (seen) {
 						point = self.events[indexBeforeFlow][1].end;
@@ -6972,7 +7060,7 @@ let point;
 				self.events.length = index;
 			}
 		}
-function exitContainers(size) {
+		function exitContainers(size) {
 			let index = stack.length;
 			while (index-- > size) {
 				const entry = stack[index];
@@ -6988,17 +7076,15 @@ function exitContainers(size) {
 			self.containerState._closeFlow = void 0;
 		}
 	}
-function tokenizeContainer(effects, ok, nok) {
+	function tokenizeContainer(effects, ok, nok) {
 		return factorySpace(effects, effects.attempt(this.parser.constructs.document, ok, nok), "linePrefix", this.parser.constructs.disable.null.includes("codeIndented") ? void 0 : 4);
 	}
-
-function classifyCharacter(code) {
+	function classifyCharacter(code) {
 		if (code === null || markdownLineEndingOrSpace(code) || unicodeWhitespace(code)) return 1;
 		if (unicodePunctuation(code)) return 2;
 	}
-
-function resolveAll(constructs, events, context) {
-const called = [];
+	function resolveAll(constructs, events, context) {
+		const called = [];
 		let index = -1;
 		while (++index < constructs.length) {
 			const resolve = constructs[index].resolveAll;
@@ -7009,22 +7095,21 @@ const called = [];
 		}
 		return events;
 	}
-
-var attention = {
+	var attention = {
 		name: "attention",
 		resolveAll: resolveAllAttention,
 		tokenize: tokenizeAttention
 	};
-function resolveAllAttention(events, context) {
+	function resolveAllAttention(events, context) {
 		let index = -1;
-let open;
-let group;
-let text;
-let openingSequence;
-let closingSequence;
-let use;
-let nextEvents;
-let offset;
+		let open;
+		let group;
+		let text;
+		let openingSequence;
+		let closingSequence;
+		let use;
+		let nextEvents;
+		let offset;
 		while (++index < events.length) if (events[index][0] === "enter" && events[index][1].type === "attentionSequence" && events[index][1]._close) {
 			open = index;
 			while (open--) if (events[open][0] === "exit" && events[open][1].type === "attentionSequence" && events[open][1]._open && context.sliceSerialize(events[open][1]).charCodeAt(0) === context.sliceSerialize(events[index][1]).charCodeAt(0)) {
@@ -7132,18 +7217,18 @@ let offset;
 		while (++index < events.length) if (events[index][1].type === "attentionSequence") events[index][1].type = "data";
 		return events;
 	}
-function tokenizeAttention(effects, ok) {
+	function tokenizeAttention(effects, ok) {
 		const attentionMarkers = this.parser.constructs.attentionMarkers.null;
 		const previous = this.previous;
 		const before = classifyCharacter(previous);
-let marker;
+		let marker;
 		return start;
-function start(code) {
+		function start(code) {
 			marker = code;
 			effects.enter("attentionSequence");
 			return inside(code);
 		}
-function inside(code) {
+		function inside(code) {
 			if (code === marker) {
 				effects.consume(code);
 				return inside;
@@ -7157,20 +7242,19 @@ function inside(code) {
 			return ok(code);
 		}
 	}
-function movePoint(point, offset) {
+	function movePoint(point, offset) {
 		point.column += offset;
 		point.offset += offset;
 		point._bufferIndex += offset;
 	}
-
-var autolink = {
+	var autolink = {
 		name: "autolink",
 		tokenize: tokenizeAutolink
 	};
-function tokenizeAutolink(effects, ok, nok) {
+	function tokenizeAutolink(effects, ok, nok) {
 		let size = 0;
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("autolink");
 			effects.enter("autolinkMarker");
 			effects.consume(code);
@@ -7178,7 +7262,7 @@ function start(code) {
 			effects.enter("autolinkProtocol");
 			return open;
 		}
-function open(code) {
+		function open(code) {
 			if (asciiAlpha(code)) {
 				effects.consume(code);
 				return schemeOrEmailAtext;
@@ -7186,14 +7270,14 @@ function open(code) {
 			if (code === 64) return nok(code);
 			return emailAtext(code);
 		}
-function schemeOrEmailAtext(code) {
+		function schemeOrEmailAtext(code) {
 			if (code === 43 || code === 45 || code === 46 || asciiAlphanumeric(code)) {
 				size = 1;
 				return schemeInsideOrEmailAtext(code);
 			}
 			return emailAtext(code);
 		}
-function schemeInsideOrEmailAtext(code) {
+		function schemeInsideOrEmailAtext(code) {
 			if (code === 58) {
 				effects.consume(code);
 				size = 0;
@@ -7206,7 +7290,7 @@ function schemeInsideOrEmailAtext(code) {
 			size = 0;
 			return emailAtext(code);
 		}
-function urlInside(code) {
+		function urlInside(code) {
 			if (code === 62) {
 				effects.exit("autolinkProtocol");
 				effects.enter("autolinkMarker");
@@ -7219,7 +7303,7 @@ function urlInside(code) {
 			effects.consume(code);
 			return urlInside;
 		}
-function emailAtext(code) {
+		function emailAtext(code) {
 			if (code === 64) {
 				effects.consume(code);
 				return emailAtSignOrDot;
@@ -7230,10 +7314,10 @@ function emailAtext(code) {
 			}
 			return nok(code);
 		}
-function emailAtSignOrDot(code) {
+		function emailAtSignOrDot(code) {
 			return asciiAlphanumeric(code) ? emailLabel(code) : nok(code);
 		}
-function emailLabel(code) {
+		function emailLabel(code) {
 			if (code === 46) {
 				effects.consume(code);
 				size = 0;
@@ -7249,7 +7333,7 @@ function emailLabel(code) {
 			}
 			return emailValue(code);
 		}
-function emailValue(code) {
+		function emailValue(code) {
 			if ((code === 45 || asciiAlphanumeric(code)) && size++ < 63) {
 				const next = code === 45 ? emailValue : emailLabel;
 				effects.consume(code);
@@ -7258,31 +7342,29 @@ function emailValue(code) {
 			return nok(code);
 		}
 	}
-
-var blankLine = {
+	var blankLine = {
 		partial: true,
 		tokenize: tokenizeBlankLine
 	};
-function tokenizeBlankLine(effects, ok, nok) {
+	function tokenizeBlankLine(effects, ok, nok) {
 		return start;
-function start(code) {
+		function start(code) {
 			return markdownSpace(code) ? factorySpace(effects, after, "linePrefix")(code) : after(code);
 		}
-function after(code) {
+		function after(code) {
 			return code === null || markdownLineEnding(code) ? ok(code) : nok(code);
 		}
 	}
-
-var blockQuote = {
+	var blockQuote = {
 		continuation: { tokenize: tokenizeBlockQuoteContinuation },
 		exit: exit$1,
 		name: "blockQuote",
 		tokenize: tokenizeBlockQuoteStart
 	};
-function tokenizeBlockQuoteStart(effects, ok, nok) {
+	function tokenizeBlockQuoteStart(effects, ok, nok) {
 		const self = this;
 		return start;
-function start(code) {
+		function start(code) {
 			if (code === 62) {
 				const state = self.containerState;
 				if (!state.open) {
@@ -7297,7 +7379,7 @@ function start(code) {
 			}
 			return nok(code);
 		}
-function after(code) {
+		function after(code) {
 			if (markdownSpace(code)) {
 				effects.enter("blockQuotePrefixWhitespace");
 				effects.consume(code);
@@ -7309,35 +7391,34 @@ function after(code) {
 			return ok(code);
 		}
 	}
-function tokenizeBlockQuoteContinuation(effects, ok, nok) {
+	function tokenizeBlockQuoteContinuation(effects, ok, nok) {
 		const self = this;
 		return contStart;
-function contStart(code) {
+		function contStart(code) {
 			if (markdownSpace(code)) return factorySpace(effects, contBefore, "linePrefix", self.parser.constructs.disable.null.includes("codeIndented") ? void 0 : 4)(code);
 			return contBefore(code);
 		}
-function contBefore(code) {
+		function contBefore(code) {
 			return effects.attempt(blockQuote, ok, nok)(code);
 		}
 	}
-function exit$1(effects) {
+	function exit$1(effects) {
 		effects.exit("blockQuote");
 	}
-
-var characterEscape = {
+	var characterEscape = {
 		name: "characterEscape",
 		tokenize: tokenizeCharacterEscape
 	};
-function tokenizeCharacterEscape(effects, ok, nok) {
+	function tokenizeCharacterEscape(effects, ok, nok) {
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("characterEscape");
 			effects.enter("escapeMarker");
 			effects.consume(code);
 			effects.exit("escapeMarker");
 			return inside;
 		}
-function inside(code) {
+		function inside(code) {
 			if (asciiPunctuation(code)) {
 				effects.enter("characterEscapeValue");
 				effects.consume(code);
@@ -7348,25 +7429,24 @@ function inside(code) {
 			return nok(code);
 		}
 	}
-
-var characterReference = {
+	var characterReference = {
 		name: "characterReference",
 		tokenize: tokenizeCharacterReference
 	};
-function tokenizeCharacterReference(effects, ok, nok) {
+	function tokenizeCharacterReference(effects, ok, nok) {
 		const self = this;
 		let size = 0;
-let max;
-let test;
+		let max;
+		let test;
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("characterReference");
 			effects.enter("characterReferenceMarker");
 			effects.consume(code);
 			effects.exit("characterReferenceMarker");
 			return open;
 		}
-function open(code) {
+		function open(code) {
 			if (code === 35) {
 				effects.enter("characterReferenceMarkerNumeric");
 				effects.consume(code);
@@ -7378,7 +7458,7 @@ function open(code) {
 			test = asciiAlphanumeric;
 			return value(code);
 		}
-function numeric(code) {
+		function numeric(code) {
 			if (code === 88 || code === 120) {
 				effects.enter("characterReferenceMarkerHexadecimal");
 				effects.consume(code);
@@ -7393,7 +7473,7 @@ function numeric(code) {
 			test = asciiDigit;
 			return value(code);
 		}
-function value(code) {
+		function value(code) {
 			if (code === 59 && size) {
 				const token = effects.exit("characterReferenceValue");
 				if (test === asciiAlphanumeric && !decodeNamedCharacterReference(self.sliceSerialize(token))) return nok(code);
@@ -7410,30 +7490,29 @@ function value(code) {
 			return nok(code);
 		}
 	}
-
-var nonLazyContinuation = {
+	var nonLazyContinuation = {
 		partial: true,
 		tokenize: tokenizeNonLazyContinuation
 	};
-var codeFenced = {
+	var codeFenced = {
 		concrete: true,
 		name: "codeFenced",
 		tokenize: tokenizeCodeFenced
 	};
-function tokenizeCodeFenced(effects, ok, nok) {
+	function tokenizeCodeFenced(effects, ok, nok) {
 		const self = this;
-const closeStart = {
+		const closeStart = {
 			partial: true,
 			tokenize: tokenizeCloseStart
 		};
 		let initialPrefix = 0;
 		let sizeOpen = 0;
-let marker;
+		let marker;
 		return start;
-function start(code) {
+		function start(code) {
 			return beforeSequenceOpen(code);
 		}
-function beforeSequenceOpen(code) {
+		function beforeSequenceOpen(code) {
 			const tail = self.events[self.events.length - 1];
 			initialPrefix = tail && tail[1].type === "linePrefix" ? tail[2].sliceSerialize(tail[1], true).length : 0;
 			marker = code;
@@ -7442,7 +7521,7 @@ function beforeSequenceOpen(code) {
 			effects.enter("codeFencedFenceSequence");
 			return sequenceOpen(code);
 		}
-function sequenceOpen(code) {
+		function sequenceOpen(code) {
 			if (code === marker) {
 				sizeOpen++;
 				effects.consume(code);
@@ -7452,7 +7531,7 @@ function sequenceOpen(code) {
 			effects.exit("codeFencedFenceSequence");
 			return markdownSpace(code) ? factorySpace(effects, infoBefore, "whitespace")(code) : infoBefore(code);
 		}
-function infoBefore(code) {
+		function infoBefore(code) {
 			if (code === null || markdownLineEnding(code)) {
 				effects.exit("codeFencedFence");
 				return self.interrupt ? ok(code) : effects.check(nonLazyContinuation, atNonLazyBreak, after)(code);
@@ -7461,7 +7540,7 @@ function infoBefore(code) {
 			effects.enter("chunkString", { contentType: "string" });
 			return info(code);
 		}
-function info(code) {
+		function info(code) {
 			if (code === null || markdownLineEnding(code)) {
 				effects.exit("chunkString");
 				effects.exit("codeFencedFenceInfo");
@@ -7476,13 +7555,13 @@ function info(code) {
 			effects.consume(code);
 			return info;
 		}
-function metaBefore(code) {
+		function metaBefore(code) {
 			if (code === null || markdownLineEnding(code)) return infoBefore(code);
 			effects.enter("codeFencedFenceMeta");
 			effects.enter("chunkString", { contentType: "string" });
 			return meta(code);
 		}
-function meta(code) {
+		function meta(code) {
 			if (code === null || markdownLineEnding(code)) {
 				effects.exit("chunkString");
 				effects.exit("codeFencedFenceMeta");
@@ -7492,24 +7571,24 @@ function meta(code) {
 			effects.consume(code);
 			return meta;
 		}
-function atNonLazyBreak(code) {
+		function atNonLazyBreak(code) {
 			return effects.attempt(closeStart, after, contentBefore)(code);
 		}
-function contentBefore(code) {
+		function contentBefore(code) {
 			effects.enter("lineEnding");
 			effects.consume(code);
 			effects.exit("lineEnding");
 			return contentStart;
 		}
-function contentStart(code) {
+		function contentStart(code) {
 			return initialPrefix > 0 && markdownSpace(code) ? factorySpace(effects, beforeContentChunk, "linePrefix", initialPrefix + 1)(code) : beforeContentChunk(code);
 		}
-function beforeContentChunk(code) {
+		function beforeContentChunk(code) {
 			if (code === null || markdownLineEnding(code)) return effects.check(nonLazyContinuation, atNonLazyBreak, after)(code);
 			effects.enter("codeFlowValue");
 			return contentChunk(code);
 		}
-function contentChunk(code) {
+		function contentChunk(code) {
 			if (code === null || markdownLineEnding(code)) {
 				effects.exit("codeFlowValue");
 				return beforeContentChunk(code);
@@ -7517,31 +7596,31 @@ function contentChunk(code) {
 			effects.consume(code);
 			return contentChunk;
 		}
-function after(code) {
+		function after(code) {
 			effects.exit("codeFenced");
 			return ok(code);
 		}
-function tokenizeCloseStart(effects, ok, nok) {
+		function tokenizeCloseStart(effects, ok, nok) {
 			let size = 0;
 			return startBefore;
-function startBefore(code) {
+			function startBefore(code) {
 				effects.enter("lineEnding");
 				effects.consume(code);
 				effects.exit("lineEnding");
 				return start;
 			}
-function start(code) {
+			function start(code) {
 				effects.enter("codeFencedFence");
 				return markdownSpace(code) ? factorySpace(effects, beforeSequenceClose, "linePrefix", self.parser.constructs.disable.null.includes("codeIndented") ? void 0 : 4)(code) : beforeSequenceClose(code);
 			}
-function beforeSequenceClose(code) {
+			function beforeSequenceClose(code) {
 				if (code === marker) {
 					effects.enter("codeFencedFenceSequence");
 					return sequenceClose(code);
 				}
 				return nok(code);
 			}
-function sequenceClose(code) {
+			function sequenceClose(code) {
 				if (code === marker) {
 					size++;
 					effects.consume(code);
@@ -7553,7 +7632,7 @@ function sequenceClose(code) {
 				}
 				return nok(code);
 			}
-function sequenceCloseAfter(code) {
+			function sequenceCloseAfter(code) {
 				if (code === null || markdownLineEnding(code)) {
 					effects.exit("codeFencedFence");
 					return ok(code);
@@ -7562,47 +7641,46 @@ function sequenceCloseAfter(code) {
 			}
 		}
 	}
-function tokenizeNonLazyContinuation(effects, ok, nok) {
+	function tokenizeNonLazyContinuation(effects, ok, nok) {
 		const self = this;
 		return start;
-function start(code) {
+		function start(code) {
 			if (code === null) return nok(code);
 			effects.enter("lineEnding");
 			effects.consume(code);
 			effects.exit("lineEnding");
 			return lineStart;
 		}
-function lineStart(code) {
+		function lineStart(code) {
 			return self.parser.lazy[self.now().line] ? nok(code) : ok(code);
 		}
 	}
-
-var codeIndented = {
+	var codeIndented = {
 		name: "codeIndented",
 		tokenize: tokenizeCodeIndented
 	};
-var furtherStart = {
+	var furtherStart = {
 		partial: true,
 		tokenize: tokenizeFurtherStart
 	};
-function tokenizeCodeIndented(effects, ok, nok) {
+	function tokenizeCodeIndented(effects, ok, nok) {
 		const self = this;
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("codeIndented");
 			return factorySpace(effects, afterPrefix, "linePrefix", 5)(code);
 		}
-function afterPrefix(code) {
+		function afterPrefix(code) {
 			const tail = self.events[self.events.length - 1];
 			return tail && tail[1].type === "linePrefix" && tail[2].sliceSerialize(tail[1], true).length >= 4 ? atBreak(code) : nok(code);
 		}
-function atBreak(code) {
+		function atBreak(code) {
 			if (code === null) return after(code);
 			if (markdownLineEnding(code)) return effects.attempt(furtherStart, atBreak, after)(code);
 			effects.enter("codeFlowValue");
 			return inside(code);
 		}
-function inside(code) {
+		function inside(code) {
 			if (code === null || markdownLineEnding(code)) {
 				effects.exit("codeFlowValue");
 				return atBreak(code);
@@ -7610,15 +7688,15 @@ function inside(code) {
 			effects.consume(code);
 			return inside;
 		}
-function after(code) {
+		function after(code) {
 			effects.exit("codeIndented");
 			return ok(code);
 		}
 	}
-function tokenizeFurtherStart(effects, ok, nok) {
+	function tokenizeFurtherStart(effects, ok, nok) {
 		const self = this;
 		return furtherStart;
-function furtherStart(code) {
+		function furtherStart(code) {
 			if (self.parser.lazy[self.now().line]) return nok(code);
 			if (markdownLineEnding(code)) {
 				effects.enter("lineEnding");
@@ -7628,23 +7706,22 @@ function furtherStart(code) {
 			}
 			return factorySpace(effects, afterPrefix, "linePrefix", 5)(code);
 		}
-function afterPrefix(code) {
+		function afterPrefix(code) {
 			const tail = self.events[self.events.length - 1];
 			return tail && tail[1].type === "linePrefix" && tail[2].sliceSerialize(tail[1], true).length >= 4 ? ok(code) : markdownLineEnding(code) ? furtherStart(code) : nok(code);
 		}
 	}
-
-var codeText = {
+	var codeText = {
 		name: "codeText",
 		previous: previous$1,
 		resolve: resolveCodeText,
 		tokenize: tokenizeCodeText
 	};
-function resolveCodeText(events) {
+	function resolveCodeText(events) {
 		let tailExitIndex = events.length - 4;
 		let headEnterIndex = 3;
-let index;
-let enter;
+		let index;
+		let enter;
 		if ((events[headEnterIndex][1].type === "lineEnding" || events[headEnterIndex][1].type === "space") && (events[tailExitIndex][1].type === "lineEnding" || events[tailExitIndex][1].type === "space")) {
 			index = headEnterIndex;
 			while (++index < tailExitIndex) if (events[index][1].type === "codeTextData") {
@@ -7671,20 +7748,20 @@ let enter;
 		}
 		return events;
 	}
-function previous$1(code) {
+	function previous$1(code) {
 		return code !== 96 || this.events[this.events.length - 1][1].type === "characterEscape";
 	}
-function tokenizeCodeText(effects, ok, nok) {
+	function tokenizeCodeText(effects, ok, nok) {
 		let sizeOpen = 0;
-let size;
-let token;
+		let size;
+		let token;
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("codeText");
 			effects.enter("codeTextSequence");
 			return sequenceOpen(code);
 		}
-function sequenceOpen(code) {
+		function sequenceOpen(code) {
 			if (code === 96) {
 				effects.consume(code);
 				sizeOpen++;
@@ -7693,7 +7770,7 @@ function sequenceOpen(code) {
 			effects.exit("codeTextSequence");
 			return between(code);
 		}
-function between(code) {
+		function between(code) {
 			if (code === null) return nok(code);
 			if (code === 32) {
 				effects.enter("space");
@@ -7715,7 +7792,7 @@ function between(code) {
 			effects.enter("codeTextData");
 			return data(code);
 		}
-function data(code) {
+		function data(code) {
 			if (code === null || code === 32 || code === 96 || markdownLineEnding(code)) {
 				effects.exit("codeTextData");
 				return between(code);
@@ -7723,7 +7800,7 @@ function data(code) {
 			effects.consume(code);
 			return data;
 		}
-function sequenceClose(code) {
+		function sequenceClose(code) {
 			if (code === 96) {
 				effects.consume(code);
 				size++;
@@ -7738,57 +7815,57 @@ function sequenceClose(code) {
 			return data(code);
 		}
 	}
-var SpliceBuffer = class {
-constructor(initial) {
-this.left = initial ? [...initial] : [];
-this.right = [];
+	var SpliceBuffer = class {
+		constructor(initial) {
+			this.left = initial ? [...initial] : [];
+			this.right = [];
 		}
-get(index) {
+		get(index) {
 			if (index < 0 || index >= this.left.length + this.right.length) throw new RangeError("Cannot access index `" + index + "` in a splice buffer of size `" + (this.left.length + this.right.length) + "`");
 			if (index < this.left.length) return this.left[index];
 			return this.right[this.right.length - index + this.left.length - 1];
 		}
-get length() {
+		get length() {
 			return this.left.length + this.right.length;
 		}
-shift() {
+		shift() {
 			this.setCursor(0);
 			return this.right.pop();
 		}
-slice(start, end) {
-const stop = end === null || end === void 0 ? Number.POSITIVE_INFINITY : end;
+		slice(start, end) {
+			const stop = end === null || end === void 0 ? Number.POSITIVE_INFINITY : end;
 			if (stop < this.left.length) return this.left.slice(start, stop);
 			if (start > this.left.length) return this.right.slice(this.right.length - stop + this.left.length, this.right.length - start + this.left.length).reverse();
 			return this.left.slice(start).concat(this.right.slice(this.right.length - stop + this.left.length).reverse());
 		}
-splice(start, deleteCount, items) {
-const count = deleteCount || 0;
+		splice(start, deleteCount, items) {
+			const count = deleteCount || 0;
 			this.setCursor(Math.trunc(start));
 			const removed = this.right.splice(this.right.length - count, Number.POSITIVE_INFINITY);
 			if (items) chunkedPush(this.left, items);
 			return removed.reverse();
 		}
-pop() {
+		pop() {
 			this.setCursor(Number.POSITIVE_INFINITY);
 			return this.left.pop();
 		}
-push(item) {
+		push(item) {
 			this.setCursor(Number.POSITIVE_INFINITY);
 			this.left.push(item);
 		}
-pushMany(items) {
+		pushMany(items) {
 			this.setCursor(Number.POSITIVE_INFINITY);
 			chunkedPush(this.left, items);
 		}
-unshift(item) {
+		unshift(item) {
 			this.setCursor(0);
 			this.right.push(item);
 		}
-unshiftMany(items) {
+		unshiftMany(items) {
 			this.setCursor(0);
 			chunkedPush(this.right, items.reverse());
 		}
-setCursor(n) {
+		setCursor(n) {
 			if (n === this.left.length || n > this.left.length && this.right.length === 0 || n < 0 && this.left.length === 0) return;
 			if (n < this.left.length) {
 				const removed = this.left.splice(n, Number.POSITIVE_INFINITY);
@@ -7799,25 +7876,24 @@ setCursor(n) {
 			}
 		}
 	};
-function chunkedPush(list, right) {
-let chunkStart = 0;
+	function chunkedPush(list, right) {
+		let chunkStart = 0;
 		if (right.length < 1e4) list.push(...right);
 		else while (chunkStart < right.length) {
 			list.push(...right.slice(chunkStart, chunkStart + 1e4));
 			chunkStart += 1e4;
 		}
 	}
-
-function subtokenize(eventsArray) {
-const jumps = {};
+	function subtokenize(eventsArray) {
+		const jumps = {};
 		let index = -1;
-let event;
-let lineIndex;
-let otherIndex;
-let otherEvent;
-let parameters;
-let subevents;
-let more;
+		let event;
+		let lineIndex;
+		let otherIndex;
+		let otherEvent;
+		let parameters;
+		let subevents;
+		let more;
 		const events = new SpliceBuffer(eventsArray);
 		while (++index < events.length) {
 			while (index in jumps) index = jumps[index];
@@ -7864,23 +7940,23 @@ let more;
 		splice(eventsArray, 0, Number.POSITIVE_INFINITY, events.slice(0));
 		return !more;
 	}
-function subcontent(events, eventIndex) {
+	function subcontent(events, eventIndex) {
 		const token = events.get(eventIndex)[1];
 		const context = events.get(eventIndex)[2];
 		let startPosition = eventIndex - 1;
-const startPositions = [];
+		const startPositions = [];
 		let tokenizer = token._tokenizer;
 		if (!tokenizer) {
 			tokenizer = context.parser[token.contentType](token.start);
 			if (token._contentTypeTextTrailing) tokenizer._contentTypeTextTrailing = true;
 		}
 		const childEvents = tokenizer.events;
-const jumps = [];
-const gaps = {};
-let stream;
-let previous;
+		const jumps = [];
+		const gaps = {};
+		let stream;
+		let previous;
 		let index = -1;
-let current = token;
+		let current = token;
 		let adjust = 0;
 		let start = 0;
 		const breaks = [start];
@@ -7926,39 +8002,38 @@ let current = token;
 		}
 		return gaps;
 	}
-
-var content = {
+	var content = {
 		resolve: resolveContent,
 		tokenize: tokenizeContent
 	};
-var continuationConstruct = {
+	var continuationConstruct = {
 		partial: true,
 		tokenize: tokenizeContinuation
 	};
-function resolveContent(events) {
+	function resolveContent(events) {
 		subtokenize(events);
 		return events;
 	}
-function tokenizeContent(effects, ok) {
-let previous;
+	function tokenizeContent(effects, ok) {
+		let previous;
 		return chunkStart;
-function chunkStart(code) {
+		function chunkStart(code) {
 			effects.enter("content");
 			previous = effects.enter("chunkContent", { contentType: "content" });
 			return chunkInside(code);
 		}
-function chunkInside(code) {
+		function chunkInside(code) {
 			if (code === null) return contentEnd(code);
 			if (markdownLineEnding(code)) return effects.check(continuationConstruct, contentContinue, contentEnd)(code);
 			effects.consume(code);
 			return chunkInside;
 		}
-function contentEnd(code) {
+		function contentEnd(code) {
 			effects.exit("chunkContent");
 			effects.exit("content");
 			return ok(code);
 		}
-function contentContinue(code) {
+		function contentContinue(code) {
 			effects.consume(code);
 			effects.exit("chunkContent");
 			previous.next = effects.enter("chunkContent", {
@@ -7969,29 +8044,28 @@ function contentContinue(code) {
 			return chunkInside;
 		}
 	}
-function tokenizeContinuation(effects, ok, nok) {
+	function tokenizeContinuation(effects, ok, nok) {
 		const self = this;
 		return startLookahead;
-function startLookahead(code) {
+		function startLookahead(code) {
 			effects.exit("chunkContent");
 			effects.enter("lineEnding");
 			effects.consume(code);
 			effects.exit("lineEnding");
 			return factorySpace(effects, prefixed, "linePrefix");
 		}
-function prefixed(code) {
+		function prefixed(code) {
 			if (code === null || markdownLineEnding(code)) return nok(code);
 			const tail = self.events[self.events.length - 1];
 			if (!self.parser.constructs.disable.null.includes("codeIndented") && tail && tail[1].type === "linePrefix" && tail[2].sliceSerialize(tail[1], true).length >= 4) return ok(code);
 			return effects.interrupt(self.parser.constructs.flow, nok, ok)(code);
 		}
 	}
-
-function factoryDestination(effects, ok, nok, type, literalType, literalMarkerType, rawType, stringType, max) {
+	function factoryDestination(effects, ok, nok, type, literalType, literalMarkerType, rawType, stringType, max) {
 		const limit = max || Number.POSITIVE_INFINITY;
 		let balance = 0;
 		return start;
-function start(code) {
+		function start(code) {
 			if (code === 60) {
 				effects.enter(type);
 				effects.enter(literalType);
@@ -8007,7 +8081,7 @@ function start(code) {
 			effects.enter("chunkString", { contentType: "string" });
 			return raw(code);
 		}
-function enclosedBefore(code) {
+		function enclosedBefore(code) {
 			if (code === 62) {
 				effects.enter(literalMarkerType);
 				effects.consume(code);
@@ -8020,7 +8094,7 @@ function enclosedBefore(code) {
 			effects.enter("chunkString", { contentType: "string" });
 			return enclosed(code);
 		}
-function enclosed(code) {
+		function enclosed(code) {
 			if (code === 62) {
 				effects.exit("chunkString");
 				effects.exit(stringType);
@@ -8030,14 +8104,14 @@ function enclosed(code) {
 			effects.consume(code);
 			return code === 92 ? enclosedEscape : enclosed;
 		}
-function enclosedEscape(code) {
+		function enclosedEscape(code) {
 			if (code === 60 || code === 62 || code === 92) {
 				effects.consume(code);
 				return enclosed;
 			}
 			return enclosed(code);
 		}
-function raw(code) {
+		function raw(code) {
 			if (!balance && (code === null || code === 41 || markdownLineEndingOrSpace(code))) {
 				effects.exit("chunkString");
 				effects.exit(stringType);
@@ -8059,7 +8133,7 @@ function raw(code) {
 			effects.consume(code);
 			return code === 92 ? rawEscape : raw;
 		}
-function rawEscape(code) {
+		function rawEscape(code) {
 			if (code === 40 || code === 41 || code === 92) {
 				effects.consume(code);
 				return raw;
@@ -8067,13 +8141,12 @@ function rawEscape(code) {
 			return raw(code);
 		}
 	}
-
-function factoryLabel(effects, ok, nok, type, markerType, stringType) {
+	function factoryLabel(effects, ok, nok, type, markerType, stringType) {
 		const self = this;
 		let size = 0;
-let seen;
+		let seen;
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter(type);
 			effects.enter(markerType);
 			effects.consume(code);
@@ -8081,7 +8154,7 @@ function start(code) {
 			effects.enter(stringType);
 			return atBreak;
 		}
-function atBreak(code) {
+		function atBreak(code) {
 			if (size > 999 || code === null || code === 91 || code === 93 && !seen || code === 94 && !size && "_hiddenFootnoteSupport" in self.parser.constructs) return nok(code);
 			if (code === 93) {
 				effects.exit(stringType);
@@ -8100,7 +8173,7 @@ function atBreak(code) {
 			effects.enter("chunkString", { contentType: "string" });
 			return labelInside(code);
 		}
-function labelInside(code) {
+		function labelInside(code) {
 			if (code === null || code === 91 || code === 93 || markdownLineEnding(code) || size++ > 999) {
 				effects.exit("chunkString");
 				return atBreak(code);
@@ -8109,7 +8182,7 @@ function labelInside(code) {
 			if (!seen) seen = !markdownSpace(code);
 			return code === 92 ? labelEscape : labelInside;
 		}
-function labelEscape(code) {
+		function labelEscape(code) {
 			if (code === 91 || code === 92 || code === 93) {
 				effects.consume(code);
 				size++;
@@ -8118,11 +8191,10 @@ function labelEscape(code) {
 			return labelInside(code);
 		}
 	}
-
-function factoryTitle(effects, ok, nok, type, markerType, stringType) {
-let marker;
+	function factoryTitle(effects, ok, nok, type, markerType, stringType) {
+		let marker;
 		return start;
-function start(code) {
+		function start(code) {
 			if (code === 34 || code === 39 || code === 40) {
 				effects.enter(type);
 				effects.enter(markerType);
@@ -8133,7 +8205,7 @@ function start(code) {
 			}
 			return nok(code);
 		}
-function begin(code) {
+		function begin(code) {
 			if (code === marker) {
 				effects.enter(markerType);
 				effects.consume(code);
@@ -8144,7 +8216,7 @@ function begin(code) {
 			effects.enter(stringType);
 			return atBreak(code);
 		}
-function atBreak(code) {
+		function atBreak(code) {
 			if (code === marker) {
 				effects.exit(stringType);
 				return begin(marker);
@@ -8159,7 +8231,7 @@ function atBreak(code) {
 			effects.enter("chunkString", { contentType: "string" });
 			return inside(code);
 		}
-function inside(code) {
+		function inside(code) {
 			if (code === marker || code === null || markdownLineEnding(code)) {
 				effects.exit("chunkString");
 				return atBreak(code);
@@ -8167,7 +8239,7 @@ function inside(code) {
 			effects.consume(code);
 			return code === 92 ? escape : inside;
 		}
-function escape(code) {
+		function escape(code) {
 			if (code === marker || code === 92) {
 				effects.consume(code);
 				return inside;
@@ -8175,11 +8247,10 @@ function escape(code) {
 			return inside(code);
 		}
 	}
-
-function factoryWhitespace(effects, ok) {
-let seen;
+	function factoryWhitespace(effects, ok) {
+		let seen;
 		return start;
-function start(code) {
+		function start(code) {
 			if (markdownLineEnding(code)) {
 				effects.enter("lineEnding");
 				effects.consume(code);
@@ -8191,27 +8262,26 @@ function start(code) {
 			return ok(code);
 		}
 	}
-
-var definition$1 = {
+	var definition$1 = {
 		name: "definition",
 		tokenize: tokenizeDefinition
 	};
-var titleBefore = {
+	var titleBefore = {
 		partial: true,
 		tokenize: tokenizeTitleBefore
 	};
-function tokenizeDefinition(effects, ok, nok) {
+	function tokenizeDefinition(effects, ok, nok) {
 		const self = this;
-let identifier;
+		let identifier;
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("definition");
 			return before(code);
 		}
-function before(code) {
+		function before(code) {
 			return factoryLabel.call(self, effects, labelAfter, nok, "definitionLabel", "definitionLabelMarker", "definitionLabelString")(code);
 		}
-function labelAfter(code) {
+		function labelAfter(code) {
 			identifier = normalizeIdentifier(self.sliceSerialize(self.events[self.events.length - 1][1]).slice(1, -1));
 			if (code === 58) {
 				effects.enter("definitionMarker");
@@ -8221,19 +8291,19 @@ function labelAfter(code) {
 			}
 			return nok(code);
 		}
-function markerAfter(code) {
+		function markerAfter(code) {
 			return markdownLineEndingOrSpace(code) ? factoryWhitespace(effects, destinationBefore)(code) : destinationBefore(code);
 		}
-function destinationBefore(code) {
+		function destinationBefore(code) {
 			return factoryDestination(effects, destinationAfter, nok, "definitionDestination", "definitionDestinationLiteral", "definitionDestinationLiteralMarker", "definitionDestinationRaw", "definitionDestinationString")(code);
 		}
-function destinationAfter(code) {
+		function destinationAfter(code) {
 			return effects.attempt(titleBefore, after, after)(code);
 		}
-function after(code) {
+		function after(code) {
 			return markdownSpace(code) ? factorySpace(effects, afterWhitespace, "whitespace")(code) : afterWhitespace(code);
 		}
-function afterWhitespace(code) {
+		function afterWhitespace(code) {
 			if (code === null || markdownLineEnding(code)) {
 				effects.exit("definition");
 				self.parser.defined.push(identifier);
@@ -8242,34 +8312,33 @@ function afterWhitespace(code) {
 			return nok(code);
 		}
 	}
-function tokenizeTitleBefore(effects, ok, nok) {
+	function tokenizeTitleBefore(effects, ok, nok) {
 		return titleBefore;
-function titleBefore(code) {
+		function titleBefore(code) {
 			return markdownLineEndingOrSpace(code) ? factoryWhitespace(effects, beforeMarker)(code) : nok(code);
 		}
-function beforeMarker(code) {
+		function beforeMarker(code) {
 			return factoryTitle(effects, titleAfter, nok, "definitionTitle", "definitionTitleMarker", "definitionTitleString")(code);
 		}
-function titleAfter(code) {
+		function titleAfter(code) {
 			return markdownSpace(code) ? factorySpace(effects, titleAfterOptionalWhitespace, "whitespace")(code) : titleAfterOptionalWhitespace(code);
 		}
-function titleAfterOptionalWhitespace(code) {
+		function titleAfterOptionalWhitespace(code) {
 			return code === null || markdownLineEnding(code) ? ok(code) : nok(code);
 		}
 	}
-
-var hardBreakEscape = {
+	var hardBreakEscape = {
 		name: "hardBreakEscape",
 		tokenize: tokenizeHardBreakEscape
 	};
-function tokenizeHardBreakEscape(effects, ok, nok) {
+	function tokenizeHardBreakEscape(effects, ok, nok) {
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("hardBreakEscape");
 			effects.consume(code);
 			return after;
 		}
-function after(code) {
+		function after(code) {
 			if (markdownLineEnding(code)) {
 				effects.exit("hardBreakEscape");
 				return ok(code);
@@ -8277,17 +8346,16 @@ function after(code) {
 			return nok(code);
 		}
 	}
-
-var headingAtx = {
+	var headingAtx = {
 		name: "headingAtx",
 		resolve: resolveHeadingAtx,
 		tokenize: tokenizeHeadingAtx
 	};
-function resolveHeadingAtx(events, context) {
+	function resolveHeadingAtx(events, context) {
 		let contentEnd = events.length - 2;
 		let contentStart = 3;
-let content;
-let text;
+		let content;
+		let text;
 		if (events[contentStart][1].type === "whitespace") contentStart += 2;
 		if (contentEnd - 2 > contentStart && events[contentEnd][1].type === "whitespace") contentEnd -= 2;
 		if (events[contentEnd][1].type === "atxHeadingSequence" && (contentStart === contentEnd - 1 || contentEnd - 4 > contentStart && events[contentEnd - 2][1].type === "whitespace")) contentEnd -= contentStart + 1 === contentEnd ? 2 : 4;
@@ -8328,18 +8396,18 @@ let text;
 		}
 		return events;
 	}
-function tokenizeHeadingAtx(effects, ok, nok) {
+	function tokenizeHeadingAtx(effects, ok, nok) {
 		let size = 0;
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("atxHeading");
 			return before(code);
 		}
-function before(code) {
+		function before(code) {
 			effects.enter("atxHeadingSequence");
 			return sequenceOpen(code);
 		}
-function sequenceOpen(code) {
+		function sequenceOpen(code) {
 			if (code === 35 && size++ < 6) {
 				effects.consume(code);
 				return sequenceOpen;
@@ -8350,7 +8418,7 @@ function sequenceOpen(code) {
 			}
 			return nok(code);
 		}
-function atBreak(code) {
+		function atBreak(code) {
 			if (code === 35) {
 				effects.enter("atxHeadingSequence");
 				return sequenceFurther(code);
@@ -8363,7 +8431,7 @@ function atBreak(code) {
 			effects.enter("atxHeadingText");
 			return data(code);
 		}
-function sequenceFurther(code) {
+		function sequenceFurther(code) {
 			if (code === 35) {
 				effects.consume(code);
 				return sequenceFurther;
@@ -8371,7 +8439,7 @@ function sequenceFurther(code) {
 			effects.exit("atxHeadingSequence");
 			return atBreak(code);
 		}
-function data(code) {
+		function data(code) {
 			if (code === null || code === 35 || markdownLineEndingOrSpace(code)) {
 				effects.exit("atxHeadingText");
 				return atBreak(code);
@@ -8380,7 +8448,7 @@ function data(code) {
 			return data;
 		}
 	}
-var htmlBlockNames = [
+	var htmlBlockNames = [
 		"address",
 		"article",
 		"aside",
@@ -8444,20 +8512,19 @@ var htmlBlockNames = [
 		"track",
 		"ul"
 	];
-var htmlRawNames = [
+	var htmlRawNames = [
 		"pre",
 		"script",
 		"style",
 		"textarea"
 	];
-
-var htmlFlow = {
+	var htmlFlow = {
 		concrete: true,
 		name: "htmlFlow",
 		resolveTo: resolveToHtmlFlow,
 		tokenize: tokenizeHtmlFlow
 	};
-var blankLineBefore = {
+	var blankLineBefore = {
 		partial: true,
 		tokenize: tokenizeBlankLineBefore
 	};
@@ -8465,7 +8532,7 @@ var blankLineBefore = {
 		partial: true,
 		tokenize: tokenizeNonLazyContinuationStart
 	};
-function resolveToHtmlFlow(events) {
+	function resolveToHtmlFlow(events) {
 		let index = events.length;
 		while (index--) if (events[index][0] === "enter" && events[index][1].type === "htmlFlow") break;
 		if (index > 1 && events[index - 2][1].type === "linePrefix") {
@@ -8475,24 +8542,24 @@ function resolveToHtmlFlow(events) {
 		}
 		return events;
 	}
-function tokenizeHtmlFlow(effects, ok, nok) {
+	function tokenizeHtmlFlow(effects, ok, nok) {
 		const self = this;
-let marker;
-let closingTag;
-let buffer;
-let index;
-let markerB;
+		let marker;
+		let closingTag;
+		let buffer;
+		let index;
+		let markerB;
 		return start;
-function start(code) {
+		function start(code) {
 			return before(code);
 		}
-function before(code) {
+		function before(code) {
 			effects.enter("htmlFlow");
 			effects.enter("htmlFlowData");
 			effects.consume(code);
 			return open;
 		}
-function open(code) {
+		function open(code) {
 			if (code === 33) {
 				effects.consume(code);
 				return declarationOpen;
@@ -8514,7 +8581,7 @@ function open(code) {
 			}
 			return nok(code);
 		}
-function declarationOpen(code) {
+		function declarationOpen(code) {
 			if (code === 45) {
 				effects.consume(code);
 				marker = 2;
@@ -8533,14 +8600,14 @@ function declarationOpen(code) {
 			}
 			return nok(code);
 		}
-function commentOpenInside(code) {
+		function commentOpenInside(code) {
 			if (code === 45) {
 				effects.consume(code);
 				return self.interrupt ? ok : continuationDeclarationInside;
 			}
 			return nok(code);
 		}
-function cdataOpenInside(code) {
+		function cdataOpenInside(code) {
 			if (code === "CDATA[".charCodeAt(index++)) {
 				effects.consume(code);
 				if (index === 6) return self.interrupt ? ok : continuation;
@@ -8548,7 +8615,7 @@ function cdataOpenInside(code) {
 			}
 			return nok(code);
 		}
-function tagCloseStart(code) {
+		function tagCloseStart(code) {
 			if (asciiAlpha(code)) {
 				effects.consume(code);
 				buffer = String.fromCharCode(code);
@@ -8556,7 +8623,7 @@ function tagCloseStart(code) {
 			}
 			return nok(code);
 		}
-function tagName(code) {
+		function tagName(code) {
 			if (code === null || code === 47 || code === 62 || markdownLineEndingOrSpace(code)) {
 				const slash = code === 47;
 				const name = buffer.toLowerCase();
@@ -8582,21 +8649,21 @@ function tagName(code) {
 			}
 			return nok(code);
 		}
-function basicSelfClosing(code) {
+		function basicSelfClosing(code) {
 			if (code === 62) {
 				effects.consume(code);
 				return self.interrupt ? ok : continuation;
 			}
 			return nok(code);
 		}
-function completeClosingTagAfter(code) {
+		function completeClosingTagAfter(code) {
 			if (markdownSpace(code)) {
 				effects.consume(code);
 				return completeClosingTagAfter;
 			}
 			return completeEnd(code);
 		}
-function completeAttributeNameBefore(code) {
+		function completeAttributeNameBefore(code) {
 			if (code === 47) {
 				effects.consume(code);
 				return completeEnd;
@@ -8611,14 +8678,14 @@ function completeAttributeNameBefore(code) {
 			}
 			return completeEnd(code);
 		}
-function completeAttributeName(code) {
+		function completeAttributeName(code) {
 			if (code === 45 || code === 46 || code === 58 || code === 95 || asciiAlphanumeric(code)) {
 				effects.consume(code);
 				return completeAttributeName;
 			}
 			return completeAttributeNameAfter(code);
 		}
-function completeAttributeNameAfter(code) {
+		function completeAttributeNameAfter(code) {
 			if (code === 61) {
 				effects.consume(code);
 				return completeAttributeValueBefore;
@@ -8629,7 +8696,7 @@ function completeAttributeNameAfter(code) {
 			}
 			return completeAttributeNameBefore(code);
 		}
-function completeAttributeValueBefore(code) {
+		function completeAttributeValueBefore(code) {
 			if (code === null || code === 60 || code === 61 || code === 62 || code === 96) return nok(code);
 			if (code === 34 || code === 39) {
 				effects.consume(code);
@@ -8642,7 +8709,7 @@ function completeAttributeValueBefore(code) {
 			}
 			return completeAttributeValueUnquoted(code);
 		}
-function completeAttributeValueQuoted(code) {
+		function completeAttributeValueQuoted(code) {
 			if (code === markerB) {
 				effects.consume(code);
 				markerB = null;
@@ -8652,23 +8719,23 @@ function completeAttributeValueQuoted(code) {
 			effects.consume(code);
 			return completeAttributeValueQuoted;
 		}
-function completeAttributeValueUnquoted(code) {
+		function completeAttributeValueUnquoted(code) {
 			if (code === null || code === 34 || code === 39 || code === 47 || code === 60 || code === 61 || code === 62 || code === 96 || markdownLineEndingOrSpace(code)) return completeAttributeNameAfter(code);
 			effects.consume(code);
 			return completeAttributeValueUnquoted;
 		}
-function completeAttributeValueQuotedAfter(code) {
+		function completeAttributeValueQuotedAfter(code) {
 			if (code === 47 || code === 62 || markdownSpace(code)) return completeAttributeNameBefore(code);
 			return nok(code);
 		}
-function completeEnd(code) {
+		function completeEnd(code) {
 			if (code === 62) {
 				effects.consume(code);
 				return completeAfter;
 			}
 			return nok(code);
 		}
-function completeAfter(code) {
+		function completeAfter(code) {
 			if (code === null || markdownLineEnding(code)) return continuation(code);
 			if (markdownSpace(code)) {
 				effects.consume(code);
@@ -8676,7 +8743,7 @@ function completeAfter(code) {
 			}
 			return nok(code);
 		}
-function continuation(code) {
+		function continuation(code) {
 			if (code === 45 && marker === 2) {
 				effects.consume(code);
 				return continuationCommentInside;
@@ -8708,28 +8775,28 @@ function continuation(code) {
 			effects.consume(code);
 			return continuation;
 		}
-function continuationStart(code) {
+		function continuationStart(code) {
 			return effects.check(nonLazyContinuationStart, continuationStartNonLazy, continuationAfter)(code);
 		}
-function continuationStartNonLazy(code) {
+		function continuationStartNonLazy(code) {
 			effects.enter("lineEnding");
 			effects.consume(code);
 			effects.exit("lineEnding");
 			return continuationBefore;
 		}
-function continuationBefore(code) {
+		function continuationBefore(code) {
 			if (code === null || markdownLineEnding(code)) return continuationStart(code);
 			effects.enter("htmlFlowData");
 			return continuation(code);
 		}
-function continuationCommentInside(code) {
+		function continuationCommentInside(code) {
 			if (code === 45) {
 				effects.consume(code);
 				return continuationDeclarationInside;
 			}
 			return continuation(code);
 		}
-function continuationRawTagOpen(code) {
+		function continuationRawTagOpen(code) {
 			if (code === 47) {
 				effects.consume(code);
 				buffer = "";
@@ -8737,7 +8804,7 @@ function continuationRawTagOpen(code) {
 			}
 			return continuation(code);
 		}
-function continuationRawEndTag(code) {
+		function continuationRawEndTag(code) {
 			if (code === 62) {
 				const name = buffer.toLowerCase();
 				if (htmlRawNames.includes(name)) {
@@ -8753,14 +8820,14 @@ function continuationRawEndTag(code) {
 			}
 			return continuation(code);
 		}
-function continuationCdataInside(code) {
+		function continuationCdataInside(code) {
 			if (code === 93) {
 				effects.consume(code);
 				return continuationDeclarationInside;
 			}
 			return continuation(code);
 		}
-function continuationDeclarationInside(code) {
+		function continuationDeclarationInside(code) {
 			if (code === 62) {
 				effects.consume(code);
 				return continuationClose;
@@ -8771,7 +8838,7 @@ function continuationDeclarationInside(code) {
 			}
 			return continuation(code);
 		}
-function continuationClose(code) {
+		function continuationClose(code) {
 			if (code === null || markdownLineEnding(code)) {
 				effects.exit("htmlFlowData");
 				return continuationAfter(code);
@@ -8779,15 +8846,15 @@ function continuationClose(code) {
 			effects.consume(code);
 			return continuationClose;
 		}
-function continuationAfter(code) {
+		function continuationAfter(code) {
 			effects.exit("htmlFlow");
 			return ok(code);
 		}
 	}
-function tokenizeNonLazyContinuationStart(effects, ok, nok) {
+	function tokenizeNonLazyContinuationStart(effects, ok, nok) {
 		const self = this;
 		return start;
-function start(code) {
+		function start(code) {
 			if (markdownLineEnding(code)) {
 				effects.enter("lineEnding");
 				effects.consume(code);
@@ -8796,37 +8863,36 @@ function start(code) {
 			}
 			return nok(code);
 		}
-function after(code) {
+		function after(code) {
 			return self.parser.lazy[self.now().line] ? nok(code) : ok(code);
 		}
 	}
-function tokenizeBlankLineBefore(effects, ok, nok) {
+	function tokenizeBlankLineBefore(effects, ok, nok) {
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("lineEnding");
 			effects.consume(code);
 			effects.exit("lineEnding");
 			return effects.attempt(blankLine, ok, nok);
 		}
 	}
-
-var htmlText = {
+	var htmlText = {
 		name: "htmlText",
 		tokenize: tokenizeHtmlText
 	};
-function tokenizeHtmlText(effects, ok, nok) {
+	function tokenizeHtmlText(effects, ok, nok) {
 		const self = this;
-let marker;
-let index;
-let returnState;
+		let marker;
+		let index;
+		let returnState;
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("htmlText");
 			effects.enter("htmlTextData");
 			effects.consume(code);
 			return open;
 		}
-function open(code) {
+		function open(code) {
 			if (code === 33) {
 				effects.consume(code);
 				return declarationOpen;
@@ -8845,7 +8911,7 @@ function open(code) {
 			}
 			return nok(code);
 		}
-function declarationOpen(code) {
+		function declarationOpen(code) {
 			if (code === 45) {
 				effects.consume(code);
 				return commentOpenInside;
@@ -8861,14 +8927,14 @@ function declarationOpen(code) {
 			}
 			return nok(code);
 		}
-function commentOpenInside(code) {
+		function commentOpenInside(code) {
 			if (code === 45) {
 				effects.consume(code);
 				return commentEnd;
 			}
 			return nok(code);
 		}
-function comment(code) {
+		function comment(code) {
 			if (code === null) return nok(code);
 			if (code === 45) {
 				effects.consume(code);
@@ -8881,24 +8947,24 @@ function comment(code) {
 			effects.consume(code);
 			return comment;
 		}
-function commentClose(code) {
+		function commentClose(code) {
 			if (code === 45) {
 				effects.consume(code);
 				return commentEnd;
 			}
 			return comment(code);
 		}
-function commentEnd(code) {
+		function commentEnd(code) {
 			return code === 62 ? end(code) : code === 45 ? commentClose(code) : comment(code);
 		}
-function cdataOpenInside(code) {
+		function cdataOpenInside(code) {
 			if (code === "CDATA[".charCodeAt(index++)) {
 				effects.consume(code);
 				return index === 6 ? cdata : cdataOpenInside;
 			}
 			return nok(code);
 		}
-function cdata(code) {
+		function cdata(code) {
 			if (code === null) return nok(code);
 			if (code === 93) {
 				effects.consume(code);
@@ -8911,14 +8977,14 @@ function cdata(code) {
 			effects.consume(code);
 			return cdata;
 		}
-function cdataClose(code) {
+		function cdataClose(code) {
 			if (code === 93) {
 				effects.consume(code);
 				return cdataEnd;
 			}
 			return cdata(code);
 		}
-function cdataEnd(code) {
+		function cdataEnd(code) {
 			if (code === 62) return end(code);
 			if (code === 93) {
 				effects.consume(code);
@@ -8926,7 +8992,7 @@ function cdataEnd(code) {
 			}
 			return cdata(code);
 		}
-function declaration(code) {
+		function declaration(code) {
 			if (code === null || code === 62) return end(code);
 			if (markdownLineEnding(code)) {
 				returnState = declaration;
@@ -8935,7 +9001,7 @@ function declaration(code) {
 			effects.consume(code);
 			return declaration;
 		}
-function instruction(code) {
+		function instruction(code) {
 			if (code === null) return nok(code);
 			if (code === 63) {
 				effects.consume(code);
@@ -8948,24 +9014,24 @@ function instruction(code) {
 			effects.consume(code);
 			return instruction;
 		}
-function instructionClose(code) {
+		function instructionClose(code) {
 			return code === 62 ? end(code) : instruction(code);
 		}
-function tagCloseStart(code) {
+		function tagCloseStart(code) {
 			if (asciiAlpha(code)) {
 				effects.consume(code);
 				return tagClose;
 			}
 			return nok(code);
 		}
-function tagClose(code) {
+		function tagClose(code) {
 			if (code === 45 || asciiAlphanumeric(code)) {
 				effects.consume(code);
 				return tagClose;
 			}
 			return tagCloseBetween(code);
 		}
-function tagCloseBetween(code) {
+		function tagCloseBetween(code) {
 			if (markdownLineEnding(code)) {
 				returnState = tagCloseBetween;
 				return lineEndingBefore(code);
@@ -8976,7 +9042,7 @@ function tagCloseBetween(code) {
 			}
 			return end(code);
 		}
-function tagOpen(code) {
+		function tagOpen(code) {
 			if (code === 45 || asciiAlphanumeric(code)) {
 				effects.consume(code);
 				return tagOpen;
@@ -8984,7 +9050,7 @@ function tagOpen(code) {
 			if (code === 47 || code === 62 || markdownLineEndingOrSpace(code)) return tagOpenBetween(code);
 			return nok(code);
 		}
-function tagOpenBetween(code) {
+		function tagOpenBetween(code) {
 			if (code === 47) {
 				effects.consume(code);
 				return end;
@@ -9003,14 +9069,14 @@ function tagOpenBetween(code) {
 			}
 			return end(code);
 		}
-function tagOpenAttributeName(code) {
+		function tagOpenAttributeName(code) {
 			if (code === 45 || code === 46 || code === 58 || code === 95 || asciiAlphanumeric(code)) {
 				effects.consume(code);
 				return tagOpenAttributeName;
 			}
 			return tagOpenAttributeNameAfter(code);
 		}
-function tagOpenAttributeNameAfter(code) {
+		function tagOpenAttributeNameAfter(code) {
 			if (code === 61) {
 				effects.consume(code);
 				return tagOpenAttributeValueBefore;
@@ -9025,7 +9091,7 @@ function tagOpenAttributeNameAfter(code) {
 			}
 			return tagOpenBetween(code);
 		}
-function tagOpenAttributeValueBefore(code) {
+		function tagOpenAttributeValueBefore(code) {
 			if (code === null || code === 60 || code === 61 || code === 62 || code === 96) return nok(code);
 			if (code === 34 || code === 39) {
 				effects.consume(code);
@@ -9043,7 +9109,7 @@ function tagOpenAttributeValueBefore(code) {
 			effects.consume(code);
 			return tagOpenAttributeValueUnquoted;
 		}
-function tagOpenAttributeValueQuoted(code) {
+		function tagOpenAttributeValueQuoted(code) {
 			if (code === marker) {
 				effects.consume(code);
 				marker = void 0;
@@ -9057,17 +9123,17 @@ function tagOpenAttributeValueQuoted(code) {
 			effects.consume(code);
 			return tagOpenAttributeValueQuoted;
 		}
-function tagOpenAttributeValueUnquoted(code) {
+		function tagOpenAttributeValueUnquoted(code) {
 			if (code === null || code === 34 || code === 39 || code === 60 || code === 61 || code === 96) return nok(code);
 			if (code === 47 || code === 62 || markdownLineEndingOrSpace(code)) return tagOpenBetween(code);
 			effects.consume(code);
 			return tagOpenAttributeValueUnquoted;
 		}
-function tagOpenAttributeValueQuotedAfter(code) {
+		function tagOpenAttributeValueQuotedAfter(code) {
 			if (code === 47 || code === 62 || markdownLineEndingOrSpace(code)) return tagOpenBetween(code);
 			return nok(code);
 		}
-function end(code) {
+		function end(code) {
 			if (code === 62) {
 				effects.consume(code);
 				effects.exit("htmlTextData");
@@ -9076,34 +9142,33 @@ function end(code) {
 			}
 			return nok(code);
 		}
-function lineEndingBefore(code) {
+		function lineEndingBefore(code) {
 			effects.exit("htmlTextData");
 			effects.enter("lineEnding");
 			effects.consume(code);
 			effects.exit("lineEnding");
 			return lineEndingAfter;
 		}
-function lineEndingAfter(code) {
+		function lineEndingAfter(code) {
 			return markdownSpace(code) ? factorySpace(effects, lineEndingAfterPrefix, "linePrefix", self.parser.constructs.disable.null.includes("codeIndented") ? void 0 : 4)(code) : lineEndingAfterPrefix(code);
 		}
-function lineEndingAfterPrefix(code) {
+		function lineEndingAfterPrefix(code) {
 			effects.enter("htmlTextData");
 			return returnState(code);
 		}
 	}
-
-var labelEnd = {
+	var labelEnd = {
 		name: "labelEnd",
 		resolveAll: resolveAllLabelEnd,
 		resolveTo: resolveToLabelEnd,
 		tokenize: tokenizeLabelEnd
 	};
-var resourceConstruct = { tokenize: tokenizeResource };
-var referenceFullConstruct = { tokenize: tokenizeReferenceFull };
-var referenceCollapsedConstruct = { tokenize: tokenizeReferenceCollapsed };
-function resolveAllLabelEnd(events) {
+	var resourceConstruct = { tokenize: tokenizeResource };
+	var referenceFullConstruct = { tokenize: tokenizeReferenceFull };
+	var referenceCollapsedConstruct = { tokenize: tokenizeReferenceCollapsed };
+	function resolveAllLabelEnd(events) {
 		let index = -1;
-const newEvents = [];
+		const newEvents = [];
 		while (++index < events.length) {
 			const token = events[index][1];
 			newEvents.push(events[index]);
@@ -9116,13 +9181,13 @@ const newEvents = [];
 		if (events.length !== newEvents.length) splice(events, 0, events.length, newEvents);
 		return events;
 	}
-function resolveToLabelEnd(events, context) {
+	function resolveToLabelEnd(events, context) {
 		let index = events.length;
 		let offset = 0;
-let token;
-let open;
-let close;
-let media;
+		let token;
+		let open;
+		let close;
+		let media;
 		while (index--) {
 			token = events[index][1];
 			if (open) {
@@ -9192,17 +9257,17 @@ let media;
 		splice(events, open, events.length, media);
 		return events;
 	}
-function tokenizeLabelEnd(effects, ok, nok) {
+	function tokenizeLabelEnd(effects, ok, nok) {
 		const self = this;
 		let index = self.events.length;
-let labelStart;
-let defined;
+		let labelStart;
+		let defined;
 		while (index--) if ((self.events[index][1].type === "labelImage" || self.events[index][1].type === "labelLink") && !self.events[index][1]._balanced) {
 			labelStart = self.events[index][1];
 			break;
 		}
 		return start;
-function start(code) {
+		function start(code) {
 			if (!labelStart) return nok(code);
 			if (labelStart._inactive) return labelEndNok(code);
 			defined = self.parser.defined.includes(normalizeIdentifier(self.sliceSerialize({
@@ -9216,52 +9281,52 @@ function start(code) {
 			effects.exit("labelEnd");
 			return after;
 		}
-function after(code) {
+		function after(code) {
 			if (code === 40) return effects.attempt(resourceConstruct, labelEndOk, defined ? labelEndOk : labelEndNok)(code);
 			if (code === 91) return effects.attempt(referenceFullConstruct, labelEndOk, defined ? referenceNotFull : labelEndNok)(code);
 			return defined ? labelEndOk(code) : labelEndNok(code);
 		}
-function referenceNotFull(code) {
+		function referenceNotFull(code) {
 			return effects.attempt(referenceCollapsedConstruct, labelEndOk, labelEndNok)(code);
 		}
-function labelEndOk(code) {
+		function labelEndOk(code) {
 			return ok(code);
 		}
-function labelEndNok(code) {
+		function labelEndNok(code) {
 			labelStart._balanced = true;
 			return nok(code);
 		}
 	}
-function tokenizeResource(effects, ok, nok) {
+	function tokenizeResource(effects, ok, nok) {
 		return resourceStart;
-function resourceStart(code) {
+		function resourceStart(code) {
 			effects.enter("resource");
 			effects.enter("resourceMarker");
 			effects.consume(code);
 			effects.exit("resourceMarker");
 			return resourceBefore;
 		}
-function resourceBefore(code) {
+		function resourceBefore(code) {
 			return markdownLineEndingOrSpace(code) ? factoryWhitespace(effects, resourceOpen)(code) : resourceOpen(code);
 		}
-function resourceOpen(code) {
+		function resourceOpen(code) {
 			if (code === 41) return resourceEnd(code);
 			return factoryDestination(effects, resourceDestinationAfter, resourceDestinationMissing, "resourceDestination", "resourceDestinationLiteral", "resourceDestinationLiteralMarker", "resourceDestinationRaw", "resourceDestinationString", 32)(code);
 		}
-function resourceDestinationAfter(code) {
+		function resourceDestinationAfter(code) {
 			return markdownLineEndingOrSpace(code) ? factoryWhitespace(effects, resourceBetween)(code) : resourceEnd(code);
 		}
-function resourceDestinationMissing(code) {
+		function resourceDestinationMissing(code) {
 			return nok(code);
 		}
-function resourceBetween(code) {
+		function resourceBetween(code) {
 			if (code === 34 || code === 39 || code === 40) return factoryTitle(effects, resourceTitleAfter, nok, "resourceTitle", "resourceTitleMarker", "resourceTitleString")(code);
 			return resourceEnd(code);
 		}
-function resourceTitleAfter(code) {
+		function resourceTitleAfter(code) {
 			return markdownLineEndingOrSpace(code) ? factoryWhitespace(effects, resourceEnd)(code) : resourceEnd(code);
 		}
-function resourceEnd(code) {
+		function resourceEnd(code) {
 			if (code === 41) {
 				effects.enter("resourceMarker");
 				effects.consume(code);
@@ -9272,29 +9337,29 @@ function resourceEnd(code) {
 			return nok(code);
 		}
 	}
-function tokenizeReferenceFull(effects, ok, nok) {
+	function tokenizeReferenceFull(effects, ok, nok) {
 		const self = this;
 		return referenceFull;
-function referenceFull(code) {
+		function referenceFull(code) {
 			return factoryLabel.call(self, effects, referenceFullAfter, referenceFullMissing, "reference", "referenceMarker", "referenceString")(code);
 		}
-function referenceFullAfter(code) {
+		function referenceFullAfter(code) {
 			return self.parser.defined.includes(normalizeIdentifier(self.sliceSerialize(self.events[self.events.length - 1][1]).slice(1, -1))) ? ok(code) : nok(code);
 		}
-function referenceFullMissing(code) {
+		function referenceFullMissing(code) {
 			return nok(code);
 		}
 	}
-function tokenizeReferenceCollapsed(effects, ok, nok) {
+	function tokenizeReferenceCollapsed(effects, ok, nok) {
 		return referenceCollapsedStart;
-function referenceCollapsedStart(code) {
+		function referenceCollapsedStart(code) {
 			effects.enter("reference");
 			effects.enter("referenceMarker");
 			effects.consume(code);
 			effects.exit("referenceMarker");
 			return referenceCollapsedOpen;
 		}
-function referenceCollapsedOpen(code) {
+		function referenceCollapsedOpen(code) {
 			if (code === 93) {
 				effects.enter("referenceMarker");
 				effects.consume(code);
@@ -9305,23 +9370,22 @@ function referenceCollapsedOpen(code) {
 			return nok(code);
 		}
 	}
-
-var labelStartImage = {
+	var labelStartImage = {
 		name: "labelStartImage",
 		resolveAll: labelEnd.resolveAll,
 		tokenize: tokenizeLabelStartImage
 	};
-function tokenizeLabelStartImage(effects, ok, nok) {
+	function tokenizeLabelStartImage(effects, ok, nok) {
 		const self = this;
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("labelImage");
 			effects.enter("labelImageMarker");
 			effects.consume(code);
 			effects.exit("labelImageMarker");
 			return open;
 		}
-function open(code) {
+		function open(code) {
 			if (code === 91) {
 				effects.enter("labelMarker");
 				effects.consume(code);
@@ -9331,20 +9395,19 @@ function open(code) {
 			}
 			return nok(code);
 		}
-function after(code) {
-return code === 94 && "_hiddenFootnoteSupport" in self.parser.constructs ? nok(code) : ok(code);
+		function after(code) {
+			return code === 94 && "_hiddenFootnoteSupport" in self.parser.constructs ? nok(code) : ok(code);
 		}
 	}
-
-var labelStartLink = {
+	var labelStartLink = {
 		name: "labelStartLink",
 		resolveAll: labelEnd.resolveAll,
 		tokenize: tokenizeLabelStartLink
 	};
-function tokenizeLabelStartLink(effects, ok, nok) {
+	function tokenizeLabelStartLink(effects, ok, nok) {
 		const self = this;
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("labelLink");
 			effects.enter("labelMarker");
 			effects.consume(code);
@@ -9352,42 +9415,40 @@ function start(code) {
 			effects.exit("labelLink");
 			return after;
 		}
-function after(code) {
-return code === 94 && "_hiddenFootnoteSupport" in self.parser.constructs ? nok(code) : ok(code);
+		function after(code) {
+			return code === 94 && "_hiddenFootnoteSupport" in self.parser.constructs ? nok(code) : ok(code);
 		}
 	}
-
-var lineEnding = {
+	var lineEnding = {
 		name: "lineEnding",
 		tokenize: tokenizeLineEnding
 	};
-function tokenizeLineEnding(effects, ok) {
+	function tokenizeLineEnding(effects, ok) {
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("lineEnding");
 			effects.consume(code);
 			effects.exit("lineEnding");
 			return factorySpace(effects, ok, "linePrefix");
 		}
 	}
-
-var thematicBreak$2 = {
+	var thematicBreak$2 = {
 		name: "thematicBreak",
 		tokenize: tokenizeThematicBreak
 	};
-function tokenizeThematicBreak(effects, ok, nok) {
+	function tokenizeThematicBreak(effects, ok, nok) {
 		let size = 0;
-let marker;
+		let marker;
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("thematicBreak");
 			return before(code);
 		}
-function before(code) {
+		function before(code) {
 			marker = code;
 			return atBreak(code);
 		}
-function atBreak(code) {
+		function atBreak(code) {
 			if (code === marker) {
 				effects.enter("thematicBreakSequence");
 				return sequence(code);
@@ -9398,7 +9459,7 @@ function atBreak(code) {
 			}
 			return nok(code);
 		}
-function sequence(code) {
+		function sequence(code) {
 			if (code === marker) {
 				effects.consume(code);
 				size++;
@@ -9408,28 +9469,27 @@ function sequence(code) {
 			return markdownSpace(code) ? factorySpace(effects, atBreak, "whitespace")(code) : atBreak(code);
 		}
 	}
-
-var list$3 = {
+	var list$3 = {
 		continuation: { tokenize: tokenizeListContinuation },
 		exit: tokenizeListEnd,
 		name: "list",
 		tokenize: tokenizeListStart
 	};
-var listItemPrefixWhitespaceConstruct = {
+	var listItemPrefixWhitespaceConstruct = {
 		partial: true,
 		tokenize: tokenizeListItemPrefixWhitespace
 	};
-var indentConstruct = {
+	var indentConstruct = {
 		partial: true,
 		tokenize: tokenizeIndent$1
 	};
-function tokenizeListStart(effects, ok, nok) {
+	function tokenizeListStart(effects, ok, nok) {
 		const self = this;
 		const tail = self.events[self.events.length - 1];
 		let initialSize = tail && tail[1].type === "linePrefix" ? tail[2].sliceSerialize(tail[1], true).length : 0;
 		let size = 0;
 		return start;
-function start(code) {
+		function start(code) {
 			const kind = self.containerState.type || (code === 42 || code === 43 || code === 45 ? "listUnordered" : "listOrdered");
 			if (kind === "listUnordered" ? !self.containerState.marker || code === self.containerState.marker : asciiDigit(code)) {
 				if (!self.containerState.type) {
@@ -9448,7 +9508,7 @@ function start(code) {
 			}
 			return nok(code);
 		}
-function inside(code) {
+		function inside(code) {
 			if (asciiDigit(code) && ++size < 10) {
 				effects.consume(code);
 				return inside;
@@ -9459,19 +9519,19 @@ function inside(code) {
 			}
 			return nok(code);
 		}
-function atMarker(code) {
+		function atMarker(code) {
 			effects.enter("listItemMarker");
 			effects.consume(code);
 			effects.exit("listItemMarker");
 			self.containerState.marker = self.containerState.marker || code;
 			return effects.check(blankLine, self.interrupt ? nok : onBlank, effects.attempt(listItemPrefixWhitespaceConstruct, endOfPrefix, otherPrefix));
 		}
-function onBlank(code) {
+		function onBlank(code) {
 			self.containerState.initialBlankLine = true;
 			initialSize++;
 			return endOfPrefix(code);
 		}
-function otherPrefix(code) {
+		function otherPrefix(code) {
 			if (markdownSpace(code)) {
 				effects.enter("listItemPrefixWhitespace");
 				effects.consume(code);
@@ -9480,20 +9540,20 @@ function otherPrefix(code) {
 			}
 			return nok(code);
 		}
-function endOfPrefix(code) {
+		function endOfPrefix(code) {
 			self.containerState.size = initialSize + self.sliceSerialize(effects.exit("listItemPrefix"), true).length;
 			return ok(code);
 		}
 	}
-function tokenizeListContinuation(effects, ok, nok) {
+	function tokenizeListContinuation(effects, ok, nok) {
 		const self = this;
 		self.containerState._closeFlow = void 0;
 		return effects.check(blankLine, onBlank, notBlank);
-function onBlank(code) {
+		function onBlank(code) {
 			self.containerState.furtherBlankLines = self.containerState.furtherBlankLines || self.containerState.initialBlankLine;
 			return factorySpace(effects, ok, "listItemIndent", self.containerState.size + 1)(code);
 		}
-function notBlank(code) {
+		function notBlank(code) {
 			if (self.containerState.furtherBlankLines || !markdownSpace(code)) {
 				self.containerState.furtherBlankLines = void 0;
 				self.containerState.initialBlankLine = void 0;
@@ -9503,42 +9563,41 @@ function notBlank(code) {
 			self.containerState.initialBlankLine = void 0;
 			return effects.attempt(indentConstruct, ok, notInCurrentItem)(code);
 		}
-function notInCurrentItem(code) {
+		function notInCurrentItem(code) {
 			self.containerState._closeFlow = true;
 			self.interrupt = void 0;
 			return factorySpace(effects, effects.attempt(list$3, ok, nok), "linePrefix", self.parser.constructs.disable.null.includes("codeIndented") ? void 0 : 4)(code);
 		}
 	}
-function tokenizeIndent$1(effects, ok, nok) {
+	function tokenizeIndent$1(effects, ok, nok) {
 		const self = this;
 		return factorySpace(effects, afterPrefix, "listItemIndent", self.containerState.size + 1);
-function afterPrefix(code) {
+		function afterPrefix(code) {
 			const tail = self.events[self.events.length - 1];
 			return tail && tail[1].type === "listItemIndent" && tail[2].sliceSerialize(tail[1], true).length === self.containerState.size ? ok(code) : nok(code);
 		}
 	}
-function tokenizeListEnd(effects) {
+	function tokenizeListEnd(effects) {
 		effects.exit(this.containerState.type);
 	}
-function tokenizeListItemPrefixWhitespace(effects, ok, nok) {
+	function tokenizeListItemPrefixWhitespace(effects, ok, nok) {
 		const self = this;
 		return factorySpace(effects, afterPrefix, "listItemPrefixWhitespace", self.parser.constructs.disable.null.includes("codeIndented") ? void 0 : 5);
-function afterPrefix(code) {
+		function afterPrefix(code) {
 			const tail = self.events[self.events.length - 1];
 			return !markdownSpace(code) && tail && tail[1].type === "listItemPrefixWhitespace" ? ok(code) : nok(code);
 		}
 	}
-
-var setextUnderline = {
+	var setextUnderline = {
 		name: "setextUnderline",
 		resolveTo: resolveToSetextUnderline,
 		tokenize: tokenizeSetextUnderline
 	};
-function resolveToSetextUnderline(events, context) {
+	function resolveToSetextUnderline(events, context) {
 		let index = events.length;
-let content;
-let text;
-let definition;
+		let content;
+		let text;
+		let definition;
 		while (index--) if (events[index][0] === "enter") {
 			if (events[index][1].type === "content") {
 				content = index;
@@ -9575,13 +9634,13 @@ let definition;
 		]);
 		return events;
 	}
-function tokenizeSetextUnderline(effects, ok, nok) {
+	function tokenizeSetextUnderline(effects, ok, nok) {
 		const self = this;
-let marker;
+		let marker;
 		return start;
-function start(code) {
+		function start(code) {
 			let index = self.events.length;
-let paragraph;
+			let paragraph;
 			while (index--) if (self.events[index][1].type !== "lineEnding" && self.events[index][1].type !== "linePrefix" && self.events[index][1].type !== "content") {
 				paragraph = self.events[index][1].type === "paragraph";
 				break;
@@ -9593,11 +9652,11 @@ let paragraph;
 			}
 			return nok(code);
 		}
-function before(code) {
+		function before(code) {
 			effects.enter("setextHeadingLineSequence");
 			return inside(code);
 		}
-function inside(code) {
+		function inside(code) {
 			if (code === marker) {
 				effects.consume(code);
 				return inside;
@@ -9605,7 +9664,7 @@ function inside(code) {
 			effects.exit("setextHeadingLineSequence");
 			return markdownSpace(code) ? factorySpace(effects, after, "lineSuffix")(code) : after(code);
 		}
-function after(code) {
+		function after(code) {
 			if (code === null || markdownLineEnding(code)) {
 				effects.exit("setextHeadingLine");
 				return ok(code);
@@ -9613,13 +9672,12 @@ function after(code) {
 			return nok(code);
 		}
 	}
-
-var flow$1 = { tokenize: initializeFlow };
-function initializeFlow(effects) {
+	var flow$1 = { tokenize: initializeFlow };
+	function initializeFlow(effects) {
 		const self = this;
 		const initial = effects.attempt(blankLine, atBlankEnding, effects.attempt(this.parser.constructs.flowInitial, afterConstruct, factorySpace(effects, effects.attempt(this.parser.constructs.flow, afterConstruct, effects.attempt(content, afterConstruct)), "linePrefix")));
 		return initial;
-function atBlankEnding(code) {
+		function atBlankEnding(code) {
 			if (code === null) {
 				effects.consume(code);
 				return;
@@ -9630,7 +9688,7 @@ function atBlankEnding(code) {
 			self.currentConstruct = void 0;
 			return initial;
 		}
-function afterConstruct(code) {
+		function afterConstruct(code) {
 			if (code === null) {
 				effects.consume(code);
 				return;
@@ -9642,23 +9700,23 @@ function afterConstruct(code) {
 			return initial;
 		}
 	}
-var resolver = { resolveAll: createResolver() };
+	var resolver = { resolveAll: createResolver() };
 	var string$1 = initializeFactory("string");
 	var text$4 = initializeFactory("text");
-function initializeFactory(field) {
+	function initializeFactory(field) {
 		return {
 			resolveAll: createResolver(field === "text" ? resolveAllLineSuffixes : void 0),
 			tokenize: initializeText
 		};
-function initializeText(effects) {
+		function initializeText(effects) {
 			const self = this;
 			const constructs = this.parser.constructs[field];
 			const text = effects.attempt(constructs, start, notText);
 			return start;
-function start(code) {
+			function start(code) {
 				return atBreak(code) ? text(code) : notText(code);
 			}
-function notText(code) {
+			function notText(code) {
 				if (code === null) {
 					effects.consume(code);
 					return;
@@ -9667,7 +9725,7 @@ function notText(code) {
 				effects.consume(code);
 				return data;
 			}
-function data(code) {
+			function data(code) {
 				if (atBreak(code)) {
 					effects.exit("data");
 					return text(code);
@@ -9675,7 +9733,7 @@ function data(code) {
 				effects.consume(code);
 				return data;
 			}
-function atBreak(code) {
+			function atBreak(code) {
 				if (code === null) return true;
 				const list = constructs[code];
 				let index = -1;
@@ -9687,11 +9745,11 @@ function atBreak(code) {
 			}
 		}
 	}
-function createResolver(extraResolver) {
+	function createResolver(extraResolver) {
 		return resolveAllText;
-function resolveAllText(events, context) {
+		function resolveAllText(events, context) {
 			let index = -1;
-let enter;
+			let enter;
 			while (++index <= events.length) if (enter === void 0) {
 				if (events[index] && events[index][1].type === "data") {
 					enter = index;
@@ -9708,7 +9766,7 @@ let enter;
 			return extraResolver ? extraResolver(events, context) : events;
 		}
 	}
-function resolveAllLineSuffixes(events, context) {
+	function resolveAllLineSuffixes(events, context) {
 		let eventIndex = 0;
 		while (++eventIndex <= events.length) if ((eventIndex === events.length || events[eventIndex][1].type === "lineEnding") && events[eventIndex - 1][1].type === "data") {
 			const data = events[eventIndex - 1][1];
@@ -9716,7 +9774,7 @@ function resolveAllLineSuffixes(events, context) {
 			let index = chunks.length;
 			let bufferIndex = -1;
 			let size = 0;
-let tabs;
+			let tabs;
 			while (index--) {
 				const chunk = chunks[index];
 				if (typeof chunk === "string") {
@@ -9767,7 +9825,7 @@ let tabs;
 		}
 		return events;
 	}
-var constructs_exports = __exportAll({
+	var constructs_exports = __exportAll({
 		attentionMarkers: () => attentionMarkers,
 		contentInitial: () => contentInitial,
 		disable: () => disable,
@@ -9778,7 +9836,7 @@ var constructs_exports = __exportAll({
 		string: () => string,
 		text: () => text$3
 	});
-var document$1 = {
+	var document$1 = {
 		[42]: list$3,
 		[43]: list$3,
 		[45]: list$3,
@@ -9794,13 +9852,13 @@ var document$1 = {
 		[57]: list$3,
 		[62]: blockQuote
 	};
-var contentInitial = { [91]: definition$1 };
-var flowInitial = {
+	var contentInitial = { [91]: definition$1 };
+	var flowInitial = {
 		[-2]: codeIndented,
 		[-1]: codeIndented,
 		[32]: codeIndented
 	};
-var flow = {
+	var flow = {
 		[35]: headingAtx,
 		[42]: thematicBreak$2,
 		[45]: [setextUnderline, thematicBreak$2],
@@ -9810,11 +9868,11 @@ var flow = {
 		[96]: codeFenced,
 		[126]: codeFenced
 	};
-var string = {
+	var string = {
 		[38]: characterReference,
 		[92]: characterEscape
 	};
-var text$3 = {
+	var text$3 = {
 		[-5]: lineEnding,
 		[-4]: lineEnding,
 		[-3]: lineEnding,
@@ -9828,24 +9886,22 @@ var text$3 = {
 		[95]: attention,
 		[96]: codeText
 	};
-var insideSpan = { null: [attention, resolver] };
-var attentionMarkers = { null: [42, 95] };
-var disable = { null: [] };
-
-
-function createTokenizer(parser, initialize, from) {
-let point = {
+	var insideSpan = { null: [attention, resolver] };
+	var attentionMarkers = { null: [42, 95] };
+	var disable = { null: [] };
+	function createTokenizer(parser, initialize, from) {
+		let point = {
 			_bufferIndex: -1,
 			_index: 0,
 			line: from && from.line || 1,
 			column: from && from.column || 1,
 			offset: from && from.offset || 0
 		};
-const columnStart = {};
-const resolveAllConstructs = [];
-let chunks = [];
-let stack = [];
-const effects = {
+		const columnStart = {};
+		const resolveAllConstructs = [];
+		let chunks = [];
+		let stack = [];
+		const effects = {
 			attempt: constructFactory(onsuccessfulconstruct),
 			check: constructFactory(onsuccessfulcheck),
 			consume,
@@ -9853,7 +9909,7 @@ const effects = {
 			exit,
 			interrupt: constructFactory(onsuccessfulcheck, { interrupt: true })
 		};
-const context = {
+		const context = {
 			code: null,
 			containerState: {},
 			defineSkip,
@@ -9865,10 +9921,10 @@ const context = {
 			sliceStream,
 			write
 		};
-let state = initialize.tokenize.call(context, effects);
+		let state = initialize.tokenize.call(context, effects);
 		if (initialize.resolveAll) resolveAllConstructs.push(initialize);
 		return context;
-function write(slice) {
+		function write(slice) {
 			chunks = push(chunks, slice);
 			main();
 			if (chunks[chunks.length - 1] !== null) return [];
@@ -9876,13 +9932,13 @@ function write(slice) {
 			context.events = resolveAll(resolveAllConstructs, context.events, context);
 			return context.events;
 		}
-function sliceSerialize(token, expandTabs) {
+		function sliceSerialize(token, expandTabs) {
 			return serializeChunks(sliceStream(token), expandTabs);
 		}
-function sliceStream(token) {
+		function sliceStream(token) {
 			return sliceChunks(chunks, token);
 		}
-function now() {
+		function now() {
 			const { _bufferIndex, _index, line, column, offset } = point;
 			return {
 				_bufferIndex,
@@ -9892,12 +9948,12 @@ function now() {
 				offset
 			};
 		}
-function defineSkip(value) {
+		function defineSkip(value) {
 			columnStart[value.line] = value.column;
 			accountForPotentialSkip();
 		}
-function main() {
-let chunkIndex;
+		function main() {
+			let chunkIndex;
 			while (point._index < chunks.length) {
 				const chunk = chunks[point._index];
 				if (typeof chunk === "string") {
@@ -9907,10 +9963,10 @@ let chunkIndex;
 				} else go(chunk);
 			}
 		}
-function go(code) {
+		function go(code) {
 			state = state(code);
 		}
-function consume(code) {
+		function consume(code) {
 			if (markdownLineEnding(code)) {
 				point.line++;
 				point.column = 1;
@@ -9930,8 +9986,8 @@ function consume(code) {
 			}
 			context.previous = code;
 		}
-function enter(type, fields) {
-const token = fields || {};
+		function enter(type, fields) {
+			const token = fields || {};
 			token.type = type;
 			token.start = now();
 			context.events.push([
@@ -9942,7 +9998,7 @@ const token = fields || {};
 			stack.push(token);
 			return token;
 		}
-function exit(type) {
+		function exit(type) {
 			const token = stack.pop();
 			token.end = now();
 			context.events.push([
@@ -9952,37 +10008,37 @@ function exit(type) {
 			]);
 			return token;
 		}
-function onsuccessfulconstruct(construct, info) {
+		function onsuccessfulconstruct(construct, info) {
 			addResult(construct, info.from);
 		}
-function onsuccessfulcheck(_, info) {
+		function onsuccessfulcheck(_, info) {
 			info.restore();
 		}
-function constructFactory(onreturn, fields) {
+		function constructFactory(onreturn, fields) {
 			return hook;
-function hook(constructs, returnState, bogusState) {
-let listOfConstructs;
-let constructIndex;
-let currentConstruct;
-let info;
+			function hook(constructs, returnState, bogusState) {
+				let listOfConstructs;
+				let constructIndex;
+				let currentConstruct;
+				let info;
 				return Array.isArray(constructs) ? handleListOfConstructs(constructs) : "tokenize" in constructs ? handleListOfConstructs([constructs]) : handleMapOfConstructs(constructs);
-function handleMapOfConstructs(map) {
+				function handleMapOfConstructs(map) {
 					return start;
-function start(code) {
+					function start(code) {
 						const left = code !== null && map[code];
 						const all = code !== null && map.null;
 						return handleListOfConstructs([...Array.isArray(left) ? left : left ? [left] : [], ...Array.isArray(all) ? all : all ? [all] : []])(code);
 					}
 				}
-function handleListOfConstructs(list) {
+				function handleListOfConstructs(list) {
 					listOfConstructs = list;
 					constructIndex = 0;
 					if (list.length === 0) return bogusState;
 					return handleConstruct(list[constructIndex]);
 				}
-function handleConstruct(construct) {
+				function handleConstruct(construct) {
 					return start;
-function start(code) {
+					function start(code) {
 						info = store();
 						currentConstruct = construct;
 						if (!construct.partial) context.currentConstruct = construct;
@@ -9990,23 +10046,23 @@ function start(code) {
 						return construct.tokenize.call(fields ? Object.assign(Object.create(context), fields) : context, effects, ok, nok)(code);
 					}
 				}
-function ok(code) {
+				function ok(code) {
 					onreturn(currentConstruct, info);
 					return returnState;
 				}
-function nok(code) {
+				function nok(code) {
 					info.restore();
 					if (++constructIndex < listOfConstructs.length) return handleConstruct(listOfConstructs[constructIndex]);
 					return bogusState;
 				}
 			}
 		}
-function addResult(construct, from) {
+		function addResult(construct, from) {
 			if (construct.resolveAll && !resolveAllConstructs.includes(construct)) resolveAllConstructs.push(construct);
 			if (construct.resolve) splice(context.events, from, context.events.length - from, construct.resolve(context.events.slice(from), context));
 			if (construct.resolveTo) context.events = construct.resolveTo(context.events, context);
 		}
-function store() {
+		function store() {
 			const startPoint = now();
 			const startPrevious = context.previous;
 			const startCurrentConstruct = context.currentConstruct;
@@ -10016,7 +10072,7 @@ function store() {
 				from: startEventsIndex,
 				restore
 			};
-function restore() {
+			function restore() {
 				point = startPoint;
 				context.previous = startPrevious;
 				context.currentConstruct = startCurrentConstruct;
@@ -10025,19 +10081,19 @@ function restore() {
 				accountForPotentialSkip();
 			}
 		}
-function accountForPotentialSkip() {
+		function accountForPotentialSkip() {
 			if (point.line in columnStart && point.column < 2) {
 				point.column = columnStart[point.line];
 				point.offset += columnStart[point.line] - 1;
 			}
 		}
 	}
-function sliceChunks(chunks, token) {
+	function sliceChunks(chunks, token) {
 		const startIndex = token.start._index;
 		const startBufferIndex = token.start._bufferIndex;
 		const endIndex = token.end._index;
 		const endBufferIndex = token.end._bufferIndex;
-let view;
+		let view;
 		if (startIndex === endIndex) view = [chunks[startIndex].slice(startBufferIndex, endBufferIndex)];
 		else {
 			view = chunks.slice(startIndex, endIndex);
@@ -10050,13 +10106,13 @@ let view;
 		}
 		return view;
 	}
-function serializeChunks(chunks, expandTabs) {
+	function serializeChunks(chunks, expandTabs) {
 		let index = -1;
-const result = [];
-let atTab;
+		const result = [];
+		let atTab;
 		while (++index < chunks.length) {
 			const chunk = chunks[index];
-let value;
+			let value;
 			if (typeof chunk === "string") value = chunk;
 			else switch (chunk) {
 				case -5:
@@ -10082,9 +10138,8 @@ let value;
 		}
 		return result.join("");
 	}
-
-function parse$1(options) {
-const parser = {
+	function parse$1(options) {
+		const parser = {
 			constructs: combineExtensions([constructs_exports, ...(options || {}).extensions || []]),
 			content: create(content$1),
 			defined: [],
@@ -10095,33 +10150,31 @@ const parser = {
 			text: create(text$4)
 		};
 		return parser;
-function create(initial) {
+		function create(initial) {
 			return creator;
-function creator(from) {
+			function creator(from) {
 				return createTokenizer(parser, initial, from);
 			}
 		}
 	}
-
-function postprocess(events) {
+	function postprocess(events) {
 		while (!subtokenize(events));
 		return events;
 	}
-
-var search = /[\0\t\n\r]/g;
-function preprocess() {
+	var search = /[\0\t\n\r]/g;
+	function preprocess() {
 		let column = 1;
 		let buffer = "";
-let start = true;
-let atCarriageReturn;
+		let start = true;
+		let atCarriageReturn;
 		return preprocessor;
-function preprocessor(value, encoding, end) {
-const chunks = [];
-let match;
-let next;
-let startPosition;
-let endPosition;
-let code;
+		function preprocessor(value, encoding, end) {
+			const chunks = [];
+			let match;
+			let next;
+			let startPosition;
+			let endPosition;
+			let code;
 			value = buffer + (typeof value === "string" ? value.toString() : new TextDecoder(encoding || void 0).decode(value));
 			startPosition = 0;
 			buffer = "";
@@ -10180,10 +10233,10 @@ let code;
 		}
 	}
 	var characterEscapeOrReference = /\\([!-/:-@[-`{-~])|&(#(?:\d{1,7}|x[\da-f]{1,6})|[\da-z]{1,31});/gi;
-function decodeString(value) {
+	function decodeString(value) {
 		return value.replace(characterEscapeOrReference, decode);
 	}
-function decode($0, $1, $2) {
+	function decode($0, $1, $2) {
 		if ($1) return $1;
 		if ($2.charCodeAt(0) === 35) {
 			const head = $2.charCodeAt(1);
@@ -10192,34 +10245,32 @@ function decode($0, $1, $2) {
 		}
 		return decodeNamedCharacterReference($2) || $0;
 	}
-
-
-function stringifyPosition(value) {
+	function stringifyPosition(value) {
 		if (!value || typeof value !== "object") return "";
 		if ("position" in value || "type" in value) return position$1(value.position);
 		if ("start" in value || "end" in value) return position$1(value);
 		if ("line" in value || "column" in value) return point$2(value);
 		return "";
 	}
-function point$2(point) {
+	function point$2(point) {
 		return index$1(point && point.line) + ":" + index$1(point && point.column);
 	}
-function position$1(pos) {
+	function position$1(pos) {
 		return point$2(pos && pos.start) + "-" + point$2(pos && pos.end);
 	}
-function index$1(value) {
+	function index$1(value) {
 		return value && typeof value === "number" ? value : 1;
 	}
-var own$2 = {}.hasOwnProperty;
-function fromMarkdown$1(value, encoding, options) {
+	var own$2 = {}.hasOwnProperty;
+	function fromMarkdown$1(value, encoding, options) {
 		if (encoding && typeof encoding === "object") {
 			options = encoding;
 			encoding = void 0;
 		}
 		return compiler(options)(postprocess(parse$1(options).document().write(preprocess()(value, encoding, true))));
 	}
-function compiler(options) {
-const config = {
+	function compiler(options) {
+		const config = {
 			transforms: [],
 			canContainEols: [
 				"emphasis",
@@ -10324,14 +10375,14 @@ const config = {
 			}
 		};
 		configure$1(config, (options || {}).mdastExtensions || []);
-const data = {};
+		const data = {};
 		return compile;
-function compile(events) {
-let tree = {
+		function compile(events) {
+			let tree = {
 				type: "root",
 				children: []
 			};
-const context = {
+			const context = {
 				stack: [tree],
 				tokenStack: [],
 				config,
@@ -10341,7 +10392,7 @@ const context = {
 				resume,
 				data
 			};
-const listStack = [];
+			const listStack = [];
 			let index = -1;
 			while (++index < events.length) if (events[index][1].type === "listOrdered" || events[index][1].type === "listUnordered") if (events[index][0] === "enter") listStack.push(index);
 			else index = prepareList(events, listStack.pop(), index);
@@ -10370,14 +10421,14 @@ const listStack = [];
 			while (++index < config.transforms.length) tree = config.transforms[index](tree) || tree;
 			return tree;
 		}
-function prepareList(events, start, length) {
+		function prepareList(events, start, length) {
 			let index = start - 1;
 			let containerBalance = -1;
 			let listSpread = false;
-let listItem;
-let lineIndex;
-let firstBlankLineIndex;
-let atMarker;
+			let listItem;
+			let lineIndex;
+			let firstBlankLineIndex;
+			let atMarker;
 			while (++index <= length) {
 				const event = events[index];
 				switch (event[1].type) {
@@ -10428,7 +10479,7 @@ let atMarker;
 						length++;
 					}
 					if (event[1].type === "listItemPrefix") {
-const item = {
+						const item = {
 							type: "listItem",
 							_spread: false,
 							start: Object.assign({}, event[1].start),
@@ -10450,20 +10501,20 @@ const item = {
 			events[start][1]._spread = listSpread;
 			return length;
 		}
-function opener(create, and) {
+		function opener(create, and) {
 			return open;
-function open(token) {
+			function open(token) {
 				enter.call(this, create(token), token);
 				if (and) and.call(this, token);
 			}
 		}
-function buffer() {
+		function buffer() {
 			this.stack.push({
 				type: "fragment",
 				children: []
 			});
 		}
-function enter(node, token, errorHandler) {
+		function enter(node, token, errorHandler) {
 			this.stack[this.stack.length - 1].children.push(node);
 			this.stack.push(node);
 			this.tokenStack.push([token, errorHandler || void 0]);
@@ -10472,14 +10523,14 @@ function enter(node, token, errorHandler) {
 				end: void 0
 			};
 		}
-function closer(and) {
+		function closer(and) {
 			return close;
-function close(token) {
+			function close(token) {
 				if (and) and.call(this, token);
 				exit.call(this, token);
 			}
 		}
-function exit(token, onExitError) {
+		function exit(token, onExitError) {
 			const node = this.stack.pop();
 			const open = this.tokenStack.pop();
 			if (!open) throw new Error("Cannot close `" + token.type + "` (" + stringifyPosition({
@@ -10490,77 +10541,77 @@ function exit(token, onExitError) {
 			else (open[1] || defaultOnError).call(this, token, open[0]);
 			node.position.end = point$1(token.end);
 		}
-function resume() {
+		function resume() {
 			return toString$1(this.stack.pop());
 		}
-function onenterlistordered() {
+		function onenterlistordered() {
 			this.data.expectingFirstListItemValue = true;
 		}
-function onenterlistitemvalue(token) {
+		function onenterlistitemvalue(token) {
 			if (this.data.expectingFirstListItemValue) {
 				const ancestor = this.stack[this.stack.length - 2];
 				ancestor.start = Number.parseInt(this.sliceSerialize(token), 10);
 				this.data.expectingFirstListItemValue = void 0;
 			}
 		}
-function onexitcodefencedfenceinfo() {
+		function onexitcodefencedfenceinfo() {
 			const data = this.resume();
 			const node = this.stack[this.stack.length - 1];
 			node.lang = data;
 		}
-function onexitcodefencedfencemeta() {
+		function onexitcodefencedfencemeta() {
 			const data = this.resume();
 			const node = this.stack[this.stack.length - 1];
 			node.meta = data;
 		}
-function onexitcodefencedfence() {
+		function onexitcodefencedfence() {
 			if (this.data.flowCodeInside) return;
 			this.buffer();
 			this.data.flowCodeInside = true;
 		}
-function onexitcodefenced() {
+		function onexitcodefenced() {
 			const data = this.resume();
 			const node = this.stack[this.stack.length - 1];
 			node.value = data.replace(/^(\r?\n|\r)|(\r?\n|\r)$/g, "");
 			this.data.flowCodeInside = void 0;
 		}
-function onexitcodeindented() {
+		function onexitcodeindented() {
 			const data = this.resume();
 			const node = this.stack[this.stack.length - 1];
 			node.value = data.replace(/(\r?\n|\r)$/g, "");
 		}
-function onexitdefinitionlabelstring(token) {
+		function onexitdefinitionlabelstring(token) {
 			const label = this.resume();
 			const node = this.stack[this.stack.length - 1];
 			node.label = label;
 			node.identifier = normalizeIdentifier(this.sliceSerialize(token)).toLowerCase();
 		}
-function onexitdefinitiontitlestring() {
+		function onexitdefinitiontitlestring() {
 			const data = this.resume();
 			const node = this.stack[this.stack.length - 1];
 			node.title = data;
 		}
-function onexitdefinitiondestinationstring() {
+		function onexitdefinitiondestinationstring() {
 			const data = this.resume();
 			const node = this.stack[this.stack.length - 1];
 			node.url = data;
 		}
-function onexitatxheadingsequence(token) {
+		function onexitatxheadingsequence(token) {
 			const node = this.stack[this.stack.length - 1];
 			if (!node.depth) node.depth = this.sliceSerialize(token).length;
 		}
-function onexitsetextheadingtext() {
+		function onexitsetextheadingtext() {
 			this.data.setextHeadingSlurpLineEnding = true;
 		}
-function onexitsetextheadinglinesequence(token) {
+		function onexitsetextheadinglinesequence(token) {
 			const node = this.stack[this.stack.length - 1];
 			node.depth = this.sliceSerialize(token).codePointAt(0) === 61 ? 1 : 2;
 		}
-function onexitsetextheading() {
+		function onexitsetextheading() {
 			this.data.setextHeadingSlurpLineEnding = void 0;
 		}
-function onenterdata(token) {
-const siblings = this.stack[this.stack.length - 1].children;
+		function onenterdata(token) {
+			const siblings = this.stack[this.stack.length - 1].children;
 			let tail = siblings[siblings.length - 1];
 			if (!tail || tail.type !== "text") {
 				tail = text();
@@ -10572,12 +10623,12 @@ const siblings = this.stack[this.stack.length - 1].children;
 			}
 			this.stack.push(tail);
 		}
-function onexitdata(token) {
+		function onexitdata(token) {
 			const tail = this.stack.pop();
 			tail.value += this.sliceSerialize(token);
 			tail.position.end = point$1(token.end);
 		}
-function onexitlineending(token) {
+		function onexitlineending(token) {
 			const context = this.stack[this.stack.length - 1];
 			if (this.data.atHardBreak) {
 				const tail = context.children[context.children.length - 1];
@@ -10590,28 +10641,28 @@ function onexitlineending(token) {
 				onexitdata.call(this, token);
 			}
 		}
-function onexithardbreak() {
+		function onexithardbreak() {
 			this.data.atHardBreak = true;
 		}
-function onexithtmlflow() {
+		function onexithtmlflow() {
 			const data = this.resume();
 			const node = this.stack[this.stack.length - 1];
 			node.value = data;
 		}
-function onexithtmltext() {
+		function onexithtmltext() {
 			const data = this.resume();
 			const node = this.stack[this.stack.length - 1];
 			node.value = data;
 		}
-function onexitcodetext() {
+		function onexitcodetext() {
 			const data = this.resume();
 			const node = this.stack[this.stack.length - 1];
 			node.value = data;
 		}
-function onexitlink() {
+		function onexitlink() {
 			const node = this.stack[this.stack.length - 1];
 			if (this.data.inReference) {
-const referenceType = this.data.referenceType || "shortcut";
+				const referenceType = this.data.referenceType || "shortcut";
 				node.type += "Reference";
 				node.referenceType = referenceType;
 				delete node.url;
@@ -10622,10 +10673,10 @@ const referenceType = this.data.referenceType || "shortcut";
 			}
 			this.data.referenceType = void 0;
 		}
-function onexitimage() {
+		function onexitimage() {
 			const node = this.stack[this.stack.length - 1];
 			if (this.data.inReference) {
-const referenceType = this.data.referenceType || "shortcut";
+				const referenceType = this.data.referenceType || "shortcut";
 				node.type += "Reference";
 				node.referenceType = referenceType;
 				delete node.url;
@@ -10636,13 +10687,13 @@ const referenceType = this.data.referenceType || "shortcut";
 			}
 			this.data.referenceType = void 0;
 		}
-function onexitlabeltext(token) {
+		function onexitlabeltext(token) {
 			const string = this.sliceSerialize(token);
 			const ancestor = this.stack[this.stack.length - 2];
 			ancestor.label = decodeString(string);
 			ancestor.identifier = normalizeIdentifier(string).toLowerCase();
 		}
-function onexitlabel() {
+		function onexitlabel() {
 			const fragment = this.stack[this.stack.length - 1];
 			const value = this.resume();
 			const node = this.stack[this.stack.length - 1];
@@ -10650,36 +10701,36 @@ function onexitlabel() {
 			if (node.type === "link") node.children = fragment.children;
 			else node.alt = value;
 		}
-function onexitresourcedestinationstring() {
+		function onexitresourcedestinationstring() {
 			const data = this.resume();
 			const node = this.stack[this.stack.length - 1];
 			node.url = data;
 		}
-function onexitresourcetitlestring() {
+		function onexitresourcetitlestring() {
 			const data = this.resume();
 			const node = this.stack[this.stack.length - 1];
 			node.title = data;
 		}
-function onexitresource() {
+		function onexitresource() {
 			this.data.inReference = void 0;
 		}
-function onenterreference() {
+		function onenterreference() {
 			this.data.referenceType = "collapsed";
 		}
-function onexitreferencestring(token) {
+		function onexitreferencestring(token) {
 			const label = this.resume();
 			const node = this.stack[this.stack.length - 1];
 			node.label = label;
 			node.identifier = normalizeIdentifier(this.sliceSerialize(token)).toLowerCase();
 			this.data.referenceType = "full";
 		}
-function onexitcharacterreferencemarker(token) {
+		function onexitcharacterreferencemarker(token) {
 			this.data.characterReferenceType = token.type;
 		}
-function onexitcharacterreferencevalue(token) {
+		function onexitcharacterreferencevalue(token) {
 			const data = this.sliceSerialize(token);
 			const type = this.data.characterReferenceType;
-let value;
+			let value;
 			if (type) {
 				value = decodeNumericCharacterReference(data, type === "characterReferenceMarkerNumeric" ? 10 : 16);
 				this.data.characterReferenceType = void 0;
@@ -10687,27 +10738,27 @@ let value;
 			const tail = this.stack[this.stack.length - 1];
 			tail.value += value;
 		}
-function onexitcharacterreference(token) {
+		function onexitcharacterreference(token) {
 			const tail = this.stack.pop();
 			tail.position.end = point$1(token.end);
 		}
-function onexitautolinkprotocol(token) {
+		function onexitautolinkprotocol(token) {
 			onexitdata.call(this, token);
 			const node = this.stack[this.stack.length - 1];
 			node.url = this.sliceSerialize(token);
 		}
-function onexitautolinkemail(token) {
+		function onexitautolinkemail(token) {
 			onexitdata.call(this, token);
 			const node = this.stack[this.stack.length - 1];
 			node.url = "mailto:" + this.sliceSerialize(token);
 		}
-function blockQuote() {
+		function blockQuote() {
 			return {
 				type: "blockquote",
 				children: []
 			};
 		}
-function codeFlow() {
+		function codeFlow() {
 			return {
 				type: "code",
 				lang: null,
@@ -10715,13 +10766,13 @@ function codeFlow() {
 				value: ""
 			};
 		}
-function codeText() {
+		function codeText() {
 			return {
 				type: "inlineCode",
 				value: ""
 			};
 		}
-function definition() {
+		function definition() {
 			return {
 				type: "definition",
 				identifier: "",
@@ -10730,29 +10781,29 @@ function definition() {
 				url: ""
 			};
 		}
-function emphasis() {
+		function emphasis() {
 			return {
 				type: "emphasis",
 				children: []
 			};
 		}
-function heading() {
+		function heading() {
 			return {
 				type: "heading",
 				depth: 0,
 				children: []
 			};
 		}
-function hardBreak() {
+		function hardBreak() {
 			return { type: "break" };
 		}
-function html() {
+		function html() {
 			return {
 				type: "html",
 				value: ""
 			};
 		}
-function image() {
+		function image() {
 			return {
 				type: "image",
 				title: null,
@@ -10760,7 +10811,7 @@ function image() {
 				alt: null
 			};
 		}
-function link() {
+		function link() {
 			return {
 				type: "link",
 				title: null,
@@ -10768,7 +10819,7 @@ function link() {
 				children: []
 			};
 		}
-function list(token) {
+		function list(token) {
 			return {
 				type: "list",
 				ordered: token.type === "listOrdered",
@@ -10777,7 +10828,7 @@ function list(token) {
 				children: []
 			};
 		}
-function listItem(token) {
+		function listItem(token) {
 			return {
 				type: "listItem",
 				spread: token._spread,
@@ -10785,36 +10836,36 @@ function listItem(token) {
 				children: []
 			};
 		}
-function paragraph() {
+		function paragraph() {
 			return {
 				type: "paragraph",
 				children: []
 			};
 		}
-function strong() {
+		function strong() {
 			return {
 				type: "strong",
 				children: []
 			};
 		}
-function text() {
+		function text() {
 			return {
 				type: "text",
 				value: ""
 			};
 		}
-function thematicBreak() {
+		function thematicBreak() {
 			return { type: "thematicBreak" };
 		}
 	}
-function point$1(d) {
+	function point$1(d) {
 		return {
 			line: d.line,
 			column: d.column,
 			offset: d.offset
 		};
 	}
-function configure$1(combined, extensions) {
+	function configure$1(combined, extensions) {
 		let index = -1;
 		while (++index < extensions.length) {
 			const value = extensions[index];
@@ -10822,8 +10873,8 @@ function configure$1(combined, extensions) {
 			else extension(combined, value);
 		}
 	}
-function extension(combined, extension) {
-let key;
+	function extension(combined, extension) {
+		let key;
 		for (key in extension) if (own$2.call(extension, key)) switch (key) {
 			case "canContainEols": {
 				const right = extension[key];
@@ -10843,7 +10894,7 @@ let key;
 			}
 		}
 	}
-function defaultOnError(left, right) {
+	function defaultOnError(left, right) {
 		if (left) throw new Error("Cannot close `" + left.type + "` (" + stringifyPosition({
 			start: left.start,
 			end: left.end
@@ -10860,73 +10911,58 @@ function defaultOnError(left, right) {
 		if (typeof string !== "string") throw new TypeError("Expected a string");
 		return string.replace(/[|\\{}()[\]^$+*?.]/g, "\\$&").replace(/-/g, "\\x2d");
 	}
-var convert = (function(test) {
+	var convert = (function(test) {
 		if (test === null || test === void 0) return ok;
 		if (typeof test === "function") return castFactory(test);
 		if (typeof test === "object") return Array.isArray(test) ? anyFactory(test) : propertiesFactory(test);
 		if (typeof test === "string") return typeFactory(test);
 		throw new Error("Expected function, string, or object as test");
 	});
-function anyFactory(tests) {
-const checks = [];
+	function anyFactory(tests) {
+		const checks = [];
 		let index = -1;
 		while (++index < tests.length) checks[index] = convert(tests[index]);
 		return castFactory(any);
-function any(...parameters) {
+		function any(...parameters) {
 			let index = -1;
 			while (++index < checks.length) if (checks[index].apply(this, parameters)) return true;
 			return false;
 		}
 	}
-function propertiesFactory(check) {
+	function propertiesFactory(check) {
 		const checkAsRecord = check;
 		return castFactory(all);
-function all(node) {
+		function all(node) {
 			const nodeAsRecord = node;
-let key;
+			let key;
 			for (key in check) if (nodeAsRecord[key] !== checkAsRecord[key]) return false;
 			return true;
 		}
 	}
-function typeFactory(check) {
+	function typeFactory(check) {
 		return castFactory(type);
-function type(node) {
+		function type(node) {
 			return node && node.type === check;
 		}
 	}
-function castFactory(testFunction) {
+	function castFactory(testFunction) {
 		return check;
-function check(value, index, parent) {
+		function check(value, index, parent) {
 			return Boolean(looksLikeANode(value) && testFunction.call(this, value, typeof index === "number" ? index : void 0, parent || void 0));
 		}
 	}
 	function ok() {
 		return true;
 	}
-function looksLikeANode(value) {
+	function looksLikeANode(value) {
 		return value !== null && typeof value === "object" && "type" in value;
 	}
-function color(d) {
+	function color(d) {
 		return d;
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-var empty = [];
-function visitParents(tree, test, visitor, reverse) {
-let check;
+	var empty = [];
+	function visitParents(tree, test, visitor, reverse) {
+		let check;
 		if (typeof test === "function" && typeof visitor !== "function") {
 			reverse = visitor;
 			visitor = test;
@@ -10934,7 +10970,7 @@ let check;
 		const is = convert(check);
 		const step = reverse ? -1 : 1;
 		factory(tree, void 0, [])();
-function factory(node, index, parents) {
+		function factory(node, index, parents) {
 			const value = node && typeof node === "object" ? node : {};
 			if (typeof value.type === "string") {
 				const name = typeof value.tagName === "string" ? value.tagName : typeof value.name === "string" ? value.name : void 0;
@@ -10942,10 +10978,10 @@ function factory(node, index, parents) {
 			}
 			return visit;
 			function visit() {
-let result = empty;
-let subresult;
-let offset;
-let grandparents;
+				let result = empty;
+				let subresult;
+				let offset;
+				let grandparents;
 				if (!test || is(node, index, parents[parents.length - 1] || void 0)) {
 					result = toResult(visitor(node, parents));
 					if (result[0] === false) return result;
@@ -10967,42 +11003,40 @@ let grandparents;
 			}
 		}
 	}
-function toResult(value) {
+	function toResult(value) {
 		if (Array.isArray(value)) return value;
 		if (typeof value === "number") return [true, value];
 		return value === null || value === void 0 ? empty : [value];
 	}
-
-
-function findAndReplace(tree, list, options) {
+	function findAndReplace(tree, list, options) {
 		const ignored = convert((options || {}).ignore || []);
 		const pairs = toPairs(list);
 		let pairIndex = -1;
 		while (++pairIndex < pairs.length) visitParents(tree, "text", visitor);
-function visitor(node, parents) {
+		function visitor(node, parents) {
 			let index = -1;
-let grandparent;
+			let grandparent;
 			while (++index < parents.length) {
 				const parent = parents[index];
-const siblings = grandparent ? grandparent.children : void 0;
+				const siblings = grandparent ? grandparent.children : void 0;
 				if (ignored(parent, siblings ? siblings.indexOf(parent) : void 0, grandparent)) return;
 				grandparent = parent;
 			}
 			if (grandparent) return handler(node, parents);
 		}
-function handler(node, parents) {
+		function handler(node, parents) {
 			const parent = parents[parents.length - 1];
 			const find = pairs[pairIndex][0];
 			const replace = pairs[pairIndex][1];
 			let start = 0;
 			const index = parent.children.indexOf(node);
 			let change = false;
-let nodes = [];
+			let nodes = [];
 			find.lastIndex = 0;
 			let match = find.exec(node.value);
 			while (match) {
 				const position = match.index;
-const matchObject = {
+				const matchObject = {
 					index: match.index,
 					input: match.input,
 					stack: [...parents, node]
@@ -11036,10 +11070,10 @@ const matchObject = {
 			return index + nodes.length;
 		}
 	}
-function toPairs(tupleOrList) {
-const result = [];
+	function toPairs(tupleOrList) {
+		const result = [];
 		if (!Array.isArray(tupleOrList)) throw new TypeError("Expected find and replace tuple or list of tuples");
-const list = !tupleOrList[0] || Array.isArray(tupleOrList[0]) ? tupleOrList : [tupleOrList];
+		const list = !tupleOrList[0] || Array.isArray(tupleOrList[0]) ? tupleOrList : [tupleOrList];
 		let index = -1;
 		while (++index < list.length) {
 			const tuple = list[index];
@@ -11047,23 +11081,22 @@ const list = !tupleOrList[0] || Array.isArray(tupleOrList[0]) ? tupleOrList : [t
 		}
 		return result;
 	}
-function toExpression(find) {
+	function toExpression(find) {
 		return typeof find === "string" ? new RegExp(escapeStringRegexp(find), "g") : find;
 	}
-function toFunction(replace) {
+	function toFunction(replace) {
 		return typeof replace === "function" ? replace : function() {
 			return replace;
 		};
 	}
-
-var inConstruct = "phrasing";
-var notInConstruct = [
+	var inConstruct = "phrasing";
+	var notInConstruct = [
 		"autolink",
 		"link",
 		"image",
 		"label"
 	];
-function gfmAutolinkLiteralFromMarkdown() {
+	function gfmAutolinkLiteralFromMarkdown() {
 		return {
 			transforms: [transformGfmAutolinkLiterals],
 			enter: {
@@ -11080,7 +11113,7 @@ function gfmAutolinkLiteralFromMarkdown() {
 			}
 		};
 	}
-function gfmAutolinkLiteralToMarkdown() {
+	function gfmAutolinkLiteralToMarkdown() {
 		return { unsafe: [
 			{
 				character: "@",
@@ -11105,7 +11138,7 @@ function gfmAutolinkLiteralToMarkdown() {
 			}
 		] };
 	}
-function enterLiteralAutolink(token) {
+	function enterLiteralAutolink(token) {
 		this.enter({
 			type: "link",
 			title: null,
@@ -11113,28 +11146,28 @@ function enterLiteralAutolink(token) {
 			children: []
 		}, token);
 	}
-function enterLiteralAutolinkValue(token) {
+	function enterLiteralAutolinkValue(token) {
 		this.config.enter.autolinkProtocol.call(this, token);
 	}
-function exitLiteralAutolinkHttp(token) {
+	function exitLiteralAutolinkHttp(token) {
 		this.config.exit.autolinkProtocol.call(this, token);
 	}
-function exitLiteralAutolinkWww(token) {
+	function exitLiteralAutolinkWww(token) {
 		this.config.exit.data.call(this, token);
 		const node = this.stack[this.stack.length - 1];
 		node.type;
 		node.url = "http://" + this.sliceSerialize(token);
 	}
-function exitLiteralAutolinkEmail(token) {
+	function exitLiteralAutolinkEmail(token) {
 		this.config.exit.autolinkEmail.call(this, token);
 	}
-function exitLiteralAutolink(token) {
+	function exitLiteralAutolink(token) {
 		this.exit(token);
 	}
-function transformGfmAutolinkLiterals(tree) {
+	function transformGfmAutolinkLiterals(tree) {
 		findAndReplace(tree, [[/(https?:\/\/|www(?=\.))([-.\w]+)([^ \t\r\n]*)/gi, findUrl], [/(?<=^|\s|\p{P}|\p{S})([-.\w+]+)@([-\w]+(?:\.[-\w]+)+)/gu, findEmail]], { ignore: ["link", "linkReference"] });
 	}
-function findUrl(_, protocol, domain, path, match) {
+	function findUrl(_, protocol, domain, path, match) {
 		let prefix = "";
 		if (!previous(match)) return false;
 		if (/^w/i.test(protocol)) {
@@ -11145,7 +11178,7 @@ function findUrl(_, protocol, domain, path, match) {
 		if (!isCorrectDomain(domain)) return false;
 		const parts = splitUrl(domain + path);
 		if (!parts[0]) return false;
-const result = {
+		const result = {
 			type: "link",
 			title: null,
 			url: prefix + protocol + parts[0],
@@ -11160,7 +11193,7 @@ const result = {
 		}];
 		return result;
 	}
-function findEmail(_, atext, label, match) {
+	function findEmail(_, atext, label, match) {
 		if (!previous(match, true) || /[-\d_]$/.test(label)) return false;
 		return {
 			type: "link",
@@ -11172,12 +11205,12 @@ function findEmail(_, atext, label, match) {
 			}]
 		};
 	}
-function isCorrectDomain(domain) {
+	function isCorrectDomain(domain) {
 		const parts = domain.split(".");
 		if (parts.length < 2 || parts[parts.length - 1] && (/_/.test(parts[parts.length - 1]) || !/[a-zA-Z\d]/.test(parts[parts.length - 1])) || parts[parts.length - 2] && (/_/.test(parts[parts.length - 2]) || !/[a-zA-Z\d]/.test(parts[parts.length - 2]))) return false;
 		return true;
 	}
-function splitUrl(url) {
+	function splitUrl(url) {
 		const trailExec = /[!"&'),.:;<>?\]}]+$/.exec(url);
 		if (!trailExec) return [url, void 0];
 		url = url.slice(0, trailExec.index);
@@ -11193,25 +11226,25 @@ function splitUrl(url) {
 		}
 		return [url, trail];
 	}
-function previous(match, email) {
+	function previous(match, email) {
 		const code = match.input.charCodeAt(match.index - 1);
 		return (match.index === 0 || unicodeWhitespace(code) || unicodePunctuation(code)) && (!email || code !== 47);
 	}
-footnoteReference$1.peek = footnoteReferencePeek;
-function enterFootnoteCallString() {
+	footnoteReference$1.peek = footnoteReferencePeek;
+	function enterFootnoteCallString() {
 		this.buffer();
 	}
-function enterFootnoteCall(token) {
+	function enterFootnoteCall(token) {
 		this.enter({
 			type: "footnoteReference",
 			identifier: "",
 			label: ""
 		}, token);
 	}
-function enterFootnoteDefinitionLabelString() {
+	function enterFootnoteDefinitionLabelString() {
 		this.buffer();
 	}
-function enterFootnoteDefinition(token) {
+	function enterFootnoteDefinition(token) {
 		this.enter({
 			type: "footnoteDefinition",
 			identifier: "",
@@ -11219,30 +11252,30 @@ function enterFootnoteDefinition(token) {
 			children: []
 		}, token);
 	}
-function exitFootnoteCallString(token) {
+	function exitFootnoteCallString(token) {
 		const label = this.resume();
 		const node = this.stack[this.stack.length - 1];
 		node.type;
 		node.identifier = normalizeIdentifier(this.sliceSerialize(token)).toLowerCase();
 		node.label = label;
 	}
-function exitFootnoteCall(token) {
+	function exitFootnoteCall(token) {
 		this.exit(token);
 	}
-function exitFootnoteDefinitionLabelString(token) {
+	function exitFootnoteDefinitionLabelString(token) {
 		const label = this.resume();
 		const node = this.stack[this.stack.length - 1];
 		node.type;
 		node.identifier = normalizeIdentifier(this.sliceSerialize(token)).toLowerCase();
 		node.label = label;
 	}
-function exitFootnoteDefinition(token) {
+	function exitFootnoteDefinition(token) {
 		this.exit(token);
 	}
-function footnoteReferencePeek() {
+	function footnoteReferencePeek() {
 		return "[";
 	}
-function footnoteReference$1(node, _, state, info) {
+	function footnoteReference$1(node, _, state, info) {
 		const tracker = state.createTracker(info);
 		let value = tracker.move("[^");
 		const exit = state.enter("footnoteReference");
@@ -11256,7 +11289,7 @@ function footnoteReference$1(node, _, state, info) {
 		value += tracker.move("]");
 		return value;
 	}
-function gfmFootnoteFromMarkdown() {
+	function gfmFootnoteFromMarkdown() {
 		return {
 			enter: {
 				gfmFootnoteCallString: enterFootnoteCallString,
@@ -11272,7 +11305,7 @@ function gfmFootnoteFromMarkdown() {
 			}
 		};
 	}
-function gfmFootnoteToMarkdown(options) {
+	function gfmFootnoteToMarkdown(options) {
 		let firstLineBlank = false;
 		if (options && options.firstLineBlank) firstLineBlank = true;
 		return {
@@ -11289,7 +11322,7 @@ function gfmFootnoteToMarkdown(options) {
 				]
 			}]
 		};
-function footnoteDefinition(node, _, state, info) {
+		function footnoteDefinition(node, _, state, info) {
 			const tracker = state.createTracker(info);
 			let value = tracker.move("[^");
 			const exit = state.enter("footnoteDefinition");
@@ -11308,14 +11341,13 @@ function footnoteDefinition(node, _, state, info) {
 			return value;
 		}
 	}
-function mapExceptFirst(line, index, blank) {
+	function mapExceptFirst(line, index, blank) {
 		return index === 0 ? line : mapAll(line, index, blank);
 	}
-function mapAll(line, index, blank) {
+	function mapAll(line, index, blank) {
 		return (blank ? "" : "    ") + line;
 	}
-
-var constructsWithoutStrikethrough = [
+	var constructsWithoutStrikethrough = [
 		"autolink",
 		"destinationLiteral",
 		"destinationRaw",
@@ -11324,14 +11356,14 @@ var constructsWithoutStrikethrough = [
 		"titleApostrophe"
 	];
 	handleDelete.peek = peekDelete;
-function gfmStrikethroughFromMarkdown() {
+	function gfmStrikethroughFromMarkdown() {
 		return {
 			canContainEols: ["delete"],
 			enter: { strikethrough: enterStrikethrough },
 			exit: { strikethrough: exitStrikethrough }
 		};
 	}
-function gfmStrikethroughToMarkdown() {
+	function gfmStrikethroughToMarkdown() {
 		return {
 			unsafe: [{
 				character: "~",
@@ -11341,16 +11373,16 @@ function gfmStrikethroughToMarkdown() {
 			handlers: { delete: handleDelete }
 		};
 	}
-function enterStrikethrough(token) {
+	function enterStrikethrough(token) {
 		this.enter({
 			type: "delete",
 			children: []
 		}, token);
 	}
-function exitStrikethrough(token) {
+	function exitStrikethrough(token) {
 		this.exit(token);
 	}
-function handleDelete(node, _, state, info) {
+	function handleDelete(node, _, state, info) {
 		const tracker = state.createTracker(info);
 		const exit = state.enter("strikethrough");
 		let value = tracker.move("~~");
@@ -11363,27 +11395,25 @@ function handleDelete(node, _, state, info) {
 		exit();
 		return value;
 	}
-function peekDelete() {
+	function peekDelete() {
 		return "~";
 	}
-
-
-function defaultStringLength(value) {
+	function defaultStringLength(value) {
 		return value.length;
 	}
-function markdownTable(table, options) {
+	function markdownTable(table, options) {
 		const settings = options || {};
 		const align = (settings.align || []).concat();
 		const stringLength = settings.stringLength || defaultStringLength;
-const alignments = [];
-const cellMatrix = [];
-const sizeMatrix = [];
-const longestCellByColumn = [];
+		const alignments = [];
+		const cellMatrix = [];
+		const sizeMatrix = [];
+		const longestCellByColumn = [];
 		let mostCellsPerRow = 0;
 		let rowIndex = -1;
 		while (++rowIndex < table.length) {
-const row = [];
-const sizes = [];
+			const row = [];
+			const sizes = [];
 			let columnIndex = -1;
 			if (table[rowIndex].length > mostCellsPerRow) mostCellsPerRow = table[rowIndex].length;
 			while (++columnIndex < table[rowIndex].length) {
@@ -11405,8 +11435,8 @@ const sizes = [];
 			while (++columnIndex < mostCellsPerRow) alignments[columnIndex] = code;
 		}
 		columnIndex = -1;
-const row = [];
-const sizes = [];
+		const row = [];
+		const sizes = [];
 		while (++columnIndex < mostCellsPerRow) {
 			const code = alignments[columnIndex];
 			let before = "";
@@ -11428,12 +11458,12 @@ const sizes = [];
 		cellMatrix.splice(1, 0, row);
 		sizeMatrix.splice(1, 0, sizes);
 		rowIndex = -1;
-const lines = [];
+		const lines = [];
 		while (++rowIndex < cellMatrix.length) {
 			const row = cellMatrix[rowIndex];
 			const sizes = sizeMatrix[rowIndex];
 			columnIndex = -1;
-const line = [];
+			const line = [];
 			while (++columnIndex < mostCellsPerRow) {
 				const cell = row[columnIndex] || "";
 				let before = "";
@@ -11463,21 +11493,21 @@ const line = [];
 		}
 		return lines.join("\n");
 	}
-function serialize$1(value) {
+	function serialize$1(value) {
 		return value === null || value === void 0 ? "" : String(value);
 	}
-function toAlignment(value) {
+	function toAlignment(value) {
 		const code = typeof value === "string" ? value.codePointAt(0) : 0;
 		return code === 67 || code === 99 ? 99 : code === 76 || code === 108 ? 108 : code === 82 || code === 114 ? 114 : 0;
 	}
-var own$1 = {}.hasOwnProperty;
-function configure(base, extension) {
+	var own$1 = {}.hasOwnProperty;
+	function configure(base, extension) {
 		let index = -1;
-let key;
+		let key;
 		if (extension.extensions) while (++index < extension.extensions.length) configure(base, extension.extensions[index]);
 		for (key in extension) if (own$1.call(extension, key)) switch (key) {
 			case "extensions": break;
-case "unsafe":
+			case "unsafe":
 				list$2(base[key], extension[key]);
 				break;
 			case "join":
@@ -11490,14 +11520,13 @@ case "unsafe":
 		}
 		return base;
 	}
-function list$2(left, right) {
+	function list$2(left, right) {
 		if (right) left.push(...right);
 	}
-function map$2(left, right) {
+	function map$2(left, right) {
 		if (right) Object.assign(left, right);
 	}
-
-function blockquote$1(node, _, state, info) {
+	function blockquote$1(node, _, state, info) {
 		const exit = state.enter("blockquote");
 		const tracker = state.createTracker(info);
 		tracker.move("> ");
@@ -11506,27 +11535,25 @@ function blockquote$1(node, _, state, info) {
 		exit();
 		return value;
 	}
-function map$1(line, _, blank) {
+	function map$1(line, _, blank) {
 		return ">" + (blank ? "" : " ") + line;
 	}
-
-function patternInScope(stack, pattern) {
+	function patternInScope(stack, pattern) {
 		return listInScope(stack, pattern.inConstruct, true) && !listInScope(stack, pattern.notInConstruct, false);
 	}
-function listInScope(stack, list, none) {
+	function listInScope(stack, list, none) {
 		if (typeof list === "string") list = [list];
 		if (!list || list.length === 0) return none;
 		let index = -1;
 		while (++index < list.length) if (stack.includes(list[index])) return true;
 		return false;
 	}
-
-function hardBreak$1(_, _1, state, info) {
+	function hardBreak$1(_, _1, state, info) {
 		let index = -1;
 		while (++index < state.unsafe.length) if (state.unsafe[index].character === "\n" && patternInScope(state.stack, state.unsafe[index])) return /[ \t]/.test(info.before) ? "" : " ";
 		return "\\\n";
 	}
-function longestStreak(value, substring) {
+	function longestStreak(value, substring) {
 		const source = String(value);
 		let index = source.indexOf(substring);
 		let expected = index;
@@ -11542,18 +11569,15 @@ function longestStreak(value, substring) {
 		}
 		return max;
 	}
-
-function formatCodeAsIndented(node, state) {
+	function formatCodeAsIndented(node, state) {
 		return Boolean(state.options.fences === false && node.value && !node.lang && /[^ \r\n]/.test(node.value) && !/^[\t ]*(?:[\r\n]|$)|(?:^|[\r\n])[\t ]*$/.test(node.value));
 	}
-
-function checkFence(state) {
+	function checkFence(state) {
 		const marker = state.options.fence || "`";
 		if (marker !== "`" && marker !== "~") throw new Error("Cannot serialize code with `" + marker + "` for `options.fence`, expected `` ` `` or `~`");
 		return marker;
 	}
-
-function code$2(node, _, state, info) {
+	function code$2(node, _, state, info) {
 		const marker = checkFence(state);
 		const raw = node.value || "";
 		const suffix = marker === "`" ? "GraveAccent" : "Tilde";
@@ -11594,17 +11618,15 @@ function code$2(node, _, state, info) {
 		exit();
 		return value;
 	}
-function map(line, _, blank) {
+	function map(line, _, blank) {
 		return (blank ? "" : "    ") + line;
 	}
-
-function checkQuote(state) {
+	function checkQuote(state) {
 		const marker = state.options.quote || "\"";
 		if (marker !== "\"" && marker !== "'") throw new Error("Cannot serialize title with `" + marker + "` for `options.quote`, expected `\"`, or `'`");
 		return marker;
 	}
-
-function definition(node, _, state, info) {
+	function definition(node, _, state, info) {
 		const quote = checkQuote(state);
 		const suffix = quote === "\"" ? "Quote" : "Apostrophe";
 		const exit = state.enter("definition");
@@ -11650,17 +11672,15 @@ function definition(node, _, state, info) {
 		exit();
 		return value;
 	}
-
-function checkEmphasis(state) {
+	function checkEmphasis(state) {
 		const marker = state.options.emphasis || "*";
 		if (marker !== "*" && marker !== "_") throw new Error("Cannot serialize emphasis with `" + marker + "` for `options.emphasis`, expected `*`, or `_`");
 		return marker;
 	}
-function encodeCharacterReference(code) {
+	function encodeCharacterReference(code) {
 		return "&#x" + code.toString(16).toUpperCase() + ";";
 	}
-
-function encodeInfo(outside, inside, marker) {
+	function encodeInfo(outside, inside, marker) {
 		const outsideKind = classifyCharacter(outside);
 		const insideKind = classifyCharacter(inside);
 		if (outsideKind === void 0) return insideKind === void 0 ? marker === "_" ? {
@@ -11697,8 +11717,8 @@ function encodeInfo(outside, inside, marker) {
 			outside: false
 		};
 	}
-emphasis$1.peek = emphasisPeek;
-function emphasis$1(node, _, state, info) {
+	emphasis$1.peek = emphasisPeek;
+	function emphasis$1(node, _, state, info) {
 		const marker = checkEmphasis(state);
 		const exit = state.enter("emphasis");
 		const tracker = state.createTracker(info);
@@ -11722,28 +11742,13 @@ function emphasis$1(node, _, state, info) {
 		};
 		return before + between + after;
 	}
-function emphasisPeek(_, _1, state) {
+	function emphasisPeek(_, _1, state) {
 		return state.options.emphasis || "*";
 	}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-function visit(tree, testOrVisitor, visitorOrReverse, maybeReverse) {
-let reverse;
-let test;
-let visitor;
+	function visit(tree, testOrVisitor, visitorOrReverse, maybeReverse) {
+		let reverse;
+		let test;
+		let visitor;
 		if (typeof testOrVisitor === "function" && typeof visitorOrReverse !== "function") {
 			test = void 0;
 			visitor = testOrVisitor;
@@ -11754,14 +11759,13 @@ let visitor;
 			reverse = maybeReverse;
 		}
 		visitParents(tree, test, overload, reverse);
-function overload(node, parents) {
+		function overload(node, parents) {
 			const parent = parents[parents.length - 1];
 			const index = parent ? parent.children.indexOf(node) : void 0;
 			return visitor(node, index, parent);
 		}
 	}
-
-function formatHeadingAsSetext(node, state) {
+	function formatHeadingAsSetext(node, state) {
 		let literalWithBreak = false;
 		visit(node, function(node) {
 			if ("value" in node && /\r?\n|\r/.test(node.value) || node.type === "break") {
@@ -11771,8 +11775,7 @@ function formatHeadingAsSetext(node, state) {
 		});
 		return Boolean((!node.depth || node.depth < 3) && toString$1(node) && (state.options.setext || literalWithBreak));
 	}
-
-function heading$1(node, _, state, info) {
+	function heading$1(node, _, state, info) {
 		const rank = Math.max(Math.min(6, node.depth || 1), 1);
 		const tracker = state.createTracker(info);
 		if (formatHeadingAsSetext(node, state)) {
@@ -11803,15 +11806,15 @@ function heading$1(node, _, state, info) {
 		exit();
 		return value;
 	}
-html$1.peek = htmlPeek;
-function html$1(node) {
+	html$1.peek = htmlPeek;
+	function html$1(node) {
 		return node.value || "";
 	}
-function htmlPeek() {
+	function htmlPeek() {
 		return "<";
 	}
-image$1.peek = imagePeek;
-function image$1(node, _, state, info) {
+	image$1.peek = imagePeek;
+	function image$1(node, _, state, info) {
 		const quote = checkQuote(state);
 		const suffix = quote === "\"" ? "Quote" : "Apostrophe";
 		const exit = state.enter("image");
@@ -11858,11 +11861,11 @@ function image$1(node, _, state, info) {
 		exit();
 		return value;
 	}
-function imagePeek() {
+	function imagePeek() {
 		return "!";
 	}
-imageReference$1.peek = imageReferencePeek;
-function imageReference$1(node, _, state, info) {
+	imageReference$1.peek = imageReferencePeek;
+	function imageReference$1(node, _, state, info) {
 		const type = node.referenceType;
 		const exit = state.enter("imageReference");
 		let subexit = state.enter("label");
@@ -11891,11 +11894,11 @@ function imageReference$1(node, _, state, info) {
 		else value += tracker.move("]");
 		return value;
 	}
-function imageReferencePeek() {
+	function imageReferencePeek() {
 		return "!";
 	}
-inlineCode$1.peek = inlineCodePeek;
-function inlineCode$1(node, _, state) {
+	inlineCode$1.peek = inlineCodePeek;
+	function inlineCode$1(node, _, state) {
 		let value = node.value || "";
 		let sequence = "`";
 		let index = -1;
@@ -11904,7 +11907,7 @@ function inlineCode$1(node, _, state) {
 		while (++index < state.unsafe.length) {
 			const pattern = state.unsafe[index];
 			const expression = state.compilePattern(pattern);
-let match;
+			let match;
 			if (!pattern.atBreak) continue;
 			while (match = expression.exec(value)) {
 				let position = match.index;
@@ -11914,21 +11917,20 @@ let match;
 		}
 		return sequence + value + sequence;
 	}
-function inlineCodePeek() {
+	function inlineCodePeek() {
 		return "`";
 	}
-
-function formatLinkAsAutolink(node, state) {
+	function formatLinkAsAutolink(node, state) {
 		const raw = toString$1(node);
 		return Boolean(!state.options.resourceLink && node.url && !node.title && node.children && node.children.length === 1 && node.children[0].type === "text" && (raw === node.url || "mailto:" + raw === node.url) && /^[a-z][a-z+.-]+:/i.test(node.url) && !/[\0- <>\u007F]/.test(node.url));
 	}
-link$1.peek = linkPeek;
-function link$1(node, _, state, info) {
+	link$1.peek = linkPeek;
+	function link$1(node, _, state, info) {
 		const quote = checkQuote(state);
 		const suffix = quote === "\"" ? "Quote" : "Apostrophe";
 		const tracker = state.createTracker(info);
-let exit;
-let subexit;
+		let exit;
+		let subexit;
 		if (formatLinkAsAutolink(node, state)) {
 			const stack = state.stack;
 			state.stack = [];
@@ -11987,11 +11989,11 @@ let subexit;
 		exit();
 		return value;
 	}
-function linkPeek(node, _, state) {
+	function linkPeek(node, _, state) {
 		return formatLinkAsAutolink(node, state) ? "<" : "[";
 	}
-linkReference$1.peek = linkReferencePeek;
-function linkReference$1(node, _, state, info) {
+	linkReference$1.peek = linkReferencePeek;
+	function linkReference$1(node, _, state, info) {
 		const type = node.referenceType;
 		const exit = state.enter("linkReference");
 		let subexit = state.enter("label");
@@ -12020,17 +12022,15 @@ function linkReference$1(node, _, state, info) {
 		else value += tracker.move("]");
 		return value;
 	}
-function linkReferencePeek() {
+	function linkReferencePeek() {
 		return "[";
 	}
-
-function checkBullet(state) {
+	function checkBullet(state) {
 		const marker = state.options.bullet || "*";
 		if (marker !== "*" && marker !== "+" && marker !== "-") throw new Error("Cannot serialize items with `" + marker + "` for `options.bullet`, expected `*`, `+`, or `-`");
 		return marker;
 	}
-
-function checkBulletOther(state) {
+	function checkBulletOther(state) {
 		const bullet = checkBullet(state);
 		const bulletOther = state.options.bulletOther;
 		if (!bulletOther) return bullet === "*" ? "-" : "*";
@@ -12038,24 +12038,21 @@ function checkBulletOther(state) {
 		if (bulletOther === bullet) throw new Error("Expected `bullet` (`" + bullet + "`) and `bulletOther` (`" + bulletOther + "`) to be different");
 		return bulletOther;
 	}
-
-function checkBulletOrdered(state) {
+	function checkBulletOrdered(state) {
 		const marker = state.options.bulletOrdered || ".";
 		if (marker !== "." && marker !== ")") throw new Error("Cannot serialize items with `" + marker + "` for `options.bulletOrdered`, expected `.` or `)`");
 		return marker;
 	}
-
-function checkRule(state) {
+	function checkRule(state) {
 		const marker = state.options.rule || "*";
 		if (marker !== "*" && marker !== "-" && marker !== "_") throw new Error("Cannot serialize rules with `" + marker + "` for `options.rule`, expected `*`, `-`, or `_`");
 		return marker;
 	}
-
-function list$1(node, parent, state, info) {
+	function list$1(node, parent, state, info) {
 		const exit = state.enter("list");
 		const bulletCurrent = state.bulletCurrent;
-let bullet = node.ordered ? checkBulletOrdered(state) : checkBullet(state);
-const bulletOther = node.ordered ? bullet === "." ? ")" : "." : checkBulletOther(state);
+		let bullet = node.ordered ? checkBulletOrdered(state) : checkBullet(state);
+		const bulletOther = node.ordered ? bullet === "." ? ")" : "." : checkBulletOther(state);
 		let useDifferentMarker = parent && state.bulletLastUsed ? bullet === state.bulletLastUsed : false;
 		if (!node.ordered) {
 			const firstListItem = node.children ? node.children[0] : void 0;
@@ -12079,14 +12076,12 @@ const bulletOther = node.ordered ? bullet === "." ? ")" : "." : checkBulletOther
 		exit();
 		return value;
 	}
-
-function checkListItemIndent(state) {
+	function checkListItemIndent(state) {
 		const style = state.options.listItemIndent || "one";
 		if (style !== "tab" && style !== "one" && style !== "mixed") throw new Error("Cannot serialize items with `" + style + "` for `options.listItemIndent`, expected `tab`, `one`, or `mixed`");
 		return style;
 	}
-
-function listItem$1(node, parent, state, info) {
+	function listItem$1(node, parent, state, info) {
 		const listItemIndent = checkListItemIndent(state);
 		let bullet = state.bulletCurrent || checkBullet(state);
 		if (parent && parent.type === "list" && parent.ordered) bullet = (typeof parent.start === "number" && parent.start > -1 ? parent.start : 1) + (state.options.incrementListMarker === false ? 0 : parent.children.indexOf(node)) + bullet;
@@ -12099,13 +12094,12 @@ function listItem$1(node, parent, state, info) {
 		const value = state.indentLines(state.containerFlow(node, tracker.current()), map);
 		exit();
 		return value;
-function map(line, index, blank) {
+		function map(line, index, blank) {
 			if (index) return (blank ? "" : " ".repeat(size)) + line;
 			return (blank ? bullet : bullet + " ".repeat(size - bullet.length)) + line;
 		}
 	}
-
-function paragraph$1(node, _, state, info) {
+	function paragraph$1(node, _, state, info) {
 		const exit = state.enter("paragraph");
 		const subexit = state.enter("phrasing");
 		const value = state.containerPhrasing(node, info);
@@ -12113,8 +12107,7 @@ function paragraph$1(node, _, state, info) {
 		exit();
 		return value;
 	}
-
-var phrasing = convert([
+	var phrasing = convert([
 		"break",
 		"delete",
 		"emphasis",
@@ -12132,20 +12125,18 @@ var phrasing = convert([
 		"text",
 		"textDirective"
 	]);
-
-function root$1(node, _, state, info) {
+	function root$1(node, _, state, info) {
 		return (node.children.some(function(d) {
 			return phrasing(d);
 		}) ? state.containerPhrasing : state.containerFlow).call(state, node, info);
 	}
-
-function checkStrong(state) {
+	function checkStrong(state) {
 		const marker = state.options.strong || "*";
 		if (marker !== "*" && marker !== "_") throw new Error("Cannot serialize strong with `" + marker + "` for `options.strong`, expected `*`, or `_`");
 		return marker;
 	}
-strong$1.peek = strongPeek;
-function strong$1(node, _, state, info) {
+	strong$1.peek = strongPeek;
+	function strong$1(node, _, state, info) {
 		const marker = checkStrong(state);
 		const exit = state.enter("strong");
 		const tracker = state.createTracker(info);
@@ -12169,25 +12160,22 @@ function strong$1(node, _, state, info) {
 		};
 		return before + between + after;
 	}
-function strongPeek(_, _1, state) {
+	function strongPeek(_, _1, state) {
 		return state.options.strong || "*";
 	}
-
-function text$2(node, _, state, info) {
+	function text$2(node, _, state, info) {
 		return state.safe(node.value, info);
 	}
-
-function checkRuleRepetition(state) {
+	function checkRuleRepetition(state) {
 		const repetition = state.options.ruleRepetition || 3;
 		if (repetition < 3) throw new Error("Cannot serialize rules with repetition `" + repetition + "` for `options.ruleRepetition`, expected `3` or more");
 		return repetition;
 	}
-
-function thematicBreak$1(_, _1, state) {
+	function thematicBreak$1(_, _1, state) {
 		const value = (checkRule(state) + (state.options.ruleSpaces ? " " : "")).repeat(checkRuleRepetition(state));
 		return state.options.ruleSpaces ? value.slice(0, -1) : value;
 	}
-var handle = {
+	var handle = {
 		blockquote: blockquote$1,
 		break: hardBreak$1,
 		code: code$2,
@@ -12209,17 +12197,15 @@ var handle = {
 		text: text$2,
 		thematicBreak: thematicBreak$1
 	};
-
-var join = [joinDefaults];
-function joinDefaults(left, right, parent, state) {
+	var join = [joinDefaults];
+	function joinDefaults(left, right, parent, state) {
 		if (right.type === "code" && formatCodeAsIndented(right, state) && (left.type === "list" || left.type === right.type && formatCodeAsIndented(left, state))) return false;
 		if ("spread" in parent && typeof parent.spread === "boolean") {
 			if (left.type === "paragraph" && (left.type === right.type || right.type === "definition" || right.type === "heading" && formatHeadingAsSetext(right, state))) return;
 			return parent.spread ? 1 : 0;
 		}
 	}
-
-var fullPhrasingSpans = [
+	var fullPhrasingSpans = [
 		"autolink",
 		"destinationLiteral",
 		"destinationRaw",
@@ -12227,7 +12213,7 @@ var fullPhrasingSpans = [
 		"titleQuote",
 		"titleApostrophe"
 	];
-var unsafe = [
+	var unsafe = [
 		{
 			character: "	",
 			after: "[\\r\\n]",
@@ -12427,36 +12413,33 @@ var unsafe = [
 			character: "~"
 		}
 	];
-
-function association(node) {
+	function association(node) {
 		if (node.label || !node.identifier) return node.label || "";
 		return decodeString(node.identifier);
 	}
-
-function compilePattern(pattern) {
+	function compilePattern(pattern) {
 		if (!pattern._compiled) {
 			const before = (pattern.atBreak ? "[\\r\\n][\\t ]*" : "") + (pattern.before ? "(?:" + pattern.before + ")" : "");
 			pattern._compiled = new RegExp((before ? "(" + before + ")" : "") + (/[|\\{}()[\]^$+*?.-]/.test(pattern.character) ? "\\" : "") + pattern.character + (pattern.after ? "(?:" + pattern.after + ")" : ""), "g");
 		}
 		return pattern._compiled;
 	}
-
-function containerPhrasing(parent, state, info) {
+	function containerPhrasing(parent, state, info) {
 		const indexStack = state.indexStack;
 		const children = parent.children || [];
-const results = [];
+		const results = [];
 		let index = -1;
 		let before = info.before;
-let encodeAfter;
+		let encodeAfter;
 		indexStack.push(-1);
 		let tracker = state.createTracker(info);
 		while (++index < children.length) {
 			const child = children[index];
-let after;
+			let after;
 			indexStack[indexStack.length - 1] = index;
 			if (index + 1 < children.length) {
-let handle = state.handle.handlers[children[index + 1].type];
-if (handle && handle.peek) handle = handle.peek;
+				let handle = state.handle.handlers[children[index + 1].type];
+				if (handle && handle.peek) handle = handle.peek;
 				after = handle ? handle(children[index + 1], parent, state, {
 					before: "",
 					after: "",
@@ -12489,12 +12472,11 @@ if (handle && handle.peek) handle = handle.peek;
 		indexStack.pop();
 		return results.join("");
 	}
-
-function containerFlow(parent, state, info) {
+	function containerFlow(parent, state, info) {
 		const indexStack = state.indexStack;
 		const children = parent.children || [];
 		const tracker = state.createTracker(info);
-const results = [];
+		const results = [];
 		let index = -1;
 		indexStack.push(-1);
 		while (++index < children.length) {
@@ -12511,7 +12493,7 @@ const results = [];
 		indexStack.pop();
 		return results.join("");
 	}
-function between(left, right, parent, state) {
+	function between(left, right, parent, state) {
 		let index = state.join.length;
 		while (index--) {
 			const result = state.join[index](left, right, parent, state);
@@ -12521,12 +12503,12 @@ function between(left, right, parent, state) {
 		}
 		return "\n\n";
 	}
-var eol = /\r?\n|\r/g;
-function indentLines(value, map) {
-const result = [];
+	var eol = /\r?\n|\r/g;
+	function indentLines(value, map) {
+		const result = [];
 		let start = 0;
 		let line = 0;
-let match;
+		let match;
 		while (match = eol.exec(value)) {
 			one(value.slice(start, match.index));
 			result.push(match[0]);
@@ -12535,22 +12517,21 @@ let match;
 		}
 		one(value.slice(start));
 		return result.join("");
-function one(value) {
+		function one(value) {
 			result.push(map(value, line, !value));
 		}
 	}
-
-function safe(state, input, config) {
+	function safe(state, input, config) {
 		const value = (config.before || "") + (input || "") + (config.after || "");
-const positions = [];
-const result = [];
-const infos = {};
+		const positions = [];
+		const result = [];
+		const infos = {};
 		let index = -1;
 		while (++index < state.unsafe.length) {
 			const pattern = state.unsafe[index];
 			if (!patternInScope(state.stack, pattern)) continue;
 			const expression = state.compilePattern(pattern);
-let match;
+			let match;
 			while (match = expression.exec(value)) {
 				const before = "before" in pattern || Boolean(pattern.atBreak);
 				const after = "after" in pattern;
@@ -12586,17 +12567,17 @@ let match;
 		result.push(escapeBackslashes(value.slice(start, end), config.after));
 		return result.join("");
 	}
-function numerical(a, b) {
+	function numerical(a, b) {
 		return a - b;
 	}
-function escapeBackslashes(value, after) {
+	function escapeBackslashes(value, after) {
 		const expression = /\\(?=[!-/:-@[-`{-~])/g;
-const positions = [];
-const results = [];
+		const positions = [];
+		const results = [];
 		const whole = value + after;
 		let index = -1;
 		let start = 0;
-let match;
+		let match;
 		while (match = expression.exec(whole)) positions.push(match.index);
 		while (++index < positions.length) {
 			if (start !== positions[index]) results.push(value.slice(start, positions[index]));
@@ -12606,9 +12587,8 @@ let match;
 		results.push(value.slice(start));
 		return results.join("");
 	}
-
-function track(config) {
-const options = config || {};
+	function track(config) {
+		const options = config || {};
 		const now = options.now || {};
 		let lineShift = options.lineShift || 0;
 		let line = now.line || 1;
@@ -12618,7 +12598,7 @@ const options = config || {};
 			current,
 			shift
 		};
-function current() {
+		function current() {
 			return {
 				now: {
 					line,
@@ -12627,10 +12607,10 @@ function current() {
 				lineShift
 			};
 		}
-function shift(value) {
+		function shift(value) {
 			lineShift += value;
 		}
-function move(input) {
+		function move(input) {
 			const value = input || "";
 			const chunks = value.split(/\r?\n|\r/g);
 			const tail = chunks[chunks.length - 1];
@@ -12639,10 +12619,9 @@ function move(input) {
 			return value;
 		}
 	}
-
-function toMarkdown$1(tree, options) {
+	function toMarkdown$1(tree, options) {
 		const settings = options || {};
-const state = {
+		const state = {
 			associationId: association,
 			containerPhrasing: containerPhrasingBound,
 			containerFlow: containerFlowBound,
@@ -12677,35 +12656,33 @@ const state = {
 		});
 		if (result && result.charCodeAt(result.length - 1) !== 10 && result.charCodeAt(result.length - 1) !== 13) result += "\n";
 		return result;
-function enter(name) {
+		function enter(name) {
 			state.stack.push(name);
 			return exit;
-function exit() {
+			function exit() {
 				state.stack.pop();
 			}
 		}
 	}
-function invalid(value) {
+	function invalid(value) {
 		throw new Error("Cannot handle value `" + value + "`, expected node");
 	}
-function unknown(value) {
+	function unknown(value) {
 		throw new Error("Cannot handle unknown node `" + value.type + "`");
 	}
-function joinDefinition(left, right) {
+	function joinDefinition(left, right) {
 		if (left.type === "definition" && left.type === right.type) return 0;
 	}
-function containerPhrasingBound(parent, info) {
+	function containerPhrasingBound(parent, info) {
 		return containerPhrasing(parent, this, info);
 	}
-function containerFlowBound(parent, info) {
+	function containerFlowBound(parent, info) {
 		return containerFlow(parent, this, info);
 	}
-function safeBound(value, config) {
+	function safeBound(value, config) {
 		return safe(this, value, config);
 	}
-
-
-function gfmTableFromMarkdown() {
+	function gfmTableFromMarkdown() {
 		return {
 			enter: {
 				table: enterTable,
@@ -12722,7 +12699,7 @@ function gfmTableFromMarkdown() {
 			}
 		};
 	}
-function enterTable(token) {
+	function enterTable(token) {
 		const align = token._align;
 		this.enter({
 			type: "table",
@@ -12733,26 +12710,26 @@ function enterTable(token) {
 		}, token);
 		this.data.inTable = true;
 	}
-function exitTable(token) {
+	function exitTable(token) {
 		this.exit(token);
 		this.data.inTable = void 0;
 	}
-function enterRow(token) {
+	function enterRow(token) {
 		this.enter({
 			type: "tableRow",
 			children: []
 		}, token);
 	}
-function exit(token) {
+	function exit(token) {
 		this.exit(token);
 	}
-function enterCell(token) {
+	function enterCell(token) {
 		this.enter({
 			type: "tableCell",
 			children: []
 		}, token);
 	}
-function exitCodeText(token) {
+	function exitCodeText(token) {
 		let value = this.resume();
 		if (this.data.inTable) value = value.replace(/\\([\\|])/g, replace);
 		const node = this.stack[this.stack.length - 1];
@@ -12760,10 +12737,10 @@ function exitCodeText(token) {
 		node.value = value;
 		this.exit(token);
 	}
-function replace($0, $1) {
+	function replace($0, $1) {
 		return $1 === "|" ? $1 : $0;
 	}
-function gfmTableToMarkdown(options) {
+	function gfmTableToMarkdown(options) {
 		const settings = options || {};
 		const padding = settings.tableCellPadding;
 		const alignDelimiters = settings.tablePipeAlign;
@@ -12806,14 +12783,14 @@ function gfmTableToMarkdown(options) {
 				tableRow: handleTableRow
 			}
 		};
-function handleTable(node, _, state, info) {
+		function handleTable(node, _, state, info) {
 			return serializeData(handleTableAsData(node, state, info), node.align);
 		}
-function handleTableRow(node, _, state, info) {
+		function handleTableRow(node, _, state, info) {
 			const value = serializeData([handleTableRowAsData(node, state, info)]);
 			return value.slice(0, value.indexOf("\n"));
 		}
-function handleTableCell(node, _, state, info) {
+		function handleTableCell(node, _, state, info) {
 			const exit = state.enter("tableCell");
 			const subexit = state.enter("phrasing");
 			const value = state.containerPhrasing(node, {
@@ -12825,7 +12802,7 @@ function handleTableCell(node, _, state, info) {
 			exit();
 			return value;
 		}
-function serializeData(matrix, align) {
+		function serializeData(matrix, align) {
 			return markdownTable(matrix, {
 				align,
 				alignDelimiters,
@@ -12833,39 +12810,38 @@ function serializeData(matrix, align) {
 				stringLength
 			});
 		}
-function handleTableAsData(node, state, info) {
+		function handleTableAsData(node, state, info) {
 			const children = node.children;
 			let index = -1;
-const result = [];
+			const result = [];
 			const subexit = state.enter("table");
 			while (++index < children.length) result[index] = handleTableRowAsData(children[index], state, info);
 			subexit();
 			return result;
 		}
-function handleTableRowAsData(node, state, info) {
+		function handleTableRowAsData(node, state, info) {
 			const children = node.children;
 			let index = -1;
-const result = [];
+			const result = [];
 			const subexit = state.enter("tableRow");
 			while (++index < children.length) result[index] = handleTableCell(children[index], node, state, info);
 			subexit();
 			return result;
 		}
-function inlineCodeWithTable(node, parent, state) {
+		function inlineCodeWithTable(node, parent, state) {
 			let value = handle.inlineCode(node, parent, state);
 			if (state.stack.includes("tableCell")) value = value.replace(/\|/g, "\\$&");
 			return value;
 		}
 	}
-
-function gfmTaskListItemFromMarkdown() {
+	function gfmTaskListItemFromMarkdown() {
 		return { exit: {
 			taskListCheckValueChecked: exitCheck,
 			taskListCheckValueUnchecked: exitCheck,
 			paragraph: exitParagraphWithTaskListItem
 		} };
 	}
-function gfmTaskListItemToMarkdown() {
+	function gfmTaskListItemToMarkdown() {
 		return {
 			unsafe: [{
 				atBreak: true,
@@ -12875,12 +12851,12 @@ function gfmTaskListItemToMarkdown() {
 			handlers: { listItem: listItemWithTaskListItem }
 		};
 	}
-function exitCheck(token) {
+	function exitCheck(token) {
 		const node = this.stack[this.stack.length - 2];
 		node.type;
 		node.checked = token.type === "taskListCheckValueChecked";
 	}
-function exitParagraphWithTaskListItem(token) {
+	function exitParagraphWithTaskListItem(token) {
 		const parent = this.stack[this.stack.length - 2];
 		if (parent && parent.type === "listItem" && typeof parent.checked === "boolean") {
 			const node = this.stack[this.stack.length - 1];
@@ -12889,7 +12865,7 @@ function exitParagraphWithTaskListItem(token) {
 			if (head && head.type === "text") {
 				const siblings = parent.children;
 				let index = -1;
-let firstParaghraph;
+				let firstParaghraph;
 				while (++index < siblings.length) {
 					const sibling = siblings[index];
 					if (sibling.type === "paragraph") {
@@ -12910,7 +12886,7 @@ let firstParaghraph;
 		}
 		this.exit(token);
 	}
-function listItemWithTaskListItem(node, parent, state, info) {
+	function listItemWithTaskListItem(node, parent, state, info) {
 		const head = node.children[0];
 		const checkable = typeof node.checked === "boolean" && head && head.type === "paragraph";
 		const checkbox = "[" + (node.checked ? "x" : " ") + "] ";
@@ -12922,12 +12898,11 @@ function listItemWithTaskListItem(node, parent, state, info) {
 		});
 		if (checkable) value = value.replace(/^(?:[*+-]|\d+\.)([\r\n]| {1,3})/, check);
 		return value;
-function check($0) {
+		function check($0) {
 			return $0 + checkbox;
 		}
 	}
-
-function gfmFromMarkdown() {
+	function gfmFromMarkdown() {
 		return [
 			gfmAutolinkLiteralFromMarkdown(),
 			gfmFootnoteFromMarkdown(),
@@ -12936,7 +12911,7 @@ function gfmFromMarkdown() {
 			gfmTaskListItemFromMarkdown()
 		];
 	}
-function gfmToMarkdown(options) {
+	function gfmToMarkdown(options) {
 		return { extensions: [
 			gfmAutolinkLiteralToMarkdown(),
 			gfmFootnoteToMarkdown(options),
@@ -12945,9 +12920,8 @@ function gfmToMarkdown(options) {
 			gfmTaskListItemToMarkdown()
 		] };
 	}
-
-function blockquote(state, node) {
-const result = {
+	function blockquote(state, node) {
+		const result = {
 			type: "element",
 			tagName: "blockquote",
 			properties: {},
@@ -12956,9 +12930,8 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-function hardBreak(state, node) {
-const result = {
+	function hardBreak(state, node) {
+		const result = {
 			type: "element",
 			tagName: "br",
 			properties: {},
@@ -12970,13 +12943,12 @@ const result = {
 			value: "\n"
 		}];
 	}
-
-function code$1(state, node) {
+	function code$1(state, node) {
 		const value = node.value ? node.value + "\n" : "";
-const properties = {};
+		const properties = {};
 		const language = node.lang ? node.lang.split(/\s+/) : [];
 		if (language.length > 0) properties.className = ["language-" + language[0]];
-let result = {
+		let result = {
 			type: "element",
 			tagName: "code",
 			properties,
@@ -12997,9 +12969,8 @@ let result = {
 		state.patch(node, result);
 		return result;
 	}
-
-function strikethrough(state, node) {
-const result = {
+	function strikethrough(state, node) {
+		const result = {
 			type: "element",
 			tagName: "del",
 			properties: {},
@@ -13008,9 +12979,8 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-function emphasis(state, node) {
-const result = {
+	function emphasis(state, node) {
+		const result = {
 			type: "element",
 			tagName: "em",
 			properties: {},
@@ -13019,13 +12989,12 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-function footnoteReference(state, node) {
+	function footnoteReference(state, node) {
 		const clobberPrefix = typeof state.options.clobberPrefix === "string" ? state.options.clobberPrefix : "user-content-";
 		const id = String(node.identifier).toUpperCase();
 		const safeId = normalizeUri(id.toLowerCase());
 		const index = state.footnoteOrder.indexOf(id);
-let counter;
+		let counter;
 		let reuseCounter = state.footnoteCounts.get(id);
 		if (reuseCounter === void 0) {
 			reuseCounter = 0;
@@ -13034,7 +13003,7 @@ let counter;
 		} else counter = index + 1;
 		reuseCounter += 1;
 		state.footnoteCounts.set(id, reuseCounter);
-const link = {
+		const link = {
 			type: "element",
 			tagName: "a",
 			properties: {
@@ -13049,7 +13018,7 @@ const link = {
 			}]
 		};
 		state.patch(node, link);
-const sup = {
+		const sup = {
 			type: "element",
 			tagName: "sup",
 			properties: {},
@@ -13058,9 +13027,8 @@ const sup = {
 		state.patch(node, sup);
 		return state.applyData(node, sup);
 	}
-
-function heading(state, node) {
-const result = {
+	function heading(state, node) {
+		const result = {
 			type: "element",
 			tagName: "h" + node.depth,
 			properties: {},
@@ -13069,10 +13037,9 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-function html(state, node) {
+	function html(state, node) {
 		if (state.options.allowDangerousHtml) {
-const result = {
+			const result = {
 				type: "raw",
 				value: node.value
 			};
@@ -13080,8 +13047,7 @@ const result = {
 			return state.applyData(node, result);
 		}
 	}
-
-function revert(state, node) {
+	function revert(state, node) {
 		const subtype = node.referenceType;
 		let suffix = "]";
 		if (subtype === "collapsed") suffix += "[]";
@@ -13105,17 +13071,16 @@ function revert(state, node) {
 		});
 		return contents;
 	}
-
-function imageReference(state, node) {
+	function imageReference(state, node) {
 		const id = String(node.identifier).toUpperCase();
 		const definition = state.definitionById.get(id);
 		if (!definition) return revert(state, node);
-const properties = {
+		const properties = {
 			src: normalizeUri(definition.url || ""),
 			alt: node.alt
 		};
 		if (definition.title !== null && definition.title !== void 0) properties.title = definition.title;
-const result = {
+		const result = {
 			type: "element",
 			tagName: "img",
 			properties,
@@ -13124,12 +13089,11 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-function image(state, node) {
-const properties = { src: normalizeUri(node.url) };
+	function image(state, node) {
+		const properties = { src: normalizeUri(node.url) };
 		if (node.alt !== null && node.alt !== void 0) properties.alt = node.alt;
 		if (node.title !== null && node.title !== void 0) properties.title = node.title;
-const result = {
+		const result = {
 			type: "element",
 			tagName: "img",
 			properties,
@@ -13138,14 +13102,13 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-function inlineCode(state, node) {
-const text = {
+	function inlineCode(state, node) {
+		const text = {
 			type: "text",
 			value: node.value.replace(/\r?\n|\r/g, " ")
 		};
 		state.patch(node, text);
-const result = {
+		const result = {
 			type: "element",
 			tagName: "code",
 			properties: {},
@@ -13154,14 +13117,13 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-function linkReference(state, node) {
+	function linkReference(state, node) {
 		const id = String(node.identifier).toUpperCase();
 		const definition = state.definitionById.get(id);
 		if (!definition) return revert(state, node);
-const properties = { href: normalizeUri(definition.url || "") };
+		const properties = { href: normalizeUri(definition.url || "") };
 		if (definition.title !== null && definition.title !== void 0) properties.title = definition.title;
-const result = {
+		const result = {
 			type: "element",
 			tagName: "a",
 			properties,
@@ -13170,11 +13132,10 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-function link(state, node) {
-const properties = { href: normalizeUri(node.url) };
+	function link(state, node) {
+		const properties = { href: normalizeUri(node.url) };
 		if (node.title !== null && node.title !== void 0) properties.title = node.title;
-const result = {
+		const result = {
 			type: "element",
 			tagName: "a",
 			properties,
@@ -13183,15 +13144,14 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-function listItem(state, node, parent) {
+	function listItem(state, node, parent) {
 		const results = state.all(node);
 		const loose = parent ? listLoose(parent) : listItemLoose(node);
-const properties = {};
-const children = [];
+		const properties = {};
+		const children = [];
 		if (typeof node.checked === "boolean") {
 			const head = results[0];
-let paragraph;
+			let paragraph;
 			if (head && head.type === "element" && head.tagName === "p") paragraph = head;
 			else {
 				paragraph = {
@@ -13233,7 +13193,7 @@ let paragraph;
 			type: "text",
 			value: "\n"
 		});
-const result = {
+		const result = {
 			type: "element",
 			tagName: "li",
 			properties,
@@ -13242,7 +13202,7 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-function listLoose(node) {
+	function listLoose(node) {
 		let loose = false;
 		if (node.type === "list") {
 			loose = node.spread || false;
@@ -13252,13 +13212,12 @@ function listLoose(node) {
 		}
 		return loose;
 	}
-function listItemLoose(node) {
+	function listItemLoose(node) {
 		const spread = node.spread;
 		return spread === null || spread === void 0 ? node.children.length > 1 : spread;
 	}
-
-function list(state, node) {
-const properties = {};
+	function list(state, node) {
+		const properties = {};
 		const results = state.all(node);
 		let index = -1;
 		if (typeof node.start === "number" && node.start !== 1) properties.start = node.start;
@@ -13269,7 +13228,7 @@ const properties = {};
 				break;
 			}
 		}
-const result = {
+		const result = {
 			type: "element",
 			tagName: node.ordered ? "ol" : "ul",
 			properties,
@@ -13278,9 +13237,8 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-function paragraph(state, node) {
-const result = {
+	function paragraph(state, node) {
+		const result = {
 			type: "element",
 			tagName: "p",
 			properties: {},
@@ -13289,18 +13247,16 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-function root(state, node) {
-const result = {
+	function root(state, node) {
+		const result = {
 			type: "root",
 			children: state.wrap(state.all(node))
 		};
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-function strong(state, node) {
-const result = {
+	function strong(state, node) {
+		const result = {
 			type: "element",
 			tagName: "strong",
 			properties: {},
@@ -13309,13 +13265,11 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-
-var pointEnd = point("end");
-var pointStart = point("start");
-function point(type) {
+	var pointEnd = point("end");
+	var pointStart = point("start");
+	function point(type) {
 		return point;
-function point(node) {
+		function point(node) {
 			const point = node && node.position && node.position[type] || {};
 			if (typeof point.line === "number" && point.line > 0 && typeof point.column === "number" && point.column > 0) return {
 				line: point.line,
@@ -13324,7 +13278,7 @@ function point(node) {
 			};
 		}
 	}
-function position(node) {
+	function position(node) {
 		const start = pointStart(node);
 		const end = pointEnd(node);
 		if (start && end) return {
@@ -13332,13 +13286,12 @@ function position(node) {
 			end
 		};
 	}
-
-function table(state, node) {
+	function table(state, node) {
 		const rows = state.all(node);
 		const firstRow = rows.shift();
-const tableContent = [];
+		const tableContent = [];
 		if (firstRow) {
-const head = {
+			const head = {
 				type: "element",
 				tagName: "thead",
 				properties: {},
@@ -13348,7 +13301,7 @@ const head = {
 			tableContent.push(head);
 		}
 		if (rows.length > 0) {
-const body = {
+			const body = {
 				type: "element",
 				tagName: "tbody",
 				properties: {},
@@ -13362,7 +13315,7 @@ const body = {
 			};
 			tableContent.push(body);
 		}
-const result = {
+		const result = {
 			type: "element",
 			tagName: "table",
 			properties: {},
@@ -13371,20 +13324,19 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-function tableRow(state, node, parent) {
+	function tableRow(state, node, parent) {
 		const siblings = parent ? parent.children : void 0;
 		const tagName = (siblings ? siblings.indexOf(node) : 1) === 0 ? "th" : "td";
 		const align = parent && parent.type === "table" ? parent.align : void 0;
 		const length = align ? align.length : node.children.length;
 		let cellIndex = -1;
-const cells = [];
+		const cells = [];
 		while (++cellIndex < length) {
 			const cell = node.children[cellIndex];
-const properties = {};
+			const properties = {};
 			const alignValue = align ? align[cellIndex] : void 0;
 			if (alignValue) properties.align = alignValue;
-let result = {
+			let result = {
 				type: "element",
 				tagName,
 				properties,
@@ -13397,7 +13349,7 @@ let result = {
 			}
 			cells.push(result);
 		}
-const result = {
+		const result = {
 			type: "element",
 			tagName: "tr",
 			properties: {},
@@ -13406,9 +13358,8 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-function tableCell(state, node) {
-const result = {
+	function tableCell(state, node) {
+		const result = {
 			type: "element",
 			tagName: "td",
 			properties: {},
@@ -13419,12 +13370,12 @@ const result = {
 	}
 	var tab = 9;
 	var space = 32;
-function trimLines(value) {
+	function trimLines(value) {
 		const source = String(value);
 		const search = /\r?\n|\r/g;
 		let match = search.exec(source);
 		let last = 0;
-const lines = [];
+		const lines = [];
 		while (match) {
 			lines.push(trimLine(source.slice(last, match.index), last > 0, true), match[0]);
 			last = match.index + match[0].length;
@@ -13433,7 +13384,7 @@ const lines = [];
 		lines.push(trimLine(source.slice(last), last > 0, false));
 		return lines.join("");
 	}
-function trimLine(value, start, end) {
+	function trimLine(value, start, end) {
 		let startIndex = 0;
 		let endIndex = value.length;
 		if (start) {
@@ -13452,18 +13403,16 @@ function trimLine(value, start, end) {
 		}
 		return endIndex > startIndex ? value.slice(startIndex, endIndex) : "";
 	}
-
-function text$1(state, node) {
-const result = {
+	function text$1(state, node) {
+		const result = {
 			type: "text",
 			value: trimLines(String(node.value))
 		};
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-function thematicBreak(state, node) {
-const result = {
+	function thematicBreak(state, node) {
+		const result = {
 			type: "element",
 			tagName: "hr",
 			properties: {},
@@ -13472,8 +13421,7 @@ const result = {
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-
-var handlers = {
+	var handlers = {
 		blockquote,
 		break: hardBreak,
 		code: code$1,
@@ -13531,12 +13479,12 @@ var handlers = {
 					return as(new RegExp(source, flags), index);
 				}
 				case 5: {
-					const map = as( new Map(), index);
+					const map = as(new Map(), index);
 					for (const [key, index] of value) map.set(unpair(key), unpair(index));
 					return map;
 				}
 				case 6: {
-					const set = as( new Set(), index);
+					const set = as(new Set(), index);
 					for (const index of value) set.add(unpair(index));
 					return set;
 				}
@@ -13556,8 +13504,7 @@ var handlers = {
 		};
 		return unpair;
 	};
-
-var deserialize = (serialized) => deserializer( new Map(), serialized)(0);
+	var deserialize = (serialized) => deserializer(new Map(), serialized)(0);
 	var EMPTY = "";
 	var { toString } = {};
 	var { keys } = Object;
@@ -13659,17 +13606,13 @@ var deserialize = (serialized) => deserializer( new Map(), serialized)(0);
 		};
 		return pair;
 	};
-
-var serialize = (value, { json, lossy } = {}) => {
+	var serialize = (value, { json, lossy } = {}) => {
 		const _ = [];
 		return serializer(!(json || lossy), !!json, new Map(), _)(value), _;
 	};
-
-var esm_default = typeof structuredClone === "function" ? (any, options) => options && ("json" in options || "lossy" in options) ? deserialize(serialize(any, options)) : structuredClone(any) : (any, options) => deserialize(serialize(any, options));
-
-
-function defaultFootnoteBackContent(_, rereferenceIndex) {
-const result = [{
+	var esm_default = typeof structuredClone === "function" ? (any, options) => options && ("json" in options || "lossy" in options) ? deserialize(serialize(any, options)) : structuredClone(any) : (any, options) => deserialize(serialize(any, options));
+	function defaultFootnoteBackContent(_, rereferenceIndex) {
+		const result = [{
 			type: "text",
 			value: "↩"
 		}];
@@ -13684,17 +13627,17 @@ const result = [{
 		});
 		return result;
 	}
-function defaultFootnoteBackLabel(referenceIndex, rereferenceIndex) {
+	function defaultFootnoteBackLabel(referenceIndex, rereferenceIndex) {
 		return "Back to reference " + (referenceIndex + 1) + (rereferenceIndex > 1 ? "-" + rereferenceIndex : "");
 	}
-function footer(state) {
+	function footer(state) {
 		const clobberPrefix = typeof state.options.clobberPrefix === "string" ? state.options.clobberPrefix : "user-content-";
 		const footnoteBackContent = state.options.footnoteBackContent || defaultFootnoteBackContent;
 		const footnoteBackLabel = state.options.footnoteBackLabel || defaultFootnoteBackLabel;
 		const footnoteLabel = state.options.footnoteLabel || "Footnotes";
 		const footnoteLabelTagName = state.options.footnoteLabelTagName || "h2";
 		const footnoteLabelProperties = state.options.footnoteLabelProperties || { className: ["sr-only"] };
-const listItems = [];
+		const listItems = [];
 		let referenceIndex = -1;
 		while (++referenceIndex < state.footnoteOrder.length) {
 			const definition = state.footnoteById.get(state.footnoteOrder[referenceIndex]);
@@ -13703,7 +13646,7 @@ const listItems = [];
 			const id = String(definition.identifier).toUpperCase();
 			const safeId = normalizeUri(id.toLowerCase());
 			let rereferenceIndex = 0;
-const backReferences = [];
+			const backReferences = [];
 			const counts = state.footnoteCounts.get(id);
 			while (counts !== void 0 && ++rereferenceIndex <= counts) {
 				if (backReferences.length > 0) backReferences.push({
@@ -13737,7 +13680,7 @@ const backReferences = [];
 				});
 				tail.children.push(...backReferences);
 			} else content.push(...backReferences);
-const listItem = {
+			const listItem = {
 				type: "element",
 				tagName: "li",
 				properties: { id: clobberPrefix + "fn-" + safeId },
@@ -13784,14 +13727,13 @@ const listItem = {
 			]
 		};
 	}
-
-var own = {}.hasOwnProperty;
-var emptyOptions = {};
-function createState(tree, options) {
+	var own = {}.hasOwnProperty;
+	var emptyOptions = {};
+	function createState(tree, options) {
 		const settings = options || emptyOptions;
-const definitionById = new Map();
-const footnoteById = new Map();
-const state = {
+		const definitionById = new Map();
+		const footnoteById = new Map();
+		const state = {
 			all,
 			applyData,
 			definitionById,
@@ -13815,7 +13757,7 @@ const state = {
 			}
 		});
 		return state;
-function one(node, parent) {
+		function one(node, parent) {
 			const type = node.type;
 			const handle = state.handlers[type];
 			if (own.call(state.handlers, type) && handle) return handle(state, node, parent);
@@ -13830,8 +13772,8 @@ function one(node, parent) {
 			}
 			return (state.options.unknownHandler || defaultUnknownHandler)(state, node, parent);
 		}
-function all(parent) {
-const values = [];
+		function all(parent) {
+			const values = [];
 			if ("children" in parent) {
 				const nodes = parent.children;
 				let index = -1;
@@ -13853,11 +13795,11 @@ const values = [];
 			return values;
 		}
 	}
-function patch(from, to) {
+	function patch(from, to) {
 		if (from.position) to.position = position(from);
 	}
-function applyData(from, to) {
-let result = to;
+	function applyData(from, to) {
+		let result = to;
 		if (from && from.data) {
 			const hName = from.data.hName;
 			const hChildren = from.data.hChildren;
@@ -13874,9 +13816,9 @@ let result = to;
 		}
 		return result;
 	}
-function defaultUnknownHandler(state, node) {
+	function defaultUnknownHandler(state, node) {
 		const data = node.data || {};
-const result = "value" in node && !(own.call(data, "hProperties") || own.call(data, "hChildren")) ? {
+		const result = "value" in node && !(own.call(data, "hProperties") || own.call(data, "hChildren")) ? {
 			type: "text",
 			value: node.value
 		} : {
@@ -13888,8 +13830,8 @@ const result = "value" in node && !(own.call(data, "hProperties") || own.call(da
 		state.patch(node, result);
 		return state.applyData(node, result);
 	}
-function wrap(nodes, loose) {
-const result = [];
+	function wrap(nodes, loose) {
+		const result = [];
 		let index = -1;
 		if (loose) result.push({
 			type: "text",
@@ -13908,7 +13850,7 @@ const result = [];
 		});
 		return result;
 	}
-function trimMarkdownSpaceStart(value) {
+	function trimMarkdownSpaceStart(value) {
 		let index = 0;
 		let code = value.charCodeAt(index);
 		while (code === 9 || code === 32) {
@@ -13917,12 +13859,11 @@ function trimMarkdownSpaceStart(value) {
 		}
 		return value.slice(index);
 	}
-
-function toHast(tree, options) {
+	function toHast(tree, options) {
 		const state = createState(tree, options);
 		const node = state.one(tree, void 0);
 		const foot = footer(state);
-const result = Array.isArray(node) ? {
+		const result = Array.isArray(node) ? {
 			type: "root",
 			children: node
 		} : node || {
@@ -13938,7 +13879,7 @@ const result = Array.isArray(node) ? {
 		}
 		return result;
 	}
-var wwwPrefix = {
+	var wwwPrefix = {
 		tokenize: tokenizeWwwPrefix,
 		partial: true
 	};
@@ -13973,11 +13914,11 @@ var wwwPrefix = {
 		tokenize: tokenizeEmailAutolink,
 		previous: previousEmail
 	};
-var text = {};
-function gfmAutolinkLiteral() {
+	var text = {};
+	function gfmAutolinkLiteral() {
 		return { text };
 	}
-var code = 48;
+	var code = 48;
 	while (code < 123) {
 		text[code] = emailAutolink;
 		code++;
@@ -13992,18 +13933,18 @@ var code = 48;
 	text[104] = [emailAutolink, protocolAutolink];
 	text[87] = [emailAutolink, wwwAutolink];
 	text[119] = [emailAutolink, wwwAutolink];
-function tokenizeEmailAutolink(effects, ok, nok) {
+	function tokenizeEmailAutolink(effects, ok, nok) {
 		const self = this;
-let dot;
-let data;
+		let dot;
+		let data;
 		return start;
-function start(code) {
+		function start(code) {
 			if (!gfmAtext(code) || !previousEmail.call(self, self.previous) || previousUnbalanced(self.events)) return nok(code);
 			effects.enter("literalAutolink");
 			effects.enter("literalAutolinkEmail");
 			return atext(code);
 		}
-function atext(code) {
+		function atext(code) {
 			if (gfmAtext(code)) {
 				effects.consume(code);
 				return atext;
@@ -14014,7 +13955,7 @@ function atext(code) {
 			}
 			return nok(code);
 		}
-function emailDomain(code) {
+		function emailDomain(code) {
 			if (code === 46) return effects.check(emailDomainDotTrail, emailDomainAfter, emailDomainDot)(code);
 			if (code === 45 || code === 95 || asciiAlphanumeric(code)) {
 				data = true;
@@ -14023,12 +13964,12 @@ function emailDomain(code) {
 			}
 			return emailDomainAfter(code);
 		}
-function emailDomainDot(code) {
+		function emailDomainDot(code) {
 			effects.consume(code);
 			dot = true;
 			return emailDomain;
 		}
-function emailDomainAfter(code) {
+		function emailDomainAfter(code) {
 			if (data && dot && asciiAlpha(self.previous)) {
 				effects.exit("literalAutolinkEmail");
 				effects.exit("literalAutolink");
@@ -14037,27 +13978,27 @@ function emailDomainAfter(code) {
 			return nok(code);
 		}
 	}
-function tokenizeWwwAutolink(effects, ok, nok) {
+	function tokenizeWwwAutolink(effects, ok, nok) {
 		const self = this;
 		return wwwStart;
-function wwwStart(code) {
+		function wwwStart(code) {
 			if (code !== 87 && code !== 119 || !previousWww.call(self, self.previous) || previousUnbalanced(self.events)) return nok(code);
 			effects.enter("literalAutolink");
 			effects.enter("literalAutolinkWww");
 			return effects.check(wwwPrefix, effects.attempt(domain, effects.attempt(path, wwwAfter), nok), nok)(code);
 		}
-function wwwAfter(code) {
+		function wwwAfter(code) {
 			effects.exit("literalAutolinkWww");
 			effects.exit("literalAutolink");
 			return ok(code);
 		}
 	}
-function tokenizeProtocolAutolink(effects, ok, nok) {
+	function tokenizeProtocolAutolink(effects, ok, nok) {
 		const self = this;
 		let buffer = "";
 		let seen = false;
 		return protocolStart;
-function protocolStart(code) {
+		function protocolStart(code) {
 			if ((code === 72 || code === 104) && previousProtocol.call(self, self.previous) && !previousUnbalanced(self.events)) {
 				effects.enter("literalAutolink");
 				effects.enter("literalAutolinkHttp");
@@ -14067,7 +14008,7 @@ function protocolStart(code) {
 			}
 			return nok(code);
 		}
-function protocolPrefixInside(code) {
+		function protocolPrefixInside(code) {
 			if (asciiAlpha(code) && buffer.length < 5) {
 				buffer += String.fromCodePoint(code);
 				effects.consume(code);
@@ -14082,7 +14023,7 @@ function protocolPrefixInside(code) {
 			}
 			return nok(code);
 		}
-function protocolSlashesInside(code) {
+		function protocolSlashesInside(code) {
 			if (code === 47) {
 				effects.consume(code);
 				if (seen) return afterProtocol;
@@ -14091,19 +14032,19 @@ function protocolSlashesInside(code) {
 			}
 			return nok(code);
 		}
-function afterProtocol(code) {
+		function afterProtocol(code) {
 			return code === null || asciiControl(code) || markdownLineEndingOrSpace(code) || unicodeWhitespace(code) || unicodePunctuation(code) ? nok(code) : effects.attempt(domain, effects.attempt(path, protocolAfter), nok)(code);
 		}
-function protocolAfter(code) {
+		function protocolAfter(code) {
 			effects.exit("literalAutolinkHttp");
 			effects.exit("literalAutolink");
 			return ok(code);
 		}
 	}
-function tokenizeWwwPrefix(effects, ok, nok) {
+	function tokenizeWwwPrefix(effects, ok, nok) {
 		let size = 0;
 		return wwwPrefixInside;
-function wwwPrefixInside(code) {
+		function wwwPrefixInside(code) {
 			if ((code === 87 || code === 119) && size < 3) {
 				size++;
 				effects.consume(code);
@@ -14115,23 +14056,23 @@ function wwwPrefixInside(code) {
 			}
 			return nok(code);
 		}
-function wwwPrefixAfter(code) {
+		function wwwPrefixAfter(code) {
 			return code === null ? nok(code) : ok(code);
 		}
 	}
-function tokenizeDomain(effects, ok, nok) {
-let underscoreInLastSegment;
-let underscoreInLastLastSegment;
-let seen;
+	function tokenizeDomain(effects, ok, nok) {
+		let underscoreInLastSegment;
+		let underscoreInLastLastSegment;
+		let seen;
 		return domainInside;
-function domainInside(code) {
+		function domainInside(code) {
 			if (code === 46 || code === 95) return effects.check(trail, domainAfter, domainAtPunctuation)(code);
 			if (code === null || markdownLineEndingOrSpace(code) || unicodeWhitespace(code) || code !== 45 && unicodePunctuation(code)) return domainAfter(code);
 			seen = true;
 			effects.consume(code);
 			return domainInside;
 		}
-function domainAtPunctuation(code) {
+		function domainAtPunctuation(code) {
 			if (code === 95) underscoreInLastSegment = true;
 			else {
 				underscoreInLastLastSegment = underscoreInLastSegment;
@@ -14140,16 +14081,16 @@ function domainAtPunctuation(code) {
 			effects.consume(code);
 			return domainInside;
 		}
-function domainAfter(code) {
+		function domainAfter(code) {
 			if (underscoreInLastLastSegment || underscoreInLastSegment || !seen) return nok(code);
 			return ok(code);
 		}
 	}
-function tokenizePath(effects, ok) {
+	function tokenizePath(effects, ok) {
 		let sizeOpen = 0;
 		let sizeClose = 0;
 		return pathInside;
-function pathInside(code) {
+		function pathInside(code) {
 			if (code === 40) {
 				sizeOpen++;
 				effects.consume(code);
@@ -14161,15 +14102,15 @@ function pathInside(code) {
 			effects.consume(code);
 			return pathInside;
 		}
-function pathAtPunctuation(code) {
+		function pathAtPunctuation(code) {
 			if (code === 41) sizeClose++;
 			effects.consume(code);
 			return pathInside;
 		}
 	}
-function tokenizeTrail(effects, ok, nok) {
+	function tokenizeTrail(effects, ok, nok) {
 		return trail;
-function trail(code) {
+		function trail(code) {
 			if (code === 33 || code === 34 || code === 39 || code === 41 || code === 42 || code === 44 || code === 46 || code === 58 || code === 59 || code === 63 || code === 95 || code === 126) {
 				effects.consume(code);
 				return trail;
@@ -14185,14 +14126,14 @@ function trail(code) {
 			if (code === 60 || code === null || markdownLineEndingOrSpace(code) || unicodeWhitespace(code)) return ok(code);
 			return nok(code);
 		}
-function trailBracketAfter(code) {
+		function trailBracketAfter(code) {
 			if (code === null || code === 40 || code === 91 || markdownLineEndingOrSpace(code) || unicodeWhitespace(code)) return ok(code);
 			return trail(code);
 		}
-function trailCharacterReferenceStart(code) {
+		function trailCharacterReferenceStart(code) {
 			return asciiAlpha(code) ? trailCharacterReferenceInside(code) : nok(code);
 		}
-function trailCharacterReferenceInside(code) {
+		function trailCharacterReferenceInside(code) {
 			if (code === 59) {
 				effects.consume(code);
 				return trail;
@@ -14204,29 +14145,29 @@ function trailCharacterReferenceInside(code) {
 			return nok(code);
 		}
 	}
-function tokenizeEmailDomainDotTrail(effects, ok, nok) {
+	function tokenizeEmailDomainDotTrail(effects, ok, nok) {
 		return start;
-function start(code) {
+		function start(code) {
 			effects.consume(code);
 			return after;
 		}
-function after(code) {
+		function after(code) {
 			return asciiAlphanumeric(code) ? nok(code) : ok(code);
 		}
 	}
-function previousWww(code) {
+	function previousWww(code) {
 		return code === null || code === 40 || code === 42 || code === 95 || code === 91 || code === 93 || code === 126 || markdownLineEndingOrSpace(code);
 	}
-function previousProtocol(code) {
+	function previousProtocol(code) {
 		return !asciiAlpha(code);
 	}
-function previousEmail(code) {
+	function previousEmail(code) {
 		return !(code === 47 || gfmAtext(code));
 	}
-function gfmAtext(code) {
+	function gfmAtext(code) {
 		return code === 43 || code === 45 || code === 46 || code === 95 || asciiAlphanumeric(code);
 	}
-function previousUnbalanced(events) {
+	function previousUnbalanced(events) {
 		let index = events.length;
 		let result = false;
 		while (index--) {
@@ -14243,12 +14184,12 @@ function previousUnbalanced(events) {
 		if (events.length > 0 && !result) events[events.length - 1][1]._gfmAutolinkLiteralWalkedInto = true;
 		return result;
 	}
-var indent = {
+	var indent = {
 		tokenize: tokenizeIndent,
 		partial: true
 	};
-function gfmFootnote() {
-return {
+	function gfmFootnote() {
+		return {
 			document: { [91]: {
 				name: "gfmFootnoteDefinition",
 				tokenize: tokenizeDefinitionStart,
@@ -14269,11 +14210,11 @@ return {
 			}
 		};
 	}
-function tokenizePotentialGfmFootnoteCall(effects, ok, nok) {
+	function tokenizePotentialGfmFootnoteCall(effects, ok, nok) {
 		const self = this;
 		let index = self.events.length;
 		const defined = self.parser.gfmFootnotes || (self.parser.gfmFootnotes = []);
-let labelStart;
+		let labelStart;
 		while (index--) {
 			const token = self.events[index][1];
 			if (token.type === "labelImage") {
@@ -14283,7 +14224,7 @@ let labelStart;
 			if (token.type === "gfmFootnoteCall" || token.type === "labelLink" || token.type === "label" || token.type === "image" || token.type === "link") break;
 		}
 		return start;
-function start(code) {
+		function start(code) {
 			if (!labelStart || !labelStart._balanced) return nok(code);
 			const id = normalizeIdentifier(self.sliceSerialize({
 				start: labelStart.end,
@@ -14296,7 +14237,7 @@ function start(code) {
 			return ok(code);
 		}
 	}
-function resolveToPotentialGfmFootnoteCall(events, context) {
+	function resolveToPotentialGfmFootnoteCall(events, context) {
 		let index = events.length;
 		while (index--) if (events[index][1].type === "labelImage" && events[index][0] === "enter") {
 			events[index][1];
@@ -14304,12 +14245,12 @@ function resolveToPotentialGfmFootnoteCall(events, context) {
 		}
 		events[index + 1][1].type = "data";
 		events[index + 3][1].type = "gfmFootnoteCallLabelMarker";
-const call = {
+		const call = {
 			type: "gfmFootnoteCall",
 			start: Object.assign({}, events[index + 3][1].start),
 			end: Object.assign({}, events[events.length - 1][1].end)
 		};
-const marker = {
+		const marker = {
 			type: "gfmFootnoteCallMarker",
 			start: Object.assign({}, events[index + 3][1].end),
 			end: Object.assign({}, events[index + 3][1].end)
@@ -14317,18 +14258,18 @@ const marker = {
 		marker.end.column++;
 		marker.end.offset++;
 		marker.end._bufferIndex++;
-const string = {
+		const string = {
 			type: "gfmFootnoteCallString",
 			start: Object.assign({}, marker.end),
 			end: Object.assign({}, events[events.length - 1][1].start)
 		};
-const chunk = {
+		const chunk = {
 			type: "chunkString",
 			contentType: "string",
 			start: Object.assign({}, string.start),
 			end: Object.assign({}, string.end)
 		};
-const replacement = [
+		const replacement = [
 			events[index + 1],
 			events[index + 2],
 			[
@@ -14379,20 +14320,20 @@ const replacement = [
 		events.splice(index, events.length - index + 1, ...replacement);
 		return events;
 	}
-function tokenizeGfmFootnoteCall(effects, ok, nok) {
+	function tokenizeGfmFootnoteCall(effects, ok, nok) {
 		const self = this;
 		const defined = self.parser.gfmFootnotes || (self.parser.gfmFootnotes = []);
 		let size = 0;
-let data;
+		let data;
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("gfmFootnoteCall");
 			effects.enter("gfmFootnoteCallLabelMarker");
 			effects.consume(code);
 			effects.exit("gfmFootnoteCallLabelMarker");
 			return callStart;
 		}
-function callStart(code) {
+		function callStart(code) {
 			if (code !== 94) return nok(code);
 			effects.enter("gfmFootnoteCallMarker");
 			effects.consume(code);
@@ -14401,7 +14342,7 @@ function callStart(code) {
 			effects.enter("chunkString").contentType = "string";
 			return callData;
 		}
-function callData(code) {
+		function callData(code) {
 			if (size > 999 || code === 93 && !data || code === null || code === 91 || markdownLineEndingOrSpace(code)) return nok(code);
 			if (code === 93) {
 				effects.exit("chunkString");
@@ -14418,7 +14359,7 @@ function callData(code) {
 			effects.consume(code);
 			return code === 92 ? callEscape : callData;
 		}
-function callEscape(code) {
+		function callEscape(code) {
 			if (code === 91 || code === 92 || code === 93) {
 				effects.consume(code);
 				size++;
@@ -14427,14 +14368,14 @@ function callEscape(code) {
 			return callData(code);
 		}
 	}
-function tokenizeDefinitionStart(effects, ok, nok) {
+	function tokenizeDefinitionStart(effects, ok, nok) {
 		const self = this;
 		const defined = self.parser.gfmFootnotes || (self.parser.gfmFootnotes = []);
-let identifier;
+		let identifier;
 		let size = 0;
-let data;
+		let data;
 		return start;
-function start(code) {
+		function start(code) {
 			effects.enter("gfmFootnoteDefinition")._container = true;
 			effects.enter("gfmFootnoteDefinitionLabel");
 			effects.enter("gfmFootnoteDefinitionLabelMarker");
@@ -14442,7 +14383,7 @@ function start(code) {
 			effects.exit("gfmFootnoteDefinitionLabelMarker");
 			return labelAtMarker;
 		}
-function labelAtMarker(code) {
+		function labelAtMarker(code) {
 			if (code === 94) {
 				effects.enter("gfmFootnoteDefinitionMarker");
 				effects.consume(code);
@@ -14453,7 +14394,7 @@ function labelAtMarker(code) {
 			}
 			return nok(code);
 		}
-function labelInside(code) {
+		function labelInside(code) {
 			if (size > 999 || code === 93 && !data || code === null || code === 91 || markdownLineEndingOrSpace(code)) return nok(code);
 			if (code === 93) {
 				effects.exit("chunkString");
@@ -14470,7 +14411,7 @@ function labelInside(code) {
 			effects.consume(code);
 			return code === 92 ? labelEscape : labelInside;
 		}
-function labelEscape(code) {
+		function labelEscape(code) {
 			if (code === 91 || code === 92 || code === 93) {
 				effects.consume(code);
 				size++;
@@ -14478,7 +14419,7 @@ function labelEscape(code) {
 			}
 			return labelInside(code);
 		}
-function labelAfter(code) {
+		function labelAfter(code) {
 			if (code === 58) {
 				effects.enter("definitionMarker");
 				effects.consume(code);
@@ -14488,26 +14429,25 @@ function labelAfter(code) {
 			}
 			return nok(code);
 		}
-function whitespaceAfter(code) {
+		function whitespaceAfter(code) {
 			return ok(code);
 		}
 	}
-function tokenizeDefinitionContinuation(effects, ok, nok) {
+	function tokenizeDefinitionContinuation(effects, ok, nok) {
 		return effects.check(blankLine, ok, effects.attempt(indent, ok, nok));
 	}
-function gfmFootnoteDefinitionEnd(effects) {
+	function gfmFootnoteDefinitionEnd(effects) {
 		effects.exit("gfmFootnoteDefinition");
 	}
-function tokenizeIndent(effects, ok, nok) {
+	function tokenizeIndent(effects, ok, nok) {
 		const self = this;
 		return factorySpace(effects, afterPrefix, "gfmFootnoteDefinitionIndent", 5);
-function afterPrefix(code) {
+		function afterPrefix(code) {
 			const tail = self.events[self.events.length - 1];
 			return tail && tail[1].type === "gfmFootnoteDefinitionIndent" && tail[2].sliceSerialize(tail[1], true).length === 4 ? ok(code) : nok(code);
 		}
 	}
-
-function gfmStrikethrough(options) {
+	function gfmStrikethrough(options) {
 		let single = (options || {}).singleTilde;
 		const tokenizer = {
 			name: "strikethrough",
@@ -14520,24 +14460,24 @@ function gfmStrikethrough(options) {
 			insideSpan: { null: [tokenizer] },
 			attentionMarkers: { null: [126] }
 		};
-function resolveAllStrikethrough(events, context) {
+		function resolveAllStrikethrough(events, context) {
 			let index = -1;
 			while (++index < events.length) if (events[index][0] === "enter" && events[index][1].type === "strikethroughSequenceTemporary" && events[index][1]._close) {
 				let open = index;
 				while (open--) if (events[open][0] === "exit" && events[open][1].type === "strikethroughSequenceTemporary" && events[open][1]._open && events[index][1].end.offset - events[index][1].start.offset === events[open][1].end.offset - events[open][1].start.offset) {
 					events[index][1].type = "strikethroughSequence";
 					events[open][1].type = "strikethroughSequence";
-const strikethrough = {
+					const strikethrough = {
 						type: "strikethrough",
 						start: Object.assign({}, events[open][1].start),
 						end: Object.assign({}, events[index][1].end)
 					};
-const text = {
+					const text = {
 						type: "strikethroughText",
 						start: Object.assign({}, events[open][1].end),
 						end: Object.assign({}, events[index][1].start)
 					};
-const nextEvents = [
+					const nextEvents = [
 						[
 							"enter",
 							strikethrough,
@@ -14592,17 +14532,17 @@ const nextEvents = [
 			while (++index < events.length) if (events[index][1].type === "strikethroughSequenceTemporary") events[index][1].type = "data";
 			return events;
 		}
-function tokenizeStrikethrough(effects, ok, nok) {
+		function tokenizeStrikethrough(effects, ok, nok) {
 			const previous = this.previous;
 			const events = this.events;
 			let size = 0;
 			return start;
-function start(code) {
+			function start(code) {
 				if (previous === 126 && events[events.length - 1][1].type !== "characterEscape") return nok(code);
 				effects.enter("strikethroughSequenceTemporary");
 				return more(code);
 			}
-function more(code) {
+			function more(code) {
 				const before = classifyCharacter(previous);
 				if (code === 126) {
 					if (size > 1) return nok(code);
@@ -14619,22 +14559,20 @@ function more(code) {
 			}
 		}
 	}
-
-
-var EditMap = class {
-constructor() {
-this.map = [];
+	var EditMap = class {
+		constructor() {
+			this.map = [];
 		}
-add(index, remove, add) {
+		add(index, remove, add) {
 			addImplementation(this, index, remove, add);
 		}
-consume(events) {
+		consume(events) {
 			this.map.sort(function(a, b) {
 				return a[0] - b[0];
 			});
-if (this.map.length === 0) return;
+			if (this.map.length === 0) return;
 			let index = this.map.length;
-const vecs = [];
+			const vecs = [];
 			while (index > 0) {
 				index -= 1;
 				vecs.push(events.slice(this.map[index][0] + this.map[index][1]), this.map[index][2]);
@@ -14650,9 +14588,9 @@ const vecs = [];
 			this.map.length = 0;
 		}
 	};
-function addImplementation(editMap, at, remove, add) {
+	function addImplementation(editMap, at, remove, add) {
 		let index = 0;
-if (remove === 0 && add.length === 0) return;
+		if (remove === 0 && add.length === 0) return;
 		while (index < editMap.map.length) {
 			if (editMap.map[index][0] === at) {
 				editMap.map[index][1] += remove;
@@ -14667,11 +14605,9 @@ if (remove === 0 && add.length === 0) return;
 			add
 		]);
 	}
-
-
-function gfmTableAlign(events, index) {
+	function gfmTableAlign(events, index) {
 		let inDelimiterRow = false;
-const align = [];
+		const align = [];
 		while (index < events.length) {
 			const event = events[index];
 			if (inDelimiterRow) {
@@ -14688,22 +14624,20 @@ const align = [];
 		}
 		return align;
 	}
-
-
-function gfmTable() {
+	function gfmTable() {
 		return { flow: { null: {
 			name: "table",
 			tokenize: tokenizeTable,
 			resolveAll: resolveTable
 		} } };
 	}
-function tokenizeTable(effects, ok, nok) {
+	function tokenizeTable(effects, ok, nok) {
 		const self = this;
 		let size = 0;
 		let sizeB = 0;
-let seen;
+		let seen;
 		return start;
-function start(code) {
+		function start(code) {
 			let index = self.events.length - 1;
 			while (index > -1) {
 				const type = self.events[index][1].type;
@@ -14715,18 +14649,18 @@ function start(code) {
 			if (next === bodyRowStart && self.parser.lazy[self.now().line]) return nok(code);
 			return next(code);
 		}
-function headRowBefore(code) {
+		function headRowBefore(code) {
 			effects.enter("tableHead");
 			effects.enter("tableRow");
 			return headRowStart(code);
 		}
-function headRowStart(code) {
+		function headRowStart(code) {
 			if (code === 124) return headRowBreak(code);
 			seen = true;
 			sizeB += 1;
 			return headRowBreak(code);
 		}
-function headRowBreak(code) {
+		function headRowBreak(code) {
 			if (code === null) return nok(code);
 			if (markdownLineEnding(code)) {
 				if (sizeB > 1) {
@@ -14756,7 +14690,7 @@ function headRowBreak(code) {
 			effects.enter("data");
 			return headRowData(code);
 		}
-function headRowData(code) {
+		function headRowData(code) {
 			if (code === null || code === 124 || markdownLineEndingOrSpace(code)) {
 				effects.exit("data");
 				return headRowBreak(code);
@@ -14764,14 +14698,14 @@ function headRowData(code) {
 			effects.consume(code);
 			return code === 92 ? headRowEscape : headRowData;
 		}
-function headRowEscape(code) {
+		function headRowEscape(code) {
 			if (code === 92 || code === 124) {
 				effects.consume(code);
 				return headRowData;
 			}
 			return headRowData(code);
 		}
-function headDelimiterStart(code) {
+		function headDelimiterStart(code) {
 			self.interrupt = false;
 			if (self.parser.lazy[self.now().line]) return nok(code);
 			effects.enter("tableDelimiterRow");
@@ -14779,7 +14713,7 @@ function headDelimiterStart(code) {
 			if (markdownSpace(code)) return factorySpace(effects, headDelimiterBefore, "linePrefix", self.parser.constructs.disable.null.includes("codeIndented") ? void 0 : 4)(code);
 			return headDelimiterBefore(code);
 		}
-function headDelimiterBefore(code) {
+		function headDelimiterBefore(code) {
 			if (code === 45 || code === 58) return headDelimiterValueBefore(code);
 			if (code === 124) {
 				seen = true;
@@ -14790,11 +14724,11 @@ function headDelimiterBefore(code) {
 			}
 			return headDelimiterNok(code);
 		}
-function headDelimiterCellBefore(code) {
+		function headDelimiterCellBefore(code) {
 			if (markdownSpace(code)) return factorySpace(effects, headDelimiterValueBefore, "whitespace")(code);
 			return headDelimiterValueBefore(code);
 		}
-function headDelimiterValueBefore(code) {
+		function headDelimiterValueBefore(code) {
 			if (code === 58) {
 				sizeB += 1;
 				seen = true;
@@ -14810,14 +14744,14 @@ function headDelimiterValueBefore(code) {
 			if (code === null || markdownLineEnding(code)) return headDelimiterCellAfter(code);
 			return headDelimiterNok(code);
 		}
-function headDelimiterLeftAlignmentAfter(code) {
+		function headDelimiterLeftAlignmentAfter(code) {
 			if (code === 45) {
 				effects.enter("tableDelimiterFiller");
 				return headDelimiterFiller(code);
 			}
 			return headDelimiterNok(code);
 		}
-function headDelimiterFiller(code) {
+		function headDelimiterFiller(code) {
 			if (code === 45) {
 				effects.consume(code);
 				return headDelimiterFiller;
@@ -14833,11 +14767,11 @@ function headDelimiterFiller(code) {
 			effects.exit("tableDelimiterFiller");
 			return headDelimiterRightAlignmentAfter(code);
 		}
-function headDelimiterRightAlignmentAfter(code) {
+		function headDelimiterRightAlignmentAfter(code) {
 			if (markdownSpace(code)) return factorySpace(effects, headDelimiterCellAfter, "whitespace")(code);
 			return headDelimiterCellAfter(code);
 		}
-function headDelimiterCellAfter(code) {
+		function headDelimiterCellAfter(code) {
 			if (code === 124) return headDelimiterBefore(code);
 			if (code === null || markdownLineEnding(code)) {
 				if (!seen || size !== sizeB) return headDelimiterNok(code);
@@ -14847,14 +14781,14 @@ function headDelimiterCellAfter(code) {
 			}
 			return headDelimiterNok(code);
 		}
-function headDelimiterNok(code) {
+		function headDelimiterNok(code) {
 			return nok(code);
 		}
-function bodyRowStart(code) {
+		function bodyRowStart(code) {
 			effects.enter("tableRow");
 			return bodyRowBreak(code);
 		}
-function bodyRowBreak(code) {
+		function bodyRowBreak(code) {
 			if (code === 124) {
 				effects.enter("tableCellDivider");
 				effects.consume(code);
@@ -14869,7 +14803,7 @@ function bodyRowBreak(code) {
 			effects.enter("data");
 			return bodyRowData(code);
 		}
-function bodyRowData(code) {
+		function bodyRowData(code) {
 			if (code === null || code === 124 || markdownLineEndingOrSpace(code)) {
 				effects.exit("data");
 				return bodyRowBreak(code);
@@ -14877,7 +14811,7 @@ function bodyRowData(code) {
 			effects.consume(code);
 			return code === 92 ? bodyRowEscape : bodyRowData;
 		}
-function bodyRowEscape(code) {
+		function bodyRowEscape(code) {
 			if (code === 92 || code === 124) {
 				effects.consume(code);
 				return bodyRowData;
@@ -14885,17 +14819,17 @@ function bodyRowEscape(code) {
 			return bodyRowData(code);
 		}
 	}
-function resolveTable(events, context) {
+	function resolveTable(events, context) {
 		let index = -1;
 		let inFirstCellAwaitingPipe = true;
-let rowKind = 0;
-let lastCell = [
+		let rowKind = 0;
+		let lastCell = [
 			0,
 			0,
 			0,
 			0
 		];
-let cell = [
+		let cell = [
 			0,
 			0,
 			0,
@@ -14903,9 +14837,9 @@ let cell = [
 		];
 		let afterHeadAwaitingFirstBodyRow = false;
 		let lastTableEnd = 0;
-let currentTable;
-let currentBody;
-let currentCell;
+		let currentTable;
+		let currentBody;
+		let currentCell;
 		const map = new EditMap();
 		while (++index < events.length) {
 			const event = events[index];
@@ -15007,7 +14941,7 @@ let currentCell;
 		}
 		return events;
 	}
-function flushCell(map, context, range, rowKind, rowEnd, previousCell) {
+	function flushCell(map, context, range, rowKind, rowEnd, previousCell) {
 		const groupName = rowKind === 1 ? "tableHeader" : rowKind === 2 ? "tableDelimiter" : "tableData";
 		const valueName = "tableContent";
 		if (range[0] !== 0) {
@@ -15032,7 +14966,7 @@ function flushCell(map, context, range, rowKind, rowEnd, previousCell) {
 		if (range[2] !== 0) {
 			const relatedStart = getPoint(context.events, range[2]);
 			const relatedEnd = getPoint(context.events, range[3]);
-const valueToken = {
+			const valueToken = {
 				type: valueName,
 				start: Object.assign({}, relatedStart),
 				end: Object.assign({}, relatedEnd)
@@ -15071,8 +15005,8 @@ const valueToken = {
 		}
 		return previousCell;
 	}
-function flushTableEnd(map, context, index, table, tableBody) {
-const exits = [];
+	function flushTableEnd(map, context, index, table, tableBody) {
+		const exits = [];
 		const related = getPoint(context.events, index);
 		if (tableBody) {
 			tableBody.end = Object.assign({}, related);
@@ -15090,22 +15024,22 @@ const exits = [];
 		]);
 		map.add(index + 1, 0, exits);
 	}
-function getPoint(events, index) {
+	function getPoint(events, index) {
 		const event = events[index];
 		const side = event[0] === "enter" ? "start" : "end";
 		return event[1][side];
 	}
-var tasklistCheck = {
+	var tasklistCheck = {
 		name: "tasklistCheck",
 		tokenize: tokenizeTasklistCheck
 	};
-function gfmTaskListItem() {
+	function gfmTaskListItem() {
 		return { text: { [91]: tasklistCheck } };
 	}
-function tokenizeTasklistCheck(effects, ok, nok) {
+	function tokenizeTasklistCheck(effects, ok, nok) {
 		const self = this;
 		return open;
-function open(code) {
+		function open(code) {
 			if (self.previous !== null || !self._gfmTasklistFirstContentOfListItem) return nok(code);
 			effects.enter("taskListCheck");
 			effects.enter("taskListCheckMarker");
@@ -15113,7 +15047,7 @@ function open(code) {
 			effects.exit("taskListCheckMarker");
 			return inside;
 		}
-function inside(code) {
+		function inside(code) {
 			if (markdownLineEndingOrSpace(code)) {
 				effects.enter("taskListCheckValueUnchecked");
 				effects.consume(code);
@@ -15128,7 +15062,7 @@ function inside(code) {
 			}
 			return nok(code);
 		}
-function close(code) {
+		function close(code) {
 			if (code === 93) {
 				effects.enter("taskListCheckMarker");
 				effects.consume(code);
@@ -15138,20 +15072,19 @@ function close(code) {
 			}
 			return nok(code);
 		}
-function after(code) {
+		function after(code) {
 			if (markdownLineEnding(code)) return ok(code);
 			if (markdownSpace(code)) return effects.check({ tokenize: spaceThenNonSpace }, ok, nok)(code);
 			return nok(code);
 		}
 	}
-function spaceThenNonSpace(effects, ok, nok) {
+	function spaceThenNonSpace(effects, ok, nok) {
 		return factorySpace(effects, after, "whitespace");
-function after(code) {
+		function after(code) {
 			return code === null ? nok(code) : ok(code);
 		}
 	}
-
-function gfm(options) {
+	function gfm(options) {
 		return combineExtensions([
 			gfmAutolinkLiteral(),
 			gfmFootnote(),
@@ -15160,7 +15093,7 @@ function gfm(options) {
 			gfmTaskListItem()
 		]);
 	}
-function fromMarkdown(content) {
+	function fromMarkdown(content) {
 		return fromMarkdown$1(content, {
 			extensions: [gfm()],
 			mdastExtensions: [gfmFromMarkdown()]
@@ -15196,11 +15129,11 @@ function fromMarkdown(content) {
 		}
 		return transform(tree, 0, void 0)[0];
 	}
-function standardizeLineBreaks(text) {
+	function standardizeLineBreaks(text) {
 		return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
 	}
-	var template_default = "<!DOCTYPE html>\n<!--\n Copyright 2022-Present Pionxzh\n Copyright 2026 Asim Ihsan\n SPDX-License-Identifier: MPL-2.0 AND MIT\n-->\n\n<html lang=\"{{lang}}\" data-theme=\"{{theme}}\">\n<head>\n    <meta charset=\"UTF-8\" />\n    <link rel=\"icon\" href=\"https://chat.openai.com/favicon.ico\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>{{title}}</title>\n    <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css\">\n    <script src=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js\"><\/script>\n    <script>\n        hljs.highlightAll()\n    <\/script>\n    <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.3/katex.min.css\">\n    <script src=\"https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.3/katex.min.js\"><\/script>\n    <script src=\"https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.3/contrib/auto-render.min.js\"><\/script>\n    <script>\n        document.addEventListener(\"DOMContentLoaded\", function() {\n            renderMathInElement(document.body, {\n                delimiters: [\n                    { left: \"$$\", right: \"$$\", display: true },\n                    { left: \"$\", right: \"$\", display: false },\n                    { left: \"\\\\[\", right: \"\\\\]\", display: true },\n                    { left: \"\\\\(\", right: \"\\\\)\", display: false }\n                ],\n                throwOnError: false,\n                ignoredClasses: [\"no-katex\"],\n                preProcess: function(math) {\n                    return `\\\\displaystyle \\\\Large ${math}`;\n                }\n            });\n            document.querySelectorAll('.katex').forEach(function(el) {\n                const parent = el.parentNode;\n                const grandparent = parent.parentNode;\n                if (grandparent.tagName === 'P' && isOnlyContent(grandparent, parent)) {\n                    el.style.width = '100%';\n                    el.style.display = 'block';\n                    el.style.textAlign = 'center';\n                    parent.style.textAlign = 'center';\n                } else {\n                    el.style.display = 'inline-block';\n                    el.style.width = 'fit-content';\n                }\n            });\n            function isOnlyContent(parent, element) {\n                let onlyKaTeX = true;\n                parent.childNodes.forEach(function(child) {\n                    console.log(child.textContent);\n                    if (child !== element) {\n                        if (child.nodeType === Node.TEXT_NODE) {\n                            if (child.textContent.trim().length > 0) {\n                                onlyKaTeX = false;\n                            }\n                        } else if (child.nodeType === Node.ELEMENT_NODE) {\n                            onlyKaTeX = false;\n                        }\n                    }\n                });\n                return onlyKaTeX;\n            }\n        });\n    <\/script>\n\n    <style>\n        :root {\n            --page-text: #0d0d0d;\n            --page-bg: #fff;\n            --td-borders: #374151;\n            --th-borders: #4b5563;\n            --tw-prose-code: var(--page-text);\n            --tw-prose-counters: #9b9b9b;\n            --tw-prose-headings: var(--page-text);\n            --tw-prose-hr: rgba(0,0,0,.25);\n            --tw-prose-links: var(--page-text);\n            --tw-prose-quotes: var(--page-text);\n            --meta-title: #616c77;\n        }\n\n        [data-theme=\"dark\"] {\n            --page-text: #ececec;\n            --page-bg: #212121;\n            --tw-prose-code: var(--page-text);\n            --tw-prose-counters: #9b9b9b;\n            --tw-prose-headings: var(--page-text);\n            --tw-prose-hr: hsla(0,0%,100%,.25);\n            --tw-prose-links: var(--page-text);\n            --tw-prose-quotes: var(--page-text);\n            --meta-title: #959faa;\n        }\n\n        * {\n            box-sizing: border-box;\n            font-size: 16px;\n        }\n\n        ::-webkit-scrollbar {\n            height: 1rem;\n            width: .5rem\n        }\n\n        ::-webkit-scrollbar:horizontal {\n            height: .5rem;\n            width: 1rem\n        }\n\n        ::-webkit-scrollbar-track {\n            background-color: transparent;\n            border-radius: 9999px\n        }\n\n        ::-webkit-scrollbar-thumb {\n            --tw-border-opacity: 1;\n            background-color: rgba(217,217,227,.8);\n            border-color: rgba(255,255,255,var(--tw-border-opacity));\n            border-radius: 9999px;\n            border-width: 1px\n        }\n\n        ::-webkit-scrollbar-thumb:hover {\n            --tw-bg-opacity: 1;\n            background-color: rgba(236,236,241,var(--tw-bg-opacity))\n        }\n\n        .dark ::-webkit-scrollbar-thumb {\n            --tw-bg-opacity: 1;\n            background-color: rgba(86,88,105,var(--tw-bg-opacity))\n        }\n\n        .dark ::-webkit-scrollbar-thumb:hover {\n            --tw-bg-opacity: 1;\n            background-color: rgba(172,172,190,var(--tw-bg-opacity))\n        }\n\n        @media (min-width: 768px) {\n            .scrollbar-trigger ::-webkit-scrollbar-thumb {\n                visibility:hidden\n            }\n\n            .scrollbar-trigger:hover ::-webkit-scrollbar-thumb {\n                visibility: visible\n            }\n        }\n\n        body {\n            font-family: Söhne,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif,Helvetica Neue,Arial,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;\n            font-size: 14px;\n            line-height: 1.5;\n            color: var(--page-text);\n            background-color: var(--page-bg);\n            margin: 0;\n            padding: 0;\n        }\n\n        [data-theme=\"light\"] .sun {\n            display: none;\n        }\n\n        [data-theme=\"dark\"] .moon {\n            display: none;\n        }\n\n        .toggle {\n            display: inline-flex;\n            justify-content: center;\n            align-items: center;\n            width: 32px;\n            height: 32px;\n            border-radius: 4px;\n            background-color: #fff;\n            border: 1px solid #e2e8f0;\n        }\n\n        [data-width=\"narrow\"] .width-toggle .expand {\n            display: block;\n        }\n\n        [data-width=\"wide\"] .width-toggle .narrow {\n            display: block;\n        }\n\n        .width-toggle {\n            display: inline-flex;\n            justify-content: center;\n            align-items: center;\n            width: 32px;\n            height: 32px;\n            border-radius: 4px;\n            background-color: #fff;\n            border: 1px solid #e2e8f0;\n            margin-left: 8px;\n            cursor: pointer;\n        }\n\n        .width-toggle svg {\n            display: none;\n        }\n\n        .metadata_container {\n            display: flex;\n            flex-direction: column;\n            margin-top: 8px;\n            padding-left: 1rem;\n        }\n\n        .metadata_item {\n            display: flex;\n            flex-direction: row;\n            align-items: center;\n            border-radius: 16px;\n            padding: 4px 0.5rem;\n        }\n\n        .metadata_item:hover {\n            background-color: rgba(0,0,0,.1);\n        }\n\n        .metadata_item > div:first-child {\n            flex: 0 1 100px;\n            color: var(--meta-title);\n        }\n\n        .metadata_item > div:last-child {\n            flex: 1;\n        }\n\n        a {\n            color: var(--tw-prose-links);\n            font-size: 0.8rem;\n            text-decoration-line: underline;\n            text-underline-offset: 2px;\n        }\n\n        .conversation-content > p:first-child,\n        ol:first-child {\n            margin-top: 0;\n        }\n\n        p>code, li>code {\n            color: var(--tw-prose-code);\n            font-weight: 600;\n            font-size: .875em;\n        }\n\n        p>code::before,\n        p>code::after,\n        li>code::before,\n        li>code::after {\n            content: \"`\";\n        }\n\n        hr {\n            width: 100%;\n            height: 0;\n            border: 1px solid var(--tw-prose-hr);\n            margin-bottom: 1em;\n            margin-top: 1em;\n        }\n\n        pre {\n            color: #ffffff;\n            background-color: #000000;\n            overflow-x: auto;\n            margin: 0 0 1rem 0;\n            border-radius: 0.375rem;\n        }\n\n        pre>code {\n            font-family: Söhne Mono, Monaco, Andale Mono, Ubuntu Mono, monospace !important;\n            font-weight: 400;\n            font-size: .875em;\n            line-height: 1.7142857;\n        }\n\n        h1, h2, h3, h4, h5, h6 {\n            color: var(--tw-prose-headings);\n            margin: 0;\n        }\n\n        h1 {\n            font-size: 2.25em;\n            font-weight: 600;\n            line-height: 1.1111111;\n            margin-bottom: 0.8888889em;\n            margin-top: 0;\n        }\n\n        h2 {\n            font-size: 1.5em;\n            font-weight: 700;\n            line-height: 1.3333333;\n            margin-bottom: 1em;\n            margin-top: 2em;\n        }\n\n        h3 {\n            font-size: 1.25em;\n            font-weight: 600;\n            line-height: 1.6;\n            margin-bottom: .6em;\n            margin-top: 1.6em;\n        }\n\n        h4 {\n            font-weight: 400;\n            line-height: 1.5;\n            margin-bottom: .5em;\n            margin-top: 1.5em\n        }\n\n        h3,h4 {\n            margin-bottom: .5rem;\n            margin-top: 1rem;\n        }\n\n        h5 {\n            font-weight: 600;\n        }\n\n        blockquote {\n            border-left: 2px solid rgba(142,142,160,1);\n            color: var(--tw-prose-quotes);\n            font-style: italic;\n            font-style: normal;\n            font-weight: 500;\n            line-height: 1rem;\n            margin: 1.6em 0;\n            padding-left: 1em;\n            quotes: \"\\201C\"\"\\201D\"\"\\2018\"\"\\2019\";\n        }\n\n        blockquote p:first-of-type:before {\n            content: open-quote;\n        }\n\n        blockquote p:last-of-type:after {\n            content: close-quote;\n        }\n\n        ol, ul {\n            padding-left: 1.1rem;\n        }\n\n        ::marker {\n            color: var(--tw-prose-counters);\n            font-weight: 400;\n        }\n\n        table {\n            width: 100%;\n            border-collapse: separate;\n            border-spacing: 0 0;\n            table-layout: auto;\n            text-align: left;\n            font-size: .875em;\n            line-height: 1.7142857;\n        }\n\n        table * {\n            box-sizing: border-box;\n            border-width: 0;\n            border-style: solid;\n            border-color: #d9d9e3;\n        }\n\n        table thead {\n            border-bottom-color: var(--th-borders);\n            border-bottom-width: 1px;\n        }\n\n        table th {\n            background-color: rgba(236,236,241,.2);\n            border-bottom-width: 1px;\n            border-left-width: 1px;\n            border-top-width: 1px;\n            padding: 0.25rem 0.75rem;\n        }\n\n        table th:first-child {\n            border-top-left-radius: 0.375rem;\n        }\n\n        table th:last-child {\n            border-right-width: 1px;\n            border-top-right-radius: 0.375rem;\n        }\n\n        table tbody tr {\n            border-bottom-color: var(--td-borders);\n            border-bottom-width: 1px;\n        }\n\n        table tbody tr:last-child {\n            border-bottom-width: 0;\n        }\n\n        table tbody tr:last-child td:first-child {\n            border-bottom-left-radius: 0.375rem;\n        }\n\n        table tbody tr:last-child td:last-child {\n            border-bottom-right-radius: 0.375rem;\n        }\n\n        table td {\n            border-bottom-width: 1px;\n            border-left-width: 1px;\n            padding: 0.25rem 0.75rem;\n        }\n\n        table td:last-child {\n            border-right-width: 1px;\n        }\n\n        [type=checkbox], [type=radio] {\n            accent-color: #2563eb;\n        }\n\n        .conversation {\n            margin: 0 auto;\n            padding: 1rem;\n            max-width: 64rem;\n        }\n\n        [data-width=\"narrow\"] .conversation {\n            max-width: 64rem;\n        }\n\n        [data-width=\"wide\"] .conversation {\n            max-width: 90%;\n        }\n\n        @media (min-width: 1280px) {\n            .conversation {\n                max-width: 48rem;\n            }\n        }\n\n        @media (min-width: 1024px) {\n            .conversation {\n                max-width: 40rem;\n            }\n        }\n\n        @media (min-width: 768px) {\n            .conversation {\n                max-width: 48rem;\n            }\n        }\n\n        .conversation-header {\n            margin-bottom: 1rem;\n        }\n\n        .conversation-header h1 {\n            margin: 0;\n        }\n\n        .conversation-header h1 a {\n            font-size: 1.5rem;\n        }\n\n        .conversation-header .conversation-export {\n            margin-top: 0.5rem;\n            font-size: 0.8rem;\n        }\n\n        .conversation-header p {\n            margin-top: 0.5rem;\n            font-size: 0.8rem;\n        }\n\n        .conversation-item {\n            display: flex;\n            position: relative;\n            padding: 1rem;\n            border-left: 1px solid rgba(0,0,0,.1);\n            border-right: 1px solid rgba(0,0,0,.1);\n            border-bottom: 1px solid rgba(0,0,0,.1);\n        }\n\n        .conversation-item:first-of-type {\n            border-top: 1px solid rgba(0,0,0,.1);\n        }\n\n        .author {\n            display: flex;\n            flex: 0 0 30px;\n            justify-content: center;\n            align-items: center;\n            width: 30px;\n            height: 30px;\n            border-radius: 0.125rem;\n            margin-right: 1rem;\n            overflow: hidden;\n        }\n\n        .author svg {\n            color: #fff;\n            width: 22px;\n            height: 22px;\n        }\n\n        .author img {\n            content: url({{avatar}});\n            width: 100%;\n            height: 100%;\n        }\n\n        .author.GPT-3 {\n            background-color: rgb(16, 163, 127);\n        }\n\n        .author.GPT-4 {\n            background-color: black;\n        }\n\n        .conversation-content-wrapper {\n            display: flex;\n            position: relative;\n            overflow: hidden;\n            flex: 1 1 auto;\n            flex-direction: column;\n        }\n\n        .conversation-content {\n            font-size: 1rem;\n            line-height: 1.5;\n        }\n\n        .conversation-content p {\n            white-space: pre-wrap;\n            line-height: 28px;\n        }\n\n        .conversation-content img, .conversation-content video {\n            display: block;\n            max-width: 100%;\n            height: auto;\n            margin-bottom: 2em;\n            margin-top: 2em;\n        }\n\n        .time {\n            position: absolute;\n            right: 8px;\n            bottom: 0;\n            font-size: 0.8rem;\n            color: #acacbe\n        }\n\n    </style>\n</head>\n\n<body>\n    <svg aria-hidden=\"true\" style=\"position: absolute; width: 0; height: 0; overflow: hidden;\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n        <symbol id=\"chatgpt\" viewBox=\"0 0 41 41\">\n            <path d=\"M37.5324 16.8707C37.9808 15.5241 38.1363 14.0974 37.9886 12.6859C37.8409 11.2744 37.3934 9.91076 36.676 8.68622C35.6126 6.83404 33.9882 5.3676 32.0373 4.4985C30.0864 3.62941 27.9098 3.40259 25.8215 3.85078C24.8796 2.7893 23.7219 1.94125 22.4257 1.36341C21.1295 0.785575 19.7249 0.491269 18.3058 0.500197C16.1708 0.495044 14.0893 1.16803 12.3614 2.42214C10.6335 3.67624 9.34853 5.44666 8.6917 7.47815C7.30085 7.76286 5.98686 8.3414 4.8377 9.17505C3.68854 10.0087 2.73073 11.0782 2.02839 12.312C0.956464 14.1591 0.498905 16.2988 0.721698 18.4228C0.944492 20.5467 1.83612 22.5449 3.268 24.1293C2.81966 25.4759 2.66413 26.9026 2.81182 28.3141C2.95951 29.7256 3.40701 31.0892 4.12437 32.3138C5.18791 34.1659 6.8123 35.6322 8.76321 36.5013C10.7141 37.3704 12.8907 37.5973 14.9789 37.1492C15.9208 38.2107 17.0786 39.0587 18.3747 39.6366C19.6709 40.2144 21.0755 40.5087 22.4946 40.4998C24.6307 40.5054 26.7133 39.8321 28.4418 38.5772C30.1704 37.3223 31.4556 35.5506 32.1119 33.5179C33.5027 33.2332 34.8167 32.6547 35.9659 31.821C37.115 30.9874 38.0728 29.9178 38.7752 28.684C39.8458 26.8371 40.3023 24.6979 40.0789 22.5748C39.8556 20.4517 38.9639 18.4544 37.5324 16.8707ZM22.4978 37.8849C20.7443 37.8874 19.0459 37.2733 17.6994 36.1501C17.7601 36.117 17.8666 36.0586 17.936 36.0161L25.9004 31.4156C26.1003 31.3019 26.2663 31.137 26.3813 30.9378C26.4964 30.7386 26.5563 30.5124 26.5549 30.2825V19.0542L29.9213 20.998C29.9389 21.0068 29.9541 21.0198 29.9656 21.0359C29.977 21.052 29.9842 21.0707 29.9867 21.0902V30.3889C29.9842 32.375 29.1946 34.2791 27.7909 35.6841C26.3872 37.0892 24.4838 37.8806 22.4978 37.8849ZM6.39227 31.0064C5.51397 29.4888 5.19742 27.7107 5.49804 25.9832C5.55718 26.0187 5.66048 26.0818 5.73461 26.1244L13.699 30.7248C13.8975 30.8408 14.1233 30.902 14.3532 30.902C14.583 30.902 14.8088 30.8408 15.0073 30.7248L24.731 25.1103V28.9979C24.7321 29.0177 24.7283 29.0376 24.7199 29.0556C24.7115 29.0736 24.6988 29.0893 24.6829 29.1012L16.6317 33.7497C14.9096 34.7416 12.8643 35.0097 10.9447 34.4954C9.02506 33.9811 7.38785 32.7263 6.39227 31.0064ZM4.29707 13.6194C5.17156 12.0998 6.55279 10.9364 8.19885 10.3327C8.19885 10.4013 8.19491 10.5228 8.19491 10.6071V19.808C8.19351 20.0378 8.25334 20.2638 8.36823 20.4629C8.48312 20.6619 8.64893 20.8267 8.84863 20.9404L18.5723 26.5542L15.206 28.4979C15.1894 28.5089 15.1703 28.5155 15.1505 28.5173C15.1307 28.5191 15.1107 28.516 15.0924 28.5082L7.04046 23.8557C5.32135 22.8601 4.06716 21.2235 3.55289 19.3046C3.03862 17.3858 3.30624 15.3413 4.29707 13.6194ZM31.955 20.0556L22.2312 14.4411L25.5976 12.4981C25.6142 12.4872 25.6333 12.4805 25.6531 12.4787C25.6729 12.4769 25.6928 12.4801 25.7111 12.4879L33.7631 17.1364C34.9967 17.849 36.0017 18.8982 36.6606 20.1613C37.3194 21.4244 37.6047 22.849 37.4832 24.2684C37.3617 25.6878 36.8382 27.0432 35.9743 28.1759C35.1103 29.3086 33.9415 30.1717 32.6047 30.6641C32.6047 30.5947 32.6047 30.4733 32.6047 30.3889V21.188C32.6066 20.9586 32.5474 20.7328 32.4332 20.5338C32.319 20.3348 32.154 20.1698 31.955 20.0556ZM35.3055 15.0128C35.2464 14.9765 35.1431 14.9142 35.069 14.8717L27.1045 10.2712C26.906 10.1554 26.6803 10.0943 26.4504 10.0943C26.2206 10.0943 25.9948 10.1554 25.7963 10.2712L16.0726 15.8858V11.9982C16.0715 11.9783 16.0753 11.9585 16.0837 11.9405C16.0921 11.9225 16.1048 11.9068 16.1207 11.8949L24.1719 7.25025C25.4053 6.53903 26.8158 6.19376 28.2383 6.25482C29.6608 6.31589 31.0364 6.78077 32.2044 7.59508C33.3723 8.40939 34.2842 9.53945 34.8334 10.8531C35.3826 12.1667 35.5464 13.6095 35.3055 15.0128ZM14.2424 21.9419L10.8752 19.9981C10.8576 19.9893 10.8423 19.9763 10.8309 19.9602C10.8195 19.9441 10.8122 19.9254 10.8098 19.9058V10.6071C10.8107 9.18295 11.2173 7.78848 11.9819 6.58696C12.7466 5.38544 13.8377 4.42659 15.1275 3.82264C16.4173 3.21869 17.8524 2.99464 19.2649 3.1767C20.6775 3.35876 22.0089 3.93941 23.1034 4.85067C23.0427 4.88379 22.937 4.94215 22.8668 4.98473L14.9024 9.58517C14.7025 9.69878 14.5366 9.86356 14.4215 10.0626C14.3065 10.2616 14.2466 10.4877 14.2479 10.7175L14.2424 21.9419ZM16.071 17.9991L20.4018 15.4978L24.7325 17.9975V22.9985L20.4018 25.4983L16.071 22.9985V17.9991Z\" fill=\"currentColor\"></path>\n        </symbol>\n    </svg>\n    <div class=\"conversation\">\n        <div class=\"conversation-header\">\n            <h1>\n                <a href=\"{{source}}\" target=\"_blank\" rel=\"noopener noreferrer\">{{title}}</a>\n                <button class=\"toggle\">\n                    <svg class=\"sun\" stroke=\"currentColor\" fill=\"none\" stroke-width=\"2\" viewBox=\"0 0 24 24\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"w-4 h-4\" height=\"1em\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"12\" cy=\"12\" r=\"5\"></circle><line x1=\"12\" y1=\"1\" x2=\"12\" y2=\"3\"></line><line x1=\"12\" y1=\"21\" x2=\"12\" y2=\"23\"></line><line x1=\"4.22\" y1=\"4.22\" x2=\"5.64\" y2=\"5.64\"></line><line x1=\"18.36\" y1=\"18.36\" x2=\"19.78\" y2=\"19.78\"></line><line x1=\"1\" y1=\"12\" x2=\"3\" y2=\"12\"></line><line x1=\"21\" y1=\"12\" x2=\"23\" y2=\"12\"></line><line x1=\"4.22\" y1=\"19.78\" x2=\"5.64\" y2=\"18.36\"></line><line x1=\"18.36\" y1=\"5.64\" x2=\"19.78\" y2=\"4.22\"></line></svg>\n                    <svg class=\"moon\" stroke=\"currentColor\" fill=\"none\" stroke-width=\"2\" viewBox=\"0 0 24 24\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"w-4 h-4\" height=\"1em\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z\"></path></svg>\n                </button>\n                <button class=\"toggle width-toggle\">\n                    <svg class=\"expand\" stroke=\"currentColor\" fill=\"none\" stroke-width=\"2\" viewBox=\"0 0 24 24\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"w-4 h-4\" height=\"1em\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\" style=\"display: block;\">\n                        <path d=\"M3 12h18M6 8l-4 4 4 4M18 8l4 4-4 4\"></path>\n                    </svg>\n                    <svg class=\"narrow\" stroke=\"currentColor\" fill=\"none\" stroke-width=\"2\" viewBox=\"0 0 24 24\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"w-4 h-4\" height=\"1em\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\" style=\"display: none;\">\n                        <path d=\"M3 12h7M14 12h7M6 16l4-4-4-4M18 16l-4-4 4-4\"></path>\n                    </svg>\n                </button>\n            </h1>\n            <div class=\"conversation-export\">\n                <p>Exported by\n                <a href=\"https://github.com/asimihsan/chatgpt-exporter.git\">ChatGPT Exporter</a>\n                at {{time}}</p>\n            </div>\n            {{details}}\n        </div>\n\n        {{content}}\n    </div>\n\n\n    <script>\n        function toggleDarkMode(mode) {\n            const html = document.querySelector('html');\n            const isDarkMode = html.getAttribute('data-theme') === 'dark';\n            const newMode = mode || (isDarkMode ? 'light' : 'dark');\n            if (newMode !== 'dark' && newMode !== 'light') return;\n            html.setAttribute('data-theme', newMode);\n\n            const url = new URL(window.location);\n            url.searchParams.set('theme', newMode);\n            window.history.replaceState({}, '', url);\n        }\n        function toggleWidthMode(mode) {\n            const body = document.querySelector('body');\n            const widthToggleButton = document.querySelector('.width-toggle');\n            const isWide = body.getAttribute('data-width') === 'wide';\n            const newWidthMode = mode || (isWide ? 'narrow' : 'wide');\n            if (newWidthMode !== 'narrow' && newWidthMode !== 'wide') return;\n            body.setAttribute('data-width', newWidthMode);\n\n            const url = new URL(window.location);\n            url.searchParams.set('width', newWidthMode);\n            window.history.replaceState({}, '', url);\n\n            // Update the icon based on the current mode\n            const narrowIcon = widthToggleButton.querySelector('.narrow');\n            const expandIcon = widthToggleButton.querySelector('.expand');\n\n            if (newWidthMode === 'wide') {\n                expandIcon.style.display = \"none\";\n                narrowIcon.style.display = \"block\";\n            } else {\n                expandIcon.style.display = \"block\";\n                narrowIcon.style.display = \"none\";\n            }\n        }\n\n        const urlParams = new URLSearchParams(window.location.search);\n        const theme = urlParams.get('theme');\n        const width = urlParams.get('width');\n\n        if (theme) toggleDarkMode(theme);\n        if (width) toggleWidthMode(width);\n\n        document.querySelector('.toggle').addEventListener('click', () => toggleDarkMode());\n        document.querySelector('.width-toggle').addEventListener('click', () => toggleWidthMode());\n    <\/script>\n</body>\n\n</html>\n";
-function toUnixSeconds$1(value) {
+	var template_default = "<!DOCTYPE html>\n<!--\n Copyright 2022-Present Pionxzh\n Copyright 2026 Asim Ihsan\n SPDX-License-Identifier: MPL-2.0\n-->\n\n<html lang=\"{{lang}}\" data-theme=\"{{theme}}\">\n<head>\n    <meta charset=\"UTF-8\" />\n    <link rel=\"icon\" href=\"https://chat.openai.com/favicon.ico\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>{{title}}</title>\n    <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css\">\n    <script src=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js\"><\/script>\n    <script>\n        hljs.highlightAll()\n    <\/script>\n    <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.3/katex.min.css\">\n    <script src=\"https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.3/katex.min.js\"><\/script>\n    <script src=\"https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.3/contrib/auto-render.min.js\"><\/script>\n    <script>\n        document.addEventListener(\"DOMContentLoaded\", function() {\n            renderMathInElement(document.body, {\n                delimiters: [\n                    { left: \"$$\", right: \"$$\", display: true },\n                    { left: \"$\", right: \"$\", display: false },\n                    { left: \"\\\\[\", right: \"\\\\]\", display: true },\n                    { left: \"\\\\(\", right: \"\\\\)\", display: false }\n                ],\n                throwOnError: false,\n                ignoredClasses: [\"no-katex\"],\n                preProcess: function(math) {\n                    return `\\\\displaystyle \\\\Large ${math}`;\n                }\n            });\n            document.querySelectorAll('.katex').forEach(function(el) {\n                const parent = el.parentNode;\n                const grandparent = parent.parentNode;\n                if (grandparent.tagName === 'P' && isOnlyContent(grandparent, parent)) {\n                    el.style.width = '100%';\n                    el.style.display = 'block';\n                    el.style.textAlign = 'center';\n                    parent.style.textAlign = 'center';\n                } else {\n                    el.style.display = 'inline-block';\n                    el.style.width = 'fit-content';\n                }\n            });\n            function isOnlyContent(parent, element) {\n                let onlyKaTeX = true;\n                parent.childNodes.forEach(function(child) {\n                    console.log(child.textContent);\n                    if (child !== element) {\n                        if (child.nodeType === Node.TEXT_NODE) {\n                            if (child.textContent.trim().length > 0) {\n                                onlyKaTeX = false;\n                            }\n                        } else if (child.nodeType === Node.ELEMENT_NODE) {\n                            onlyKaTeX = false;\n                        }\n                    }\n                });\n                return onlyKaTeX;\n            }\n        });\n    <\/script>\n\n    <style>\n        :root {\n            --page-text: #0d0d0d;\n            --page-bg: #fff;\n            --td-borders: #374151;\n            --th-borders: #4b5563;\n            --tw-prose-code: var(--page-text);\n            --tw-prose-counters: #9b9b9b;\n            --tw-prose-headings: var(--page-text);\n            --tw-prose-hr: rgba(0,0,0,.25);\n            --tw-prose-links: var(--page-text);\n            --tw-prose-quotes: var(--page-text);\n            --meta-title: #616c77;\n        }\n\n        [data-theme=\"dark\"] {\n            --page-text: #ececec;\n            --page-bg: #212121;\n            --tw-prose-code: var(--page-text);\n            --tw-prose-counters: #9b9b9b;\n            --tw-prose-headings: var(--page-text);\n            --tw-prose-hr: hsla(0,0%,100%,.25);\n            --tw-prose-links: var(--page-text);\n            --tw-prose-quotes: var(--page-text);\n            --meta-title: #959faa;\n        }\n\n        * {\n            box-sizing: border-box;\n            font-size: 16px;\n        }\n\n        ::-webkit-scrollbar {\n            height: 1rem;\n            width: .5rem\n        }\n\n        ::-webkit-scrollbar:horizontal {\n            height: .5rem;\n            width: 1rem\n        }\n\n        ::-webkit-scrollbar-track {\n            background-color: transparent;\n            border-radius: 9999px\n        }\n\n        ::-webkit-scrollbar-thumb {\n            --tw-border-opacity: 1;\n            background-color: rgba(217,217,227,.8);\n            border-color: rgba(255,255,255,var(--tw-border-opacity));\n            border-radius: 9999px;\n            border-width: 1px\n        }\n\n        ::-webkit-scrollbar-thumb:hover {\n            --tw-bg-opacity: 1;\n            background-color: rgba(236,236,241,var(--tw-bg-opacity))\n        }\n\n        .dark ::-webkit-scrollbar-thumb {\n            --tw-bg-opacity: 1;\n            background-color: rgba(86,88,105,var(--tw-bg-opacity))\n        }\n\n        .dark ::-webkit-scrollbar-thumb:hover {\n            --tw-bg-opacity: 1;\n            background-color: rgba(172,172,190,var(--tw-bg-opacity))\n        }\n\n        @media (min-width: 768px) {\n            .scrollbar-trigger ::-webkit-scrollbar-thumb {\n                visibility:hidden\n            }\n\n            .scrollbar-trigger:hover ::-webkit-scrollbar-thumb {\n                visibility: visible\n            }\n        }\n\n        body {\n            font-family: Söhne,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif,Helvetica Neue,Arial,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;\n            font-size: 14px;\n            line-height: 1.5;\n            color: var(--page-text);\n            background-color: var(--page-bg);\n            margin: 0;\n            padding: 0;\n        }\n\n        [data-theme=\"light\"] .sun {\n            display: none;\n        }\n\n        [data-theme=\"dark\"] .moon {\n            display: none;\n        }\n\n        .toggle {\n            display: inline-flex;\n            justify-content: center;\n            align-items: center;\n            width: 32px;\n            height: 32px;\n            border-radius: 4px;\n            background-color: #fff;\n            border: 1px solid #e2e8f0;\n        }\n\n        [data-width=\"narrow\"] .width-toggle .expand {\n            display: block;\n        }\n\n        [data-width=\"wide\"] .width-toggle .narrow {\n            display: block;\n        }\n\n        .width-toggle {\n            display: inline-flex;\n            justify-content: center;\n            align-items: center;\n            width: 32px;\n            height: 32px;\n            border-radius: 4px;\n            background-color: #fff;\n            border: 1px solid #e2e8f0;\n            margin-left: 8px;\n            cursor: pointer;\n        }\n\n        .width-toggle svg {\n            display: none;\n        }\n\n        .metadata_container {\n            display: flex;\n            flex-direction: column;\n            margin-top: 8px;\n            padding-left: 1rem;\n        }\n\n        .metadata_item {\n            display: flex;\n            flex-direction: row;\n            align-items: center;\n            border-radius: 16px;\n            padding: 4px 0.5rem;\n        }\n\n        .metadata_item:hover {\n            background-color: rgba(0,0,0,.1);\n        }\n\n        .metadata_item > div:first-child {\n            flex: 0 1 100px;\n            color: var(--meta-title);\n        }\n\n        .metadata_item > div:last-child {\n            flex: 1;\n        }\n\n        a {\n            color: var(--tw-prose-links);\n            font-size: 0.8rem;\n            text-decoration-line: underline;\n            text-underline-offset: 2px;\n        }\n\n        .conversation-content > p:first-child,\n        ol:first-child {\n            margin-top: 0;\n        }\n\n        p>code, li>code {\n            color: var(--tw-prose-code);\n            font-weight: 600;\n            font-size: .875em;\n        }\n\n        p>code::before,\n        p>code::after,\n        li>code::before,\n        li>code::after {\n            content: \"`\";\n        }\n\n        hr {\n            width: 100%;\n            height: 0;\n            border: 1px solid var(--tw-prose-hr);\n            margin-bottom: 1em;\n            margin-top: 1em;\n        }\n\n        pre {\n            color: #ffffff;\n            background-color: #000000;\n            overflow-x: auto;\n            margin: 0 0 1rem 0;\n            border-radius: 0.375rem;\n        }\n\n        pre>code {\n            font-family: Söhne Mono, Monaco, Andale Mono, Ubuntu Mono, monospace !important;\n            font-weight: 400;\n            font-size: .875em;\n            line-height: 1.7142857;\n        }\n\n        h1, h2, h3, h4, h5, h6 {\n            color: var(--tw-prose-headings);\n            margin: 0;\n        }\n\n        h1 {\n            font-size: 2.25em;\n            font-weight: 600;\n            line-height: 1.1111111;\n            margin-bottom: 0.8888889em;\n            margin-top: 0;\n        }\n\n        h2 {\n            font-size: 1.5em;\n            font-weight: 700;\n            line-height: 1.3333333;\n            margin-bottom: 1em;\n            margin-top: 2em;\n        }\n\n        h3 {\n            font-size: 1.25em;\n            font-weight: 600;\n            line-height: 1.6;\n            margin-bottom: .6em;\n            margin-top: 1.6em;\n        }\n\n        h4 {\n            font-weight: 400;\n            line-height: 1.5;\n            margin-bottom: .5em;\n            margin-top: 1.5em\n        }\n\n        h3,h4 {\n            margin-bottom: .5rem;\n            margin-top: 1rem;\n        }\n\n        h5 {\n            font-weight: 600;\n        }\n\n        blockquote {\n            border-left: 2px solid rgba(142,142,160,1);\n            color: var(--tw-prose-quotes);\n            font-style: italic;\n            font-style: normal;\n            font-weight: 500;\n            line-height: 1rem;\n            margin: 1.6em 0;\n            padding-left: 1em;\n            quotes: \"\\201C\"\"\\201D\"\"\\2018\"\"\\2019\";\n        }\n\n        blockquote p:first-of-type:before {\n            content: open-quote;\n        }\n\n        blockquote p:last-of-type:after {\n            content: close-quote;\n        }\n\n        ol, ul {\n            padding-left: 1.1rem;\n        }\n\n        ::marker {\n            color: var(--tw-prose-counters);\n            font-weight: 400;\n        }\n\n        table {\n            width: 100%;\n            border-collapse: separate;\n            border-spacing: 0 0;\n            table-layout: auto;\n            text-align: left;\n            font-size: .875em;\n            line-height: 1.7142857;\n        }\n\n        table * {\n            box-sizing: border-box;\n            border-width: 0;\n            border-style: solid;\n            border-color: #d9d9e3;\n        }\n\n        table thead {\n            border-bottom-color: var(--th-borders);\n            border-bottom-width: 1px;\n        }\n\n        table th {\n            background-color: rgba(236,236,241,.2);\n            border-bottom-width: 1px;\n            border-left-width: 1px;\n            border-top-width: 1px;\n            padding: 0.25rem 0.75rem;\n        }\n\n        table th:first-child {\n            border-top-left-radius: 0.375rem;\n        }\n\n        table th:last-child {\n            border-right-width: 1px;\n            border-top-right-radius: 0.375rem;\n        }\n\n        table tbody tr {\n            border-bottom-color: var(--td-borders);\n            border-bottom-width: 1px;\n        }\n\n        table tbody tr:last-child {\n            border-bottom-width: 0;\n        }\n\n        table tbody tr:last-child td:first-child {\n            border-bottom-left-radius: 0.375rem;\n        }\n\n        table tbody tr:last-child td:last-child {\n            border-bottom-right-radius: 0.375rem;\n        }\n\n        table td {\n            border-bottom-width: 1px;\n            border-left-width: 1px;\n            padding: 0.25rem 0.75rem;\n        }\n\n        table td:last-child {\n            border-right-width: 1px;\n        }\n\n        [type=checkbox], [type=radio] {\n            accent-color: #2563eb;\n        }\n\n        .conversation {\n            margin: 0 auto;\n            padding: 1rem;\n            max-width: 64rem;\n        }\n\n        [data-width=\"narrow\"] .conversation {\n            max-width: 64rem;\n        }\n\n        [data-width=\"wide\"] .conversation {\n            max-width: 90%;\n        }\n\n        @media (min-width: 1280px) {\n            .conversation {\n                max-width: 48rem;\n            }\n        }\n\n        @media (min-width: 1024px) {\n            .conversation {\n                max-width: 40rem;\n            }\n        }\n\n        @media (min-width: 768px) {\n            .conversation {\n                max-width: 48rem;\n            }\n        }\n\n        .conversation-header {\n            margin-bottom: 1rem;\n        }\n\n        .conversation-header h1 {\n            margin: 0;\n        }\n\n        .conversation-header h1 a {\n            font-size: 1.5rem;\n        }\n\n        .conversation-header .conversation-export {\n            margin-top: 0.5rem;\n            font-size: 0.8rem;\n        }\n\n        .conversation-header p {\n            margin-top: 0.5rem;\n            font-size: 0.8rem;\n        }\n\n        .conversation-item {\n            display: flex;\n            position: relative;\n            padding: 1rem;\n            border-left: 1px solid rgba(0,0,0,.1);\n            border-right: 1px solid rgba(0,0,0,.1);\n            border-bottom: 1px solid rgba(0,0,0,.1);\n        }\n\n        .conversation-item:first-of-type {\n            border-top: 1px solid rgba(0,0,0,.1);\n        }\n\n        .author {\n            display: flex;\n            flex: 0 0 30px;\n            justify-content: center;\n            align-items: center;\n            width: 30px;\n            height: 30px;\n            border-radius: 0.125rem;\n            margin-right: 1rem;\n            overflow: hidden;\n        }\n\n        .author svg {\n            color: #fff;\n            width: 22px;\n            height: 22px;\n        }\n\n        .author img {\n            content: url({{avatar}});\n            width: 100%;\n            height: 100%;\n        }\n\n        .author.GPT-3 {\n            background-color: rgb(16, 163, 127);\n        }\n\n        .author.GPT-4 {\n            background-color: black;\n        }\n\n        .conversation-content-wrapper {\n            display: flex;\n            position: relative;\n            overflow: hidden;\n            flex: 1 1 auto;\n            flex-direction: column;\n        }\n\n        .conversation-content {\n            font-size: 1rem;\n            line-height: 1.5;\n        }\n\n        .conversation-content p {\n            white-space: pre-wrap;\n            line-height: 28px;\n        }\n\n        .conversation-content img, .conversation-content video {\n            display: block;\n            max-width: 100%;\n            height: auto;\n            margin-bottom: 2em;\n            margin-top: 2em;\n        }\n\n        .time {\n            position: absolute;\n            right: 8px;\n            bottom: 0;\n            font-size: 0.8rem;\n            color: #acacbe\n        }\n\n    </style>\n</head>\n\n<body>\n    <svg aria-hidden=\"true\" style=\"position: absolute; width: 0; height: 0; overflow: hidden;\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n        <symbol id=\"chatgpt\" viewBox=\"0 0 41 41\">\n            <path d=\"M37.5324 16.8707C37.9808 15.5241 38.1363 14.0974 37.9886 12.6859C37.8409 11.2744 37.3934 9.91076 36.676 8.68622C35.6126 6.83404 33.9882 5.3676 32.0373 4.4985C30.0864 3.62941 27.9098 3.40259 25.8215 3.85078C24.8796 2.7893 23.7219 1.94125 22.4257 1.36341C21.1295 0.785575 19.7249 0.491269 18.3058 0.500197C16.1708 0.495044 14.0893 1.16803 12.3614 2.42214C10.6335 3.67624 9.34853 5.44666 8.6917 7.47815C7.30085 7.76286 5.98686 8.3414 4.8377 9.17505C3.68854 10.0087 2.73073 11.0782 2.02839 12.312C0.956464 14.1591 0.498905 16.2988 0.721698 18.4228C0.944492 20.5467 1.83612 22.5449 3.268 24.1293C2.81966 25.4759 2.66413 26.9026 2.81182 28.3141C2.95951 29.7256 3.40701 31.0892 4.12437 32.3138C5.18791 34.1659 6.8123 35.6322 8.76321 36.5013C10.7141 37.3704 12.8907 37.5973 14.9789 37.1492C15.9208 38.2107 17.0786 39.0587 18.3747 39.6366C19.6709 40.2144 21.0755 40.5087 22.4946 40.4998C24.6307 40.5054 26.7133 39.8321 28.4418 38.5772C30.1704 37.3223 31.4556 35.5506 32.1119 33.5179C33.5027 33.2332 34.8167 32.6547 35.9659 31.821C37.115 30.9874 38.0728 29.9178 38.7752 28.684C39.8458 26.8371 40.3023 24.6979 40.0789 22.5748C39.8556 20.4517 38.9639 18.4544 37.5324 16.8707ZM22.4978 37.8849C20.7443 37.8874 19.0459 37.2733 17.6994 36.1501C17.7601 36.117 17.8666 36.0586 17.936 36.0161L25.9004 31.4156C26.1003 31.3019 26.2663 31.137 26.3813 30.9378C26.4964 30.7386 26.5563 30.5124 26.5549 30.2825V19.0542L29.9213 20.998C29.9389 21.0068 29.9541 21.0198 29.9656 21.0359C29.977 21.052 29.9842 21.0707 29.9867 21.0902V30.3889C29.9842 32.375 29.1946 34.2791 27.7909 35.6841C26.3872 37.0892 24.4838 37.8806 22.4978 37.8849ZM6.39227 31.0064C5.51397 29.4888 5.19742 27.7107 5.49804 25.9832C5.55718 26.0187 5.66048 26.0818 5.73461 26.1244L13.699 30.7248C13.8975 30.8408 14.1233 30.902 14.3532 30.902C14.583 30.902 14.8088 30.8408 15.0073 30.7248L24.731 25.1103V28.9979C24.7321 29.0177 24.7283 29.0376 24.7199 29.0556C24.7115 29.0736 24.6988 29.0893 24.6829 29.1012L16.6317 33.7497C14.9096 34.7416 12.8643 35.0097 10.9447 34.4954C9.02506 33.9811 7.38785 32.7263 6.39227 31.0064ZM4.29707 13.6194C5.17156 12.0998 6.55279 10.9364 8.19885 10.3327C8.19885 10.4013 8.19491 10.5228 8.19491 10.6071V19.808C8.19351 20.0378 8.25334 20.2638 8.36823 20.4629C8.48312 20.6619 8.64893 20.8267 8.84863 20.9404L18.5723 26.5542L15.206 28.4979C15.1894 28.5089 15.1703 28.5155 15.1505 28.5173C15.1307 28.5191 15.1107 28.516 15.0924 28.5082L7.04046 23.8557C5.32135 22.8601 4.06716 21.2235 3.55289 19.3046C3.03862 17.3858 3.30624 15.3413 4.29707 13.6194ZM31.955 20.0556L22.2312 14.4411L25.5976 12.4981C25.6142 12.4872 25.6333 12.4805 25.6531 12.4787C25.6729 12.4769 25.6928 12.4801 25.7111 12.4879L33.7631 17.1364C34.9967 17.849 36.0017 18.8982 36.6606 20.1613C37.3194 21.4244 37.6047 22.849 37.4832 24.2684C37.3617 25.6878 36.8382 27.0432 35.9743 28.1759C35.1103 29.3086 33.9415 30.1717 32.6047 30.6641C32.6047 30.5947 32.6047 30.4733 32.6047 30.3889V21.188C32.6066 20.9586 32.5474 20.7328 32.4332 20.5338C32.319 20.3348 32.154 20.1698 31.955 20.0556ZM35.3055 15.0128C35.2464 14.9765 35.1431 14.9142 35.069 14.8717L27.1045 10.2712C26.906 10.1554 26.6803 10.0943 26.4504 10.0943C26.2206 10.0943 25.9948 10.1554 25.7963 10.2712L16.0726 15.8858V11.9982C16.0715 11.9783 16.0753 11.9585 16.0837 11.9405C16.0921 11.9225 16.1048 11.9068 16.1207 11.8949L24.1719 7.25025C25.4053 6.53903 26.8158 6.19376 28.2383 6.25482C29.6608 6.31589 31.0364 6.78077 32.2044 7.59508C33.3723 8.40939 34.2842 9.53945 34.8334 10.8531C35.3826 12.1667 35.5464 13.6095 35.3055 15.0128ZM14.2424 21.9419L10.8752 19.9981C10.8576 19.9893 10.8423 19.9763 10.8309 19.9602C10.8195 19.9441 10.8122 19.9254 10.8098 19.9058V10.6071C10.8107 9.18295 11.2173 7.78848 11.9819 6.58696C12.7466 5.38544 13.8377 4.42659 15.1275 3.82264C16.4173 3.21869 17.8524 2.99464 19.2649 3.1767C20.6775 3.35876 22.0089 3.93941 23.1034 4.85067C23.0427 4.88379 22.937 4.94215 22.8668 4.98473L14.9024 9.58517C14.7025 9.69878 14.5366 9.86356 14.4215 10.0626C14.3065 10.2616 14.2466 10.4877 14.2479 10.7175L14.2424 21.9419ZM16.071 17.9991L20.4018 15.4978L24.7325 17.9975V22.9985L20.4018 25.4983L16.071 22.9985V17.9991Z\" fill=\"currentColor\"></path>\n        </symbol>\n    </svg>\n    <div class=\"conversation\">\n        <div class=\"conversation-header\">\n            <h1>\n                <a href=\"{{source}}\" target=\"_blank\" rel=\"noopener noreferrer\">{{title}}</a>\n                <button class=\"toggle\">\n                    <svg class=\"sun\" stroke=\"currentColor\" fill=\"none\" stroke-width=\"2\" viewBox=\"0 0 24 24\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"w-4 h-4\" height=\"1em\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"12\" cy=\"12\" r=\"5\"></circle><line x1=\"12\" y1=\"1\" x2=\"12\" y2=\"3\"></line><line x1=\"12\" y1=\"21\" x2=\"12\" y2=\"23\"></line><line x1=\"4.22\" y1=\"4.22\" x2=\"5.64\" y2=\"5.64\"></line><line x1=\"18.36\" y1=\"18.36\" x2=\"19.78\" y2=\"19.78\"></line><line x1=\"1\" y1=\"12\" x2=\"3\" y2=\"12\"></line><line x1=\"21\" y1=\"12\" x2=\"23\" y2=\"12\"></line><line x1=\"4.22\" y1=\"19.78\" x2=\"5.64\" y2=\"18.36\"></line><line x1=\"18.36\" y1=\"5.64\" x2=\"19.78\" y2=\"4.22\"></line></svg>\n                    <svg class=\"moon\" stroke=\"currentColor\" fill=\"none\" stroke-width=\"2\" viewBox=\"0 0 24 24\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"w-4 h-4\" height=\"1em\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z\"></path></svg>\n                </button>\n                <button class=\"toggle width-toggle\">\n                    <svg class=\"expand\" stroke=\"currentColor\" fill=\"none\" stroke-width=\"2\" viewBox=\"0 0 24 24\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"w-4 h-4\" height=\"1em\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\" style=\"display: block;\">\n                        <path d=\"M3 12h18M6 8l-4 4 4 4M18 8l4 4-4 4\"></path>\n                    </svg>\n                    <svg class=\"narrow\" stroke=\"currentColor\" fill=\"none\" stroke-width=\"2\" viewBox=\"0 0 24 24\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"w-4 h-4\" height=\"1em\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\" style=\"display: none;\">\n                        <path d=\"M3 12h7M14 12h7M6 16l4-4-4-4M18 16l-4-4 4-4\"></path>\n                    </svg>\n                </button>\n            </h1>\n            <div class=\"conversation-export\">\n                <p>Exported by\n                <a href=\"https://github.com/asimihsan/chatgpt-exporter.git\">ChatGPT Exporter</a>\n                at {{time}}</p>\n            </div>\n            {{details}}\n        </div>\n\n        {{content}}\n    </div>\n\n\n    <script>\n        function toggleDarkMode(mode) {\n            const html = document.querySelector('html');\n            const isDarkMode = html.getAttribute('data-theme') === 'dark';\n            const newMode = mode || (isDarkMode ? 'light' : 'dark');\n            if (newMode !== 'dark' && newMode !== 'light') return;\n            html.setAttribute('data-theme', newMode);\n\n            const url = new URL(window.location);\n            url.searchParams.set('theme', newMode);\n            window.history.replaceState({}, '', url);\n        }\n        function toggleWidthMode(mode) {\n            const body = document.querySelector('body');\n            const widthToggleButton = document.querySelector('.width-toggle');\n            const isWide = body.getAttribute('data-width') === 'wide';\n            const newWidthMode = mode || (isWide ? 'narrow' : 'wide');\n            if (newWidthMode !== 'narrow' && newWidthMode !== 'wide') return;\n            body.setAttribute('data-width', newWidthMode);\n\n            const url = new URL(window.location);\n            url.searchParams.set('width', newWidthMode);\n            window.history.replaceState({}, '', url);\n\n            // Update the icon based on the current mode\n            const narrowIcon = widthToggleButton.querySelector('.narrow');\n            const expandIcon = widthToggleButton.querySelector('.expand');\n\n            if (newWidthMode === 'wide') {\n                expandIcon.style.display = \"none\";\n                narrowIcon.style.display = \"block\";\n            } else {\n                expandIcon.style.display = \"block\";\n                narrowIcon.style.display = \"none\";\n            }\n        }\n\n        const urlParams = new URLSearchParams(window.location.search);\n        const theme = urlParams.get('theme');\n        const width = urlParams.get('width');\n\n        if (theme) toggleDarkMode(theme);\n        if (width) toggleWidthMode(width);\n\n        document.querySelector('.toggle').addEventListener('click', () => toggleDarkMode());\n        document.querySelector('.width-toggle').addEventListener('click', () => toggleWidthMode());\n    <\/script>\n</body>\n\n</html>\n";
+	function toUnixSeconds$1(value) {
 		if (!value) return Math.floor(Date.now() / 1e3);
 		const parsed = Date.parse(value);
 		if (Number.isNaN(parsed)) return Math.floor(Date.now() / 1e3);
@@ -15433,7 +15366,7 @@ function toUnixSeconds$1(value) {
 			rawPayload: { finding }
 		};
 	}
-function toUnixSeconds(value) {
+	function toUnixSeconds(value) {
 		if (!value) return Math.floor(Date.now() / 1e3);
 		const parsed = Date.parse(value);
 		if (Number.isNaN(parsed)) return Math.floor(Date.now() / 1e3);
@@ -15572,19 +15505,19 @@ function toUnixSeconds(value) {
 		return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
 	}
 	function timestamp() {
-		return ( new Date()).toISOString().replace(/:/g, "-").replace(/\..+/, "");
+		return new Date().toISOString().replace(/:/g, "-").replace(/\..+/, "");
 	}
 	function getColorScheme() {
 		return document.documentElement.style.getPropertyValue("color-scheme");
 	}
 	function unixTimestampToISOString(timestamp) {
 		if (!timestamp) return "";
-		return ( new Date(timestamp * 1e3)).toISOString();
+		return new Date(timestamp * 1e3).toISOString();
 	}
 	function jsonlStringify(list) {
 		return list.map((msg) => JSON.stringify(msg)).join("\n");
 	}
-function escapeHtml$1(input) {
+	function escapeHtml$1(input) {
 		return input.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;").replaceAll("'", "&#039;");
 	}
 	function escapeSecurityMarkdownSource(input) {
@@ -15681,7 +15614,7 @@ function escapeHtml$1(input) {
 		const theme = getColorScheme() || "light";
 		const escapedTitle = escapeHtml$1(normalizeSingleLineText(document.title));
 		const escapedSourceUrl = escapeHtml$1(document.sourceUrl);
-		return template_default.replaceAll("{{title}}", escapedTitle).replaceAll("{{date}}", dateStr()).replaceAll("{{time}}", ( new Date()).toISOString()).replaceAll("{{source}}", escapedSourceUrl).replaceAll("{{lang}}", escapeHtml$1(lang)).replaceAll("{{theme}}", escapeHtml$1(theme)).replaceAll("{{avatar}}", "data:,").replaceAll("{{details}}", detailsHtml).replaceAll("{{content}}", `<article class="conversation-item"><div class="conversation-content-wrapper"><div class="conversation-content"><h1>${escapedTitle}</h1>${sectionsHtml}</div></div></article>`);
+		return template_default.replaceAll("{{title}}", escapedTitle).replaceAll("{{date}}", dateStr()).replaceAll("{{time}}", new Date().toISOString()).replaceAll("{{source}}", escapedSourceUrl).replaceAll("{{lang}}", escapeHtml$1(lang)).replaceAll("{{theme}}", escapeHtml$1(theme)).replaceAll("{{avatar}}", "data:,").replaceAll("{{details}}", detailsHtml).replaceAll("{{content}}", `<article class="conversation-item"><div class="conversation-content-wrapper"><div class="conversation-content"><h1>${escapedTitle}</h1>${sectionsHtml}</div></div></article>`);
 	}
 	function getSecurityFileNameOptions(document) {
 		return {
@@ -15755,7 +15688,7 @@ function escapeHtml$1(input) {
 	var UI_TOKEN_REGEX = /\uE200([a-z0-9_]+)\uE202([\s\S]*?)\uE201/giu;
 	var UNICODE_SPACE_REGEX = /[\u00A0\u202F\u2007\u2060]/gu;
 	var UNICODE_HYPHEN_REGEX = /[\u2010-\u2015\u2212]/gu;
-function stripUiTokens(input) {
+	function stripUiTokens(input) {
 		return input.replace(UI_TOKEN_REGEX, (_match, tokenType, payload) => {
 			return tokenType.toLowerCase() === "cite" ? payload : "";
 		});
@@ -15805,7 +15738,7 @@ function stripUiTokens(input) {
 		if (!message?.content) return null;
 		return extractDeepResearchReportMessage(message) ?? message;
 	}
-function isExecutionOutputImage(value) {
+	function isExecutionOutputImage(value) {
 		if (typeof value !== "object" || value === null) return false;
 		const maybeImage = value;
 		return maybeImage.message_type === "image" && typeof maybeImage.image_url === "string" && typeof maybeImage.height === "number" && typeof maybeImage.width === "number";
@@ -15818,7 +15751,7 @@ function isExecutionOutputImage(value) {
 	function getExecutionOutputText(content) {
 		return stripUiTokens(content.text || "");
 	}
-function getExportAuthorLabel(message) {
+	function getExportAuthorLabel(message) {
 		if (isThinkingMessage(message)) return "ChatGPT (Thinking)";
 		if (isAnalysisCodeMessage(message)) return "ChatGPT (Analysis)";
 		if (isAnalysisExecutionOutput(message)) {
@@ -15832,7 +15765,7 @@ function getExportAuthorLabel(message) {
 			default: return message.author.role;
 		}
 	}
-var DEFAULT_SANITIZE_TEXT_OPTIONS = {
+	var DEFAULT_SANITIZE_TEXT_OPTIONS = {
 		normalization: "NFKC",
 		replaceQuotes: true,
 		replaceDashes: true,
@@ -15918,7 +15851,7 @@ var DEFAULT_SANITIZE_TEXT_OPTIONS = {
 		if (resolved.stripChatGptUtmSourceFromMarkdownLinks) output = stripChatGptUtmSourceFromMarkdownLinks(output);
 		return output;
 	}
-async function exportToText() {
+	async function exportToText() {
 		const pageContext = getPageContext();
 		if (pageContext.kind === "security-finding" || pageContext.kind === "security-scan") {
 			const document = await loadCurrentSecurityDocument();
@@ -15937,7 +15870,10 @@ async function exportToText() {
 			alert(i18n_default.t("Please start a conversation first"));
 			return false;
 		}
-		const { conversationNodes } = processConversation(await fetchConversation(await getCurrentChatId(), false));
+		const chatId = await getCurrentChatId();
+		const rawConversation = await fetchConversation(chatId, false);
+		await inlineGeneratedTextFiles(rawConversation, { conversationId: rawConversation.conversation_id ?? rawConversation.id ?? chatId });
+		const { conversationNodes } = processConversation(rawConversation);
 		await copyToClipboard(standardizeLineBreaks(conversationNodes.map(({ message }) => transformMessageForTextExport(message)).filter(Boolean).join("\n\n")));
 		return true;
 	}
@@ -15966,7 +15902,7 @@ async function exportToText() {
 		content = sanitizeLLMText(content);
 		return `${author}:\n${content}`;
 	}
-function transformContent$2(content, metadata) {
+	function transformContent$2(content, metadata) {
 		switch (content.content_type) {
 			case "text": return stripUiTokens(content.parts?.join("\n") || "");
 			case "code": return stripUiTokens(content.text || "");
@@ -15993,7 +15929,7 @@ function transformContent$2(content, metadata) {
 			default: return "[Unsupported Content]";
 		}
 	}
-function reformatContent(input) {
+	function reformatContent(input) {
 		const root = fromMarkdown(input);
 		flatMap(root, (item) => {
 			if (item.type === "strong") return item.children;
@@ -16018,13 +15954,13 @@ function reformatContent(input) {
 		}
 		return output;
 	}
-function transformFootNotes$2(input, metadata) {
+	function transformFootNotes$2(input, metadata) {
 		return input.replace(/【(\d+)†\((.+?)\)】/g, (match, citeIndex, _evidenceText) => {
 			if (metadata?.citations?.find((cite) => cite.metadata?.extra?.cited_message_idx === +citeIndex)) return "";
 			return match;
 		});
 	}
-function getExportCapabilities(context = getPageContext()) {
+	function getExportCapabilities(context = getPageContext()) {
 		switch (context.kind) {
 			case "conversation": return {
 				canExportText: true,
@@ -16088,7 +16024,7 @@ function getExportCapabilities(context = getPageContext()) {
 			};
 		}
 	}
-var EDITABLE_SELECTOR = "input, textarea, select, [contenteditable], [role=\"textbox\"]";
+	var EDITABLE_SELECTOR = "input, textarea, select, [contenteditable], [role=\"textbox\"]";
 	var MODIFIER_ORDER = [
 		"Mod",
 		"Shift",
@@ -16180,7 +16116,7 @@ var EDITABLE_SELECTOR = "input, textarea, select, [contenteditable], [role=\"tex
 		enableCopyTextShortcut: true,
 		copyTextShortcut: DEFAULT_COPY_TEXT_SHORTCUT
 	};
-var listeners = new Set();
+	var listeners = new Set();
 	function cloneExportMetaList(exportMetaList) {
 		return exportMetaList.map((meta) => ({ ...meta }));
 	}
@@ -16303,7 +16239,7 @@ var listeners = new Set();
 		if (settings.enableTimestamp) document.body.setAttribute("data-time-format", settings.timeStamp24H ? "24" : "12");
 		else document.body.removeAttribute("data-time-format");
 	}
-var COPY_TEXT_SHORTCUT_SUCCESS_EVENT = "ce:copy-text-success";
+	var COPY_TEXT_SHORTCUT_SUCCESS_EVENT = "ce:copy-text-success";
 	var shortcutRegistered = false;
 	var settingsSubscribed = false;
 	var activeShortcutSettings = {
@@ -16389,7 +16325,7 @@ var COPY_TEXT_SHORTCUT_SUCCESS_EVENT = "ce:copy-text-success";
 		});
 		shortcutRegistered = true;
 	}
-function t$2(key, fallback) {
+	function t$2(key, fallback) {
 		const value = i18n_default.t(key);
 		return value === key ? fallback : value;
 	}
@@ -16726,7 +16662,7 @@ function t$2(key, fallback) {
 		shadow.append(styleElement, template.content.cloneNode(true));
 		return getPanelElements(shadow);
 	}
-var activePanel = null;
+	var activePanel = null;
 	function t$1(key, fallback) {
 		const value = i18n_default.t(key);
 		return value === key ? fallback : value;
@@ -16904,7 +16840,7 @@ var activePanel = null;
 		activePanel.host.remove();
 		activePanel = null;
 	}
-var registered = false;
+	var registered = false;
 	function registerSettingsMenuCommand() {
 		if (registered) return;
 		const label = i18n_default.t("Exporter Settings");
@@ -17126,7 +17062,7 @@ var registered = false;
 		return typeof value === "function";
 	}
 	init_compat_module();
-function createSlot(ownerName) {
+	function createSlot(ownerName) {
 		const SlotClone = createSlotClone(ownerName);
 		const Slot2 = D$1((props, forwardedRef) => {
 			const { children, ...slotProps } = props;
@@ -17155,7 +17091,7 @@ function createSlot(ownerName) {
 		Slot2.displayName = `${ownerName}.Slot`;
 		return Slot2;
 	}
-function createSlotClone(ownerName) {
+	function createSlotClone(ownerName) {
 		const SlotClone = D$1((props, forwardedRef) => {
 			const { children, ...slotProps } = props;
 			if (hn(children)) {
@@ -17631,7 +17567,7 @@ function createSlotClone(ownerName) {
 		const [mounted, setMounted] = d$1(false);
 		useLayoutEffect2(() => setMounted(true), []);
 		const container = containerProp || mounted && globalThis?.document?.body;
-		return container ? gn.createPortal( u$1(Primitive.div, {
+		return container ? gn.createPortal(u$1(Primitive.div, {
 			...portalProps,
 			ref: forwardedRef
 		}), container) : null;
@@ -17789,14 +17725,14 @@ function createSlotClone(ownerName) {
 	var zeroRightClassName = "right-scroll-bar-position";
 	var fullWidthClassName = "width-before-scroll-bar";
 	var noScrollbarsClassName = "with-scroll-bars-hidden";
-var removedBarSizeVariable = "--removed-body-scroll-bar-size";
-function assignRef(ref, value) {
+	var removedBarSizeVariable = "--removed-body-scroll-bar-size";
+	function assignRef(ref, value) {
 		if (typeof ref === "function") ref(value);
 		else if (ref) ref.current = value;
 		return ref;
 	}
 	init_compat_module();
-function useCallbackRef(initialValue, callback) {
+	function useCallbackRef(initialValue, callback) {
 		var ref = d$1(function() {
 			return {
 				value: initialValue,
@@ -17821,7 +17757,7 @@ function useCallbackRef(initialValue, callback) {
 	init_compat_module();
 	var useIsomorphicLayoutEffect = typeof window !== "undefined" ? _ : y$1;
 	var currentValues = new WeakMap();
-function useMergeRefs(refs, defaultValue) {
+	function useMergeRefs(refs, defaultValue) {
 		var callbackRef = useCallbackRef(defaultValue || null, function(newValue) {
 			return refs.forEach(function(ref) {
 				return assignRef(ref, newValue);
@@ -17938,7 +17874,7 @@ function useMergeRefs(refs, defaultValue) {
 	var effectCar = createSidecarMedium();
 	init_compat_module();
 	var nothing = function() {};
-var RemoveScroll = D$1(function(props, parentRef) {
+	var RemoveScroll = D$1(function(props, parentRef) {
 		var ref = A$2(null);
 		var _a = d$1({
 			onScrollCapture: nothing,
@@ -18031,7 +17967,7 @@ var RemoveScroll = D$1(function(props, parentRef) {
 		};
 	};
 	init_compat_module();
-var styleHookSingleton = function() {
+	var styleHookSingleton = function() {
 		var sheet = stylesheetSingleton();
 		return function(styles, isDynamic) {
 			y$1(function() {
@@ -18042,7 +17978,7 @@ var styleHookSingleton = function() {
 			}, [styles && isDynamic]);
 		};
 	};
-var styleSingleton = function() {
+	var styleSingleton = function() {
 		var useStyle = styleHookSingleton();
 		var Sheet = function(_a) {
 			var styles = _a.styles, dynamic = _a.dynamic;
@@ -18110,7 +18046,7 @@ var styleSingleton = function() {
 			};
 		}, []);
 	};
-var RemoveScrollBar = function(_a) {
+	var RemoveScrollBar = function(_a) {
 		var noRelative = _a.noRelative, noImportant = _a.noImportant, _b = _a.gapMode, gapMode = _b === void 0 ? "margin" : _b;
 		useLockAttribute();
 		return k$2(Style, { styles: getStyles(T$1(function() {
@@ -18177,7 +18113,7 @@ var RemoveScrollBar = function(_a) {
 		return axis === "v" ? getVScrollVariables(node) : getHScrollVariables(node);
 	};
 	var getDirectionFactor = function(axis, direction) {
-return axis === "h" && direction === "rtl" ? -1 : 1;
+		return axis === "h" && direction === "rtl" ? -1 : 1;
 	};
 	var handleScroll = function(axis, endTarget, event, sourceDelta, noOverscroll) {
 		var directionFactor = getDirectionFactor(axis, window.getComputedStyle(endTarget).direction);
@@ -18390,7 +18326,7 @@ return axis === "h" && direction === "rtl" ? -1 : 1;
 			return Boolean(x);
 		});
 	};
-var applyAttributeToOthers = function(originalTarget, parentNode, markerName, controlAttribute) {
+	var applyAttributeToOthers = function(originalTarget, parentNode, markerName, controlAttribute) {
 		var targets = correctTargets(parentNode, Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
 		if (!markerMap[markerName]) markerMap[markerName] = new WeakMap();
 		var markerCounter = markerMap[markerName];
@@ -18447,7 +18383,7 @@ var applyAttributeToOthers = function(originalTarget, parentNode, markerName, co
 			}
 		};
 	};
-var hideOthers = function(originalTarget, parentNode, markerName) {
+	var hideOthers = function(originalTarget, parentNode, markerName) {
 		if (markerName === void 0) markerName = "data-aria-hidden";
 		var targets = Array.from(Array.isArray(originalTarget) ? originalTarget : [originalTarget]);
 		var activeParentNode = parentNode || getDefaultParent(originalTarget);
@@ -18633,7 +18569,7 @@ var hideOthers = function(originalTarget, parentNode, markerName) {
 		const contentRef = A$2(null);
 		const composedRefs = useComposedRefs(forwardedRef, contentRef);
 		useFocusGuards();
-		return u$1(S$1, { children: [ u$1(FocusScope, {
+		return u$1(S$1, { children: [u$1(FocusScope, {
 			asChild: true,
 			loop: true,
 			trapped: trapFocus,
@@ -18649,7 +18585,7 @@ var hideOthers = function(originalTarget, parentNode, markerName) {
 				ref: composedRefs,
 				onDismiss: () => context.onOpenChange(false)
 			})
-		}), u$1(S$1, { children: [ u$1(TitleWarning, { titleId: context.titleId }), u$1(DescriptionWarning, {
+		}), u$1(S$1, { children: [u$1(TitleWarning, { titleId: context.titleId }), u$1(DescriptionWarning, {
 			contentRef,
 			descriptionId: context.descriptionId
 		})] })] });
@@ -18733,7 +18669,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 	var Content$1 = DialogContent$2;
 	var Title = DialogTitle;
 	var Close = DialogClose;
-var sides = [
+	var sides = [
 		"top",
 		"right",
 		"bottom",
@@ -18910,7 +18846,7 @@ var sides = [
 		}
 		return coords;
 	}
-async function detectOverflow(state, options) {
+	async function detectOverflow(state, options) {
 		var _await$platform$isEle;
 		if (options === void 0) options = {};
 		const { x, y, platform, rects, elements, strategy } = state;
@@ -18950,7 +18886,7 @@ async function detectOverflow(state, options) {
 			right: (elementClientRect.right - clippingClientRect.right + paddingObject.right) / offsetScale.x
 		};
 	}
-var computePosition$1 = async (reference, floating, config) => {
+	var computePosition$1 = async (reference, floating, config) => {
 		const { placement = "bottom", strategy = "absolute", middleware = [], platform } = config;
 		const validMiddleware = middleware.filter(Boolean);
 		const rtl = await (platform.isRTL == null ? void 0 : platform.isRTL(floating));
@@ -19014,7 +18950,7 @@ var computePosition$1 = async (reference, floating, config) => {
 			middlewareData
 		};
 	};
-var arrow$3 = (options) => ({
+	var arrow$3 = (options) => ({
 		name: "arrow",
 		options,
 		async fn(state) {
@@ -19059,7 +18995,7 @@ var arrow$3 = (options) => ({
 			};
 		}
 	});
-var flip$2 = function(options) {
+	var flip$2 = function(options) {
 		if (options === void 0) options = {};
 		return {
 			name: "flip",
@@ -19137,7 +19073,7 @@ var flip$2 = function(options) {
 	function isAnySideFullyClipped(overflow) {
 		return sides.some((side) => overflow[side] >= 0);
 	}
-var hide$2 = function(options) {
+	var hide$2 = function(options) {
 		if (options === void 0) options = {};
 		return {
 			name: "hide",
@@ -19199,7 +19135,7 @@ var hide$2 = function(options) {
 			y: crossAxis * crossAxisMulti
 		};
 	}
-var offset$2 = function(options) {
+	var offset$2 = function(options) {
 		if (options === void 0) options = 0;
 		return {
 			name: "offset",
@@ -19220,7 +19156,7 @@ var offset$2 = function(options) {
 			}
 		};
 	};
-var shift$2 = function(options) {
+	var shift$2 = function(options) {
 		if (options === void 0) options = {};
 		return {
 			name: "shift",
@@ -19276,7 +19212,7 @@ var shift$2 = function(options) {
 			}
 		};
 	};
-var limitShift$2 = function(options) {
+	var limitShift$2 = function(options) {
 		if (options === void 0) options = {};
 		return {
 			options,
@@ -19323,7 +19259,7 @@ var limitShift$2 = function(options) {
 			}
 		};
 	};
-var size$2 = function(options) {
+	var size$2 = function(options) {
 		if (options === void 0) options = {};
 		return {
 			name: "size",
@@ -19919,7 +19855,7 @@ var size$2 = function(options) {
 		refresh(true);
 		return cleanup;
 	}
-function autoUpdate(reference, floating, update, options) {
+	function autoUpdate(reference, floating, update, options) {
 		if (options === void 0) options = {};
 		const { ancestorScroll = true, ancestorResize = true, elementResize = typeof ResizeObserver === "function", layoutShift = typeof IntersectionObserver === "function", animationFrame = false } = options;
 		const referenceEl = unwrapElement(reference);
@@ -19969,14 +19905,14 @@ function autoUpdate(reference, floating, update, options) {
 			if (animationFrame) cancelAnimationFrame(frameId);
 		};
 	}
-var offset$1 = offset$2;
-var shift$1 = shift$2;
-var flip$1 = flip$2;
-var size$1 = size$2;
-var hide$1 = hide$2;
-var arrow$2 = arrow$3;
-var limitShift$1 = limitShift$2;
-var computePosition = (reference, floating, options) => {
+	var offset$1 = offset$2;
+	var shift$1 = shift$2;
+	var flip$1 = flip$2;
+	var size$1 = size$2;
+	var hide$1 = hide$2;
+	var arrow$2 = arrow$3;
+	var limitShift$1 = limitShift$2;
+	var computePosition = (reference, floating, options) => {
 		const cache = new Map();
 		const mergedOptions = {
 			platform,
@@ -20035,7 +19971,7 @@ var computePosition = (reference, floating, options) => {
 		});
 		return ref;
 	}
-function useFloating(options) {
+	function useFloating(options) {
 		if (options === void 0) options = {};
 		const { placement = "bottom", strategy = "absolute", middleware = [], platform, elements: { reference: externalReference, floating: externalFloating } = {}, transform = true, whileElementsMounted, open } = options;
 		const [data, setData] = d$1({
@@ -20178,7 +20114,7 @@ function useFloating(options) {
 			floatingStyles
 		]);
 	}
-var arrow$1 = (options) => {
+	var arrow$1 = (options) => {
 		function isRef(value) {
 			return {}.hasOwnProperty.call(value, "current");
 		}
@@ -20202,31 +20138,31 @@ var arrow$1 = (options) => {
 			}
 		};
 	};
-var offset = (options, deps) => ({
+	var offset = (options, deps) => ({
 		...offset$1(options),
 		options: [options, deps]
 	});
-var shift = (options, deps) => ({
+	var shift = (options, deps) => ({
 		...shift$1(options),
 		options: [options, deps]
 	});
-var limitShift = (options, deps) => ({
+	var limitShift = (options, deps) => ({
 		...limitShift$1(options),
 		options: [options, deps]
 	});
-var flip = (options, deps) => ({
+	var flip = (options, deps) => ({
 		...flip$1(options),
 		options: [options, deps]
 	});
-var size = (options, deps) => ({
+	var size = (options, deps) => ({
 		...size$1(options),
 		options: [options, deps]
 	});
-var hide = (options, deps) => ({
+	var hide = (options, deps) => ({
 		...hide$1(options),
 		options: [options, deps]
 	});
-var arrow = (options, deps) => ({
+	var arrow = (options, deps) => ({
 		...arrow$1(options),
 		options: [options, deps]
 	});
@@ -20783,13 +20719,13 @@ var arrow = (options, deps) => ({
 		var getLength = require_browser$1();
 		module.exports = truncate.bind(null, getLength);
 	}));
-	var import_sanitize_filename = __toESM(( __commonJSMin(((exports, module) => {
-var truncate = require_browser();
+	var import_sanitize_filename = __toESM(__commonJSMin(((exports, module) => {
+		var truncate = require_browser();
 		var illegalRe = /[\/\?<>\\:\*\|"]/g;
 		var controlRe = /[\x00-\x1f\x80-\x9f]/g;
 		var reservedRe = /^\.+$/;
 		var windowsReservedRe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
-function replaceTrailingDotsAndSpaces(str, replacement) {
+		function replaceTrailingDotsAndSpaces(str, replacement) {
 			var end = str.length;
 			while (end > 0 && (str[end - 1] === "." || str[end - 1] === " ")) end--;
 			return end < str.length ? str.slice(0, end) + replacement : str;
@@ -20806,7 +20742,7 @@ function replaceTrailingDotsAndSpaces(str, replacement) {
 			if (replacement === "") return output;
 			return sanitize(output, "");
 		};
-	})))(), 1);
+	}))(), 1);
 	function downloadFile(filename, type, content) {
 		const blob = content instanceof Blob ? content : new Blob([content], { type });
 		const url = URL.createObjectURL(blob);
@@ -20831,7 +20767,7 @@ function replaceTrailingDotsAndSpaces(str, replacement) {
 		const _updateTime = unixTimestampToISOString(updateTime);
 		return format.replace("{title}", _title).replace("{date}", dateStr()).replace("{timestamp}", timestamp()).replace("{chat_id}", chatId).replace("{create_time}", _createTime).replace("{update_time}", _updateTime).concat(`.${ext}`);
 	}
-async function exportToHtml(fileNameFormat, metaList) {
+	async function exportToHtml(fileNameFormat, metaList) {
 		const pageContext = getPageContext();
 		if (pageContext.kind === "security-finding" || pageContext.kind === "security-scan") {
 			const document = await loadCurrentSecurityDocument();
@@ -20961,7 +20897,7 @@ async function exportToHtml(fileNameFormat, metaList) {
 </div>`;
 		}).filter(Boolean).join("\n\n");
 		const date = dateStr();
-		const time = ( new Date()).toISOString();
+		const time = new Date().toISOString();
 		const source = `${baseUrl}/c/${id}`;
 		const lang = options?.lang || resolveDocumentLanguage();
 		const theme = options?.theme || resolveColorScheme();
@@ -20976,7 +20912,7 @@ async function exportToHtml(fileNameFormat, metaList) {
 </details>` : "";
 		return template_default.replaceAll("{{title}}", title).replaceAll("{{date}}", date).replaceAll("{{time}}", time).replaceAll("{{source}}", source).replaceAll("{{lang}}", lang).replaceAll("{{theme}}", theme).replaceAll("{{avatar}}", avatar).replaceAll("{{details}}", detailsHtml).replaceAll("{{content}}", conversationHtml);
 	}
-function transformFootNotes$1(input, metadata) {
+	function transformFootNotes$1(input, metadata) {
 		return input.replace(/【(\d+)†\((.+?)\)】/g, (match, citeIndex, _evidenceText) => {
 			if (metadata?.citations?.find((cite) => cite.metadata?.extra?.cited_message_idx === +citeIndex)) return "";
 			return match;
@@ -21006,7 +20942,7 @@ function transformFootNotes$1(input, metadata) {
 		}
 		return output;
 	}
-function transformContent$1(content, metadata, postProcess) {
+	function transformContent$1(content, metadata, postProcess) {
 		switch (content.content_type) {
 			case "text": return postProcess(stripUiTokens(content.parts?.join("\n") || ""));
 			case "code": return `Code:\n\`\`\`\n${stripUiTokens(content.text)}\n\`\`\``;
@@ -21038,15 +20974,15 @@ function transformContent$1(content, metadata, postProcess) {
 	function escapeHtml(html) {
 		return html.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
 	}
-var Effect = class {
+	var Effect = class {
 		_sideEffects = [];
 		_cleanupFns = [];
 		_isDisposed = false;
-add(sideEffect) {
+		add(sideEffect) {
 			if (this._isDisposed) return;
 			this._sideEffects.push(sideEffect);
 		}
-run() {
+		run() {
 			if (this._isDisposed) return;
 			this._sideEffects.forEach((fn) => {
 				const cleanupFn = fn();
@@ -21054,14 +20990,14 @@ run() {
 			});
 			this._sideEffects = [];
 		}
-dispose() {
+		dispose() {
 			if (this._isDisposed) return;
 			this._cleanupFns.forEach((fn) => fn());
 			this._cleanupFns = [];
 			this._isDisposed = true;
 		}
 	};
-var SECURITY_PNG_TARGET_ATTRIBUTE = "data-ce-security-png-target";
+	var SECURITY_PNG_TARGET_ATTRIBUTE = "data-ce-security-png-target";
 	function fnIgnoreElements(el) {
 		return typeof el.shadowRoot === "object" && el.shadowRoot !== null;
 	}
@@ -21252,10 +21188,10 @@ var SECURITY_PNG_TARGET_ATTRIBUTE = "data-ce-security-png-target";
 		window.URL.revokeObjectURL(dataUrl);
 		return true;
 	}
-function convertMessageToTavern(node) {
+	function convertMessageToTavern(node) {
 		if (!node.message || node.message.content.content_type !== "text") return null;
 		const authorRole = node.message.author.role;
-		const createTime = node.message.create_time || ( new Date()).getTime() / 1e3;
+		const createTime = node.message.create_time || new Date().getTime() / 1e3;
 		const text = node.message.content.parts.join("\n");
 		return {
 			name: authorRole === "assistant" ? "Assistant" : "You",
@@ -21316,7 +21252,7 @@ function convertMessageToTavern(node) {
 		if (oobaData.visible[0] && oobaData.visible[0][0] === "<|BEGIN-VISIBLE-CHAT|>") oobaData.visible[0][0] = "";
 		return JSON.stringify(oobaData, null, 2);
 	}
-async function exportToJson(fileNameFormat) {
+	async function exportToJson(fileNameFormat) {
 		const pageContext = getPageContext();
 		if (pageContext.kind === "security-finding" || pageContext.kind === "security-scan") {
 			const document = await loadCurrentSecurityDocument();
@@ -21412,7 +21348,7 @@ async function exportToJson(fileNameFormat) {
 	function conversationToJson(conversation) {
 		return JSON.stringify(conversation);
 	}
-async function exportToMarkdown(fileNameFormat, metaList) {
+	async function exportToMarkdown(fileNameFormat, metaList) {
 		const pageContext = getPageContext();
 		if (pageContext.kind === "security-finding" || pageContext.kind === "security-scan") {
 			const document = await loadCurrentSecurityDocument();
@@ -21522,7 +21458,7 @@ async function exportToMarkdown(fileNameFormat, metaList) {
 			return `#### ${author}:\n${timestampHtml}${content}`;
 		}).filter(Boolean).join("\n\n")}`;
 	}
-function transformFootNotes(input, metadata) {
+	function transformFootNotes(input, metadata) {
 		const footNoteMarkRegex = /【(\d+)†\((.+?)\)】/g;
 		const citationList = [];
 		return `${input.replace(footNoteMarkRegex, (match, citeIndex, _evidenceText) => {
@@ -21536,7 +21472,7 @@ function transformFootNotes(input, metadata) {
 			return `[^${citation.metadata?.extra?.cited_message_idx ?? 1}]: ${citation.metadata?.title ?? "No title"}`;
 		}).join("\n")}`;
 	}
-function transformContentReferences(input, metadata) {
+	function transformContentReferences(input, metadata) {
 		const contentRefs = metadata?.content_references;
 		if (!contentRefs || contentRefs.length === 0) return input;
 		const sortedRefs = [...contentRefs].sort((a, b) => (b.matched_text?.length || 0) - (a.matched_text?.length || 0));
@@ -21560,7 +21496,7 @@ function transformContentReferences(input, metadata) {
 		}
 		return output;
 	}
-function transformContent(content, metadata, postProcess) {
+	function transformContent(content, metadata, postProcess) {
 		switch (content.content_type) {
 			case "text": return postProcess(stripUiTokens(content.parts?.join("\n") || ""));
 			case "code": return `Code:\n\`\`\`\n${stripUiTokens(content.text)}\n\`\`\``;
@@ -21629,12 +21565,12 @@ function transformContent(content, metadata, postProcess) {
 		window.addEventListener("resize", callback);
 		return () => window.removeEventListener("resize", callback);
 	}
-var EXPORT_DIALOG_CLASS_NAMES = {
+	var EXPORT_DIALOG_CLASS_NAMES = {
 		overlay: "ce-dialog-overlay",
 		content: "ce-dialog-content",
 		title: "ce-dialog-title"
 	};
-var Divider = () => u$1("div", { className: "h-px bg-token-border-light" });
+	var Divider = () => u$1("div", { className: "h-px bg-token-border-light" });
 	function mitt_default(n) {
 		return {
 			all: n = n || new Map(),
@@ -21656,7 +21592,7 @@ var Divider = () => u$1("div", { className: "h-px bg-token-border-light" });
 			}
 		};
 	}
-var RequestQueue = class {
+	var RequestQueue = class {
 		eventEmitter = mitt_default();
 		queue = [];
 		results = [];
@@ -21733,7 +21669,7 @@ var RequestQueue = class {
 			this.eventEmitter.emit("done", this.results);
 		}
 	};
-	_virtual_monkey_css_side_effects_default("/**\n * Copyright 2022-Present Pionxzh\n * SPDX-License-Identifier: MIT\n */\n\n.CheckBoxLabel {\n    position: relative;\n    display: flex;\n    font-size: 16px;\n    vertical-align: middle;\n}\n\n.CheckBoxLabel * {\n    cursor: pointer;\n}\n\n.CheckBoxLabel[disabled] {\n    opacity: 0.7;\n}\n\n.CheckBoxLabel[disabled] * {\n    cursor: not-allowed;\n}\n\n.CheckBoxLabel input {\n    position: absolute;\n    opacity: 0;\n    width: 100%;\n    height: 100%;\n    top: 0;\n    left: 0;\n    margin: 0;\n    padding: 0;\n}\n\n.CheckBoxLabel .IconWrapper {\n    display: inline-flex;\n    align-items: center;\n    position: relative;\n    vertical-align: middle;\n    font-size: 1.5rem;\n}\n\n.CheckBoxLabel input:checked ~ svg {\n    color: rgb(28 100 242);\n}\n\n.dark .CheckBoxLabel input:checked ~ svg {\n    color: rgb(144, 202, 249);\n}\n\n.CheckBoxLabel .LabelText {\n    margin-left: 0.5rem;\n    font-size: 1rem;\n    line-height: 1.5;\n}\n");
+	_css("/**\n * Copyright 2022-Present Pionxzh\n * SPDX-License-Identifier: MPL-2.0\n */\n\n.CheckBoxLabel {\n    position: relative;\n    display: flex;\n    font-size: 16px;\n    vertical-align: middle;\n}\n\n.CheckBoxLabel * {\n    cursor: pointer;\n}\n\n.CheckBoxLabel[disabled] {\n    opacity: 0.7;\n}\n\n.CheckBoxLabel[disabled] * {\n    cursor: not-allowed;\n}\n\n.CheckBoxLabel input {\n    position: absolute;\n    opacity: 0;\n    width: 100%;\n    height: 100%;\n    top: 0;\n    left: 0;\n    margin: 0;\n    padding: 0;\n}\n\n.CheckBoxLabel .IconWrapper {\n    display: inline-flex;\n    align-items: center;\n    position: relative;\n    vertical-align: middle;\n    font-size: 1.5rem;\n}\n\n.CheckBoxLabel input:checked ~ svg {\n    color: rgb(28 100 242);\n}\n\n.dark .CheckBoxLabel input:checked ~ svg {\n    color: rgb(144, 202, 249);\n}\n\n.CheckBoxLabel .LabelText {\n    margin-left: 0.5rem;\n    font-size: 1rem;\n    line-height: 1.5;\n}\n");
 	function FileCode() {
 		return u$1("svg", {
 			xmlns: "http://www.w3.org/2000/svg",
@@ -21823,15 +21759,15 @@ var RequestQueue = class {
 			strokeLinecap: "round",
 			strokeLinejoin: "round",
 			children: [
-u$1("path", {
+				u$1("path", {
 					stroke: "none",
 					d: "M0 0h24v24H0z",
 					fill: "none"
 				}),
-u$1("path", { d: "M20 16v-8l3 8v-8" }),
-u$1("path", { d: "M15 8a2 2 0 0 1 2 2v4a2 2 0 1 1 -4 0v-4a2 2 0 0 1 2 -2z" }),
-u$1("path", { d: "M1 8h3v6.5a1.5 1.5 0 0 1 -3 0v-.5" }),
-u$1("path", { d: "M7 15a1 1 0 0 0 1 1h1a1 1 0 0 0 1 -1v-2a1 1 0 0 0 -1 -1h-1a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1" })
+				u$1("path", { d: "M20 16v-8l3 8v-8" }),
+				u$1("path", { d: "M15 8a2 2 0 0 1 2 2v4a2 2 0 1 1 -4 0v-4a2 2 0 0 1 2 -2z" }),
+				u$1("path", { d: "M1 8h3v6.5a1.5 1.5 0 0 1 -3 0v-.5" }),
+				u$1("path", { d: "M7 15a1 1 0 0 0 1 1h1a1 1 0 0 0 1 -1v-2a1 1 0 0 0 -1 -1h-1a1 1 0 0 1 -1 -1v-2a1 1 0 0 1 1 -1h1a1 1 0 0 1 1 1" })
 			]
 		});
 	}
@@ -21846,19 +21782,19 @@ u$1("path", { d: "M7 15a1 1 0 0 0 1 1h1a1 1 0 0 0 1 -1v-2a1 1 0 0 0 -1 -1h-1a1 1
 			strokeLinecap: "round",
 			strokeLinejoin: "round",
 			children: [
-u$1("path", {
+				u$1("path", {
 					stroke: "none",
 					d: "M0 0h24v24H0z",
 					fill: "none"
 				}),
-u$1("path", { d: "M6 20.735a2 2 0 0 1 -1 -1.735v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-1" }),
-u$1("path", { d: "M11 17a2 2 0 0 1 2 2v2a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-2a2 2 0 0 1 2 -2z" }),
-u$1("path", { d: "M11 5l-1 0" }),
-u$1("path", { d: "M13 7l-1 0" }),
-u$1("path", { d: "M11 9l-1 0" }),
-u$1("path", { d: "M13 11l-1 0" }),
-u$1("path", { d: "M11 13l-1 0" }),
-u$1("path", { d: "M13 15l-1 0" })
+				u$1("path", { d: "M6 20.735a2 2 0 0 1 -1 -1.735v-14a2 2 0 0 1 2 -2h7l5 5v11a2 2 0 0 1 -2 2h-1" }),
+				u$1("path", { d: "M11 17a2 2 0 0 1 2 2v2a1 1 0 0 1 -1 1h-2a1 1 0 0 1 -1 -1v-2a2 2 0 0 1 2 -2z" }),
+				u$1("path", { d: "M11 5l-1 0" }),
+				u$1("path", { d: "M13 7l-1 0" }),
+				u$1("path", { d: "M11 9l-1 0" }),
+				u$1("path", { d: "M13 11l-1 0" }),
+				u$1("path", { d: "M11 13l-1 0" }),
+				u$1("path", { d: "M13 15l-1 0" })
 			]
 		});
 	}
@@ -21924,20 +21860,20 @@ u$1("path", { d: "M13 15l-1 0" })
 			"stroke-linecap": "round",
 			"stroke-linejoin": "round",
 			children: [
-u$1("path", {
+				u$1("path", {
 					stroke: "none",
 					d: "M0 0h24v24H0z",
 					fill: "none"
 				}),
-u$1("path", {
+				u$1("path", {
 					stroke: "currentColor",
 					d: "M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2 -2v-2"
 				}),
-u$1("path", {
+				u$1("path", {
 					stroke: "currentColor",
 					d: "M7 9l5 -5l5 5"
 				}),
-u$1("path", {
+				u$1("path", {
 					stroke: "currentColor",
 					d: "M12 4l0 12"
 				})
@@ -21958,9 +21894,9 @@ u$1("path", {
 		return u$1("label", {
 			className: `CheckBoxLabel ${className ?? ""}`,
 			"aria-disabled": disabled,
-			children: [ u$1("span", {
+			children: [u$1("span", {
 				className: "IconWrapper",
-				children: [ u$1("input", {
+				children: [u$1("input", {
 					type: "checkbox",
 					checked: isChecked,
 					onChange,
@@ -22074,7 +22010,7 @@ u$1("path", {
 		});
 	};
 	var useSettingContext = () => x$1(SettingContext);
-init_hooks_module();
+	init_hooks_module();
 	var ProjectSelect = ({ projects, selected, setSelected, disabled }) => {
 		const { t } = useTranslation();
 		return u$1("div", {
@@ -22087,7 +22023,7 @@ init_hooks_module();
 					const projectId = e.currentTarget.value;
 					setSelected(projects.find((p) => p.id === projectId) || null);
 				},
-				children: [ u$1("option", {
+				children: [u$1("option", {
 					value: "",
 					children: t("(no project)")
 				}), projects.map((project) => u$1("option", {
@@ -22099,7 +22035,7 @@ init_hooks_module();
 	};
 	var ConversationSelect = ({ conversations, selected, setSelected, disabled, loading, error }) => {
 		const { t } = useTranslation();
-		return u$1(S$1, { children: [ u$1("div", {
+		return u$1(S$1, { children: [u$1("div", {
 			className: "SelectToolbar",
 			children: u$1(CheckBox, {
 				label: t("Select All"),
@@ -22354,11 +22290,11 @@ init_hooks_module();
 			}).finally(() => setLoading(false));
 		}, [selectedProject, exportAllLimit]);
 		return u$1(S$1, { children: [
-u$1(Title, {
+			u$1(Title, {
 				className: EXPORT_DIALOG_CLASS_NAMES.title,
 				children: t("Export Dialog Title")
 			}),
-u$1("div", {
+			u$1("div", {
 				className: "flex items-center text-gray-600 dark:text-gray-300 flex justify-between border-b-[1px] pb-3 mb-3 dark:border-gray-700",
 				children: [
 					t("Export from official export file"),
@@ -22370,7 +22306,7 @@ u$1("div", {
 					})
 				]
 			}),
-u$1("input", {
+			u$1("input", {
 				type: "file",
 				accept: "application/json",
 				className: "hidden",
@@ -22381,13 +22317,13 @@ u$1("input", {
 				className: "flex items-center text-gray-600 dark:text-gray-300 flex justify-between mb-3",
 				children: t("Export from API")
 			}),
-u$1(ProjectSelect, {
+			u$1(ProjectSelect, {
 				projects,
 				selected: selectedProject,
 				setSelected: setSelectedProject,
 				disabled: processing || loading
 			}),
-u$1(ConversationSelect, {
+			u$1(ConversationSelect, {
 				conversations,
 				selected,
 				setSelected,
@@ -22395,11 +22331,11 @@ u$1(ConversationSelect, {
 				loading,
 				error
 			}),
-u$1("div", {
+			u$1("div", {
 				className: "flex mt-6",
 				style: { justifyContent: "space-between" },
 				children: [
-u$1("select", {
+					u$1("select", {
 						className: "Select",
 						disabled: processing,
 						value: exportType,
@@ -22409,20 +22345,20 @@ u$1("select", {
 							children: label
 						}, t(label)))
 					}),
-u$1("div", { className: "flex flex-grow" }),
-u$1("button", {
+					u$1("div", { className: "flex flex-grow" }),
+					u$1("button", {
 						className: "Button red",
 						disabled: disabled || exportSource === "Local",
 						onClick: archiveAll,
 						children: t("Archive")
 					}),
-u$1("button", {
+					u$1("button", {
 						className: "Button red ml-4",
 						disabled: disabled || exportSource === "Local",
 						onClick: deleteAll,
 						children: t("Delete")
 					}),
-u$1("button", {
+					u$1("button", {
 						className: "Button green ml-4",
 						disabled,
 						onClick: exportAll,
@@ -22430,9 +22366,9 @@ u$1("button", {
 					})
 				]
 			}),
-			processing && u$1(S$1, { children: [ u$1("div", {
+			processing && u$1(S$1, { children: [u$1("div", {
 				className: "mt-2 mb-1 justify-between flex",
-				children: [ u$1("span", {
+				children: [u$1("span", {
 					className: "truncate mr-8",
 					children: progress.currentName
 				}), u$1("span", { children: `${progress.completed}/${progress.total}` })]
@@ -22443,7 +22379,7 @@ u$1("button", {
 					style: { width: `${progress.completed / progress.total * 100}%` }
 				})
 			})] }),
-u$1(Close, {
+			u$1(Close, {
 				asChild: true,
 				children: u$1("button", {
 					className: "IconButton CloseButton",
@@ -22457,10 +22393,10 @@ u$1(Close, {
 		return u$1(Root$1, {
 			open,
 			onOpenChange,
-			children: [ u$1(Trigger$1, {
+			children: [u$1(Trigger$1, {
 				asChild: true,
 				children
-			}), u$1(Portal$1, { children: [ u$1(Overlay, { className: EXPORT_DIALOG_CLASS_NAMES.overlay }), u$1(Content$1, {
+			}), u$1(Portal$1, { children: [u$1(Overlay, { className: EXPORT_DIALOG_CLASS_NAMES.overlay }), u$1(Content$1, {
 				className: EXPORT_DIALOG_CLASS_NAMES.content,
 				children: open && u$1(DialogContent$1, { format })
 			})] })]
@@ -22773,7 +22709,7 @@ u$1(Close, {
 			l.setUint32(0, 1347093766), l.setUint16(8, r(s), 1), l.setUint16(10, r(s), 1), l.setUint32(12, i(d), 1), l.setUint32(16, i(a), 1), yield n(l);
 		}(u, a), u);
 	}
-function getSecurityFindingDocuments(findings) {
+	function getSecurityFindingDocuments(findings) {
 		return findings.map((finding, index) => {
 			const start = performance.now();
 			const document = normalizeSecurityFindingDocument(finding);
@@ -22952,7 +22888,7 @@ function getSecurityFindingDocuments(findings) {
 		});
 		return summary;
 	}
-init_hooks_module();
+	init_hooks_module();
 	function getFindingProgressName(finding) {
 		return (typeof finding.commit_analysis === "object" && finding.commit_analysis && "title" in finding.commit_analysis && typeof finding.commit_analysis.title === "string" ? finding.commit_analysis.title.trim() : "") || finding.hid || finding.id;
 	}
@@ -23075,33 +23011,33 @@ init_hooks_module();
 			metaList
 		]);
 		return u$1(S$1, { children: [
-u$1(Title, {
+			u$1(Title, {
 				className: EXPORT_DIALOG_CLASS_NAMES.title,
 				children: "Export Matching Findings"
 			}),
-u$1("div", {
+			u$1("div", {
 				className: "text-gray-600 dark:text-gray-300 mb-3",
 				children: "Export the current filtered findings set from this security view."
 			}),
-u$1("div", {
+			u$1("div", {
 				className: "border-b-[1px] pb-3 mb-3 dark:border-gray-700",
 				children: [
-u$1("div", {
+					u$1("div", {
 						className: "flex items-center text-gray-600 dark:text-gray-300 justify-between mb-2",
-						children: [ u$1("span", { children: "Matching findings" }), u$1("span", { children: loading ? `${t("Loading")}...` : matchingTotal ?? 0 })]
+						children: [u$1("span", { children: "Matching findings" }), u$1("span", { children: loading ? `${t("Loading")}...` : matchingTotal ?? 0 })]
 					}),
 					filterSummary.length > 0 && u$1("ul", {
 						className: "text-sm text-gray-600 dark:text-gray-300",
 						children: filterSummary.map((item) => u$1("li", {
 							className: "mb-1",
 							children: [
-u$1("strong", { children: [item.label, ":"] }),
+								u$1("strong", { children: [item.label, ":"] }),
 								" ",
 								item.value
 							]
 						}, item.label))
 					}),
-u$1("div", {
+					u$1("div", {
 						className: "mt-3 text-sm text-gray-600 dark:text-gray-300",
 						children: ["Export limit: ", exportAllLimit]
 					}),
@@ -23127,11 +23063,11 @@ u$1("div", {
 					})
 				]
 			}),
-u$1("div", {
+			u$1("div", {
 				className: "flex mt-6",
 				style: { justifyContent: "space-between" },
 				children: [
-u$1("select", {
+					u$1("select", {
 						className: "Select",
 						disabled: processing || loading,
 						value: exportType,
@@ -23141,8 +23077,8 @@ u$1("select", {
 							children: label
 						}, label))
 					}),
-u$1("div", { className: "flex flex-grow" }),
-u$1("button", {
+					u$1("div", { className: "flex flex-grow" }),
+					u$1("button", {
 						className: "Button green ml-4",
 						disabled,
 						onClick: () => void exportAll(),
@@ -23150,9 +23086,9 @@ u$1("button", {
 					})
 				]
 			}),
-			processing && u$1(S$1, { children: [ u$1("div", {
+			processing && u$1(S$1, { children: [u$1("div", {
 				className: "mt-2 mb-1 justify-between flex",
-				children: [ u$1("span", {
+				children: [u$1("span", {
 					className: "truncate mr-8",
 					children: progress.currentName
 				}), u$1("span", { children: `${progress.completed}/${progress.total}` })]
@@ -23163,7 +23099,7 @@ u$1("button", {
 					style: { width: progress.total > 0 ? `${progress.completed / progress.total * 100}%` : "0%" }
 				})
 			})] }),
-u$1(Close, {
+			u$1(Close, {
 				asChild: true,
 				children: u$1("button", {
 					className: "IconButton CloseButton",
@@ -23177,17 +23113,17 @@ u$1(Close, {
 		return u$1(Root$1, {
 			open,
 			onOpenChange,
-			children: [ u$1(Trigger$1, {
+			children: [u$1(Trigger$1, {
 				asChild: true,
 				children
-			}), u$1(Portal$1, { children: [ u$1(Overlay, { className: EXPORT_DIALOG_CLASS_NAMES.overlay }), u$1(Content$1, {
+			}), u$1(Portal$1, { children: [u$1(Overlay, { className: EXPORT_DIALOG_CLASS_NAMES.overlay }), u$1(Content$1, {
 				className: EXPORT_DIALOG_CLASS_NAMES.content,
 				children: open && u$1(DialogContent, { format })
 			})] })]
 		});
 	};
-	_virtual_monkey_css_side_effects_default("/**\n * Copyright 2022-Present Pionxzh\n * Copyright 2026 Asim Ihsan\n * SPDX-License-Identifier: MPL-2.0 AND MIT\n */\n\nspan[data-time-format] {\n    display: none;\n}\n\nbody[data-time-format=\"12\"] span[data-time-format=\"12\"] {\n    display: inline;\n}\n\nbody[data-time-format=\"24\"] span[data-time-format=\"24\"] {\n    display: inline;\n}\n\n.Select {\n    padding: 0 0 0 0.5rem;\n    width: 7.5rem;\n    border-radius: 4px;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\n.dark .Select {\n    background-color: #2f2f2f;\n    color: #fff;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\nhtml {\n    --ce-text-primary: var(--text-primary, #0d0d0d);\n    --ce-menu-primary: #f7f7f8;\n    --ce-menu-secondary: #ececf1;\n    --ce-border-light: rgba(0, 0, 0, .14);\n}\n\n.dark {\n    --ce-text-primary: var(--text-primary, #ececec);\n    --ce-menu-primary: #202123;\n    --ce-menu-secondary: #2d2f34;\n    --ce-border-light: rgba(255, 255, 255, .16);\n}\n\n.ce-text-menu {\n    color: var(--ce-text-primary);\n}\n\n.ce-bg-menu {\n    background-color: var(--ce-menu-primary);\n}\n\n.ce-border-menu {\n    border-color: var(--ce-border-light);\n}\n\n.ce-menu-content,\n.ce-menu-content[data-state=\"open\"],\n.ce-menu-content[data-state=\"closed\"] {\n    display: flex !important;\n    flex-direction: column !important;\n    padding: 0.5rem 0.5rem 0.25rem !important;\n    opacity: 1 !important;\n    background-color: var(--ce-menu-primary) !important;\n    border-width: 1px !important;\n    border-style: solid !important;\n    border-radius: 0.375rem !important;\n    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18) !important;\n    backdrop-filter: none !important;\n    filter: none !important;\n    mix-blend-mode: normal !important;\n    isolation: isolate !important;\n}\n\n.ce-menu-item {\n    height: 46px;\n    width: 100%;\n    background-color: var(--ce-menu-primary) !important;\n    color: var(--ce-text-primary) !important;\n    border-width: 1px !important;\n    border-style: solid !important;\n}\n\n.ce-menu-item[aria-disabled=\"false\"]:hover {\n    background-color: var(--ce-menu-secondary) !important;\n}\n\n.ce-menu-trigger-success {\n    background-color: color-mix(in srgb, var(--ce-menu-secondary) 82%, #1f9f54 18%) !important;\n    border-color: color-mix(in srgb, var(--ce-border-light) 50%, #1f9f54 50%) !important;\n}\n\n.ce-menu-item[aria-disabled=\"true\"] {\n    filter: brightness(0.5);\n}\n\n.inputFieldSet {\n    display: block;\n    border-width: 2px;\n    border-style: groove;\n}\n\n.inputFieldSet legend {\n    margin-left: 4px;\n}\n\n.inputFieldSet input {\n    background-color: transparent;\n    box-shadow: none!important;\n}\n\n.dropdown-backdrop {\n    display: block;\n    position: fixed;\n    top: 0;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    background-color: rgba(0,0,0,.5);\n    animation-name: cePointerFadeIn;\n    animation-duration: .3s;\n}\n\n@keyframes ceFadeIn {\n    from {\n        opacity: 0;\n    }\n    to {\n        opacity: 1;\n    }\n}\n\n@keyframes ceSlideUp {\n    from {\n        transform: translateY(100%);\n    }\n    to {\n        transform: translateY(0);\n    }\n}\n\n@keyframes cePointerFadeIn {\n    from {\n        opacity: 0;\n        pointer-events: none;\n    }\n    to {\n        opacity: 1;\n        pointer-events: auto;\n    }\n}\n\n@keyframes rotate {\n    from {\n        transform: rotate(0deg);\n    }\n    to {\n        transform: rotate(360deg);\n    }\n}\n\n@keyframes circularDash {\n    0% {\n        stroke-dasharray: 1px, 200px;\n        stroke-dashoffset: 0;\n    }\n    50% {\n        stroke-dasharray: 100px, 200px;\n        stroke-dashoffset: -15px;\n    }\n    100% {\n        stroke-dasharray: 100px, 200px;\n        stroke-dashoffset: -125px;\n    }\n}\n");
-	_virtual_monkey_css_side_effects_default("/**\n * Copyright 2022-Present Pionxzh\n * Copyright 2026 Asim Ihsan\n * SPDX-License-Identifier: MPL-2.0 AND MIT\n */\n\n.ce-dialog-overlay {\n    background-color: rgba(0, 0, 0, 0.44);\n    position: fixed;\n    inset: 0;\n    z-index: 1000;\n    animation: fadeIn 150ms cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.ce-dialog-content {\n    background-color: #f3f3f3;\n    border-radius: 6px;\n    box-shadow: hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px;\n    position: fixed;\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%, -50%);\n    width: 90vw;\n    max-width: 560px;\n    max-height: 85vh;\n    overflow-x: hidden;\n    overflow-y: auto;\n    padding: 16px 24px;\n    z-index: 1001;\n    outline: none;\n    animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.dark .ce-dialog-content {\n    background-color: #2a2a2a;\n    border-color: #40414f;\n    border-width: 1px;\n}\n\n.ce-dialog-content input[type=\"checkbox\"] {\n    border: none;\n    outline: none;\n    box-shadow: none;\n}\n\n.ce-dialog-title {\n    margin: 0 0 16px 0;\n    font-weight: 500;\n    color: #1a1523;\n    font-size: 20px;\n}\n\n.dark .ce-dialog-title {\n    color: #fff;\n}\n\n.Button {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 4px;\n    padding: 0 15px;\n    font-size: 15px;\n    line-height: 1;\n    height: 35px;\n}\n.Button.green {\n    background-color: #ddf3e4;\n    color: #18794e;\n}\n.Button.red {\n    background-color: #f9d9d9;\n    color: #a71d2a;\n}\n.Button.green:hover {\n    background-color: #ccebd7;\n}\n.Button:disabled {\n    opacity: 0.5;\n    color: #6f6e77;\n    background-color: #e0e0e0;\n    cursor: not-allowed;\n}\n.Button:disabled:hover {\n    background-color: #e0e0e0;\n}\n\n.IconButton {\n    font-family: inherit;\n    border-radius: 100%;\n    height: 25px;\n    width: 25px;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    color: #6f6e77;\n}\n.IconButton:hover {\n    background-color: rgba(0, 0, 0, 0.06);\n}\n\n.CloseButton {\n    position: absolute;\n    top: 10px;\n    right: 10px;\n}\n\n.Fieldset {\n    display: flex;\n    gap: 20px;\n    align-items: center;\n    margin-bottom: 15px;\n}\n\n.Label {\n    font-size: 15px;\n    color: #1a1523;\n    min-width: 90px;\n    text-align: right;\n}\n\n.dark .Label {\n    color: #fff;\n}\n\n.Input {\n    width: 100%;\n    flex: 1;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 4px;\n    padding: 0 10px;\n    font-size: 15px;\n    line-height: 1;\n    color: #000;\n    background-color: #fafafa;\n    box-shadow: 0 0 0 1px #6f6e77;\n    height: 35px;\n    outline: none;\n}\n\n.dark .Input {\n    background-color: #2f2f2f;\n    color: #fff;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\n.Description {\n    font-size: 13px;\n    color: #5a5865;\n    text-align: right;\n    margin-bottom: 4px;\n}\n\n.dark .Description {\n    color: #bcbcbc;\n}\n\n.SelectToolbar {\n    display: flex;\n    align-items: center;\n    padding: 12px 16px;\n    border-radius: 4px 4px 0 0;\n    border: 1px solid #6f6e77;\n    border-bottom: none;\n}\n\n.SelectList {\n    position: relative;\n    width: 100%;\n    height: 270px;\n    padding: 12px 16px;\n    overflow-x: hidden;\n    overflow-y: auto;\n    border: 1px solid #6f6e77;\n    border-radius: 0 0 4px 4px;\n    white-space: nowrap;\n}\n\n.SelectItem {\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n\n.SelectItem label, .SelectItem input {\n    cursor: pointer;\n}\n\n.SelectItem span {\n    vertical-align: middle;\n}\n\n@keyframes contentShow {\n    from {\n        opacity: 0;\n        transform: translate(-50%, -48%) scale(0.96);\n    }\n    to {\n        opacity: 1;\n        transform: translate(-50%, -50%) scale(1);\n    }\n}\n");
+	_css("/**\n * Copyright 2022-Present Pionxzh\n * Copyright 2026 Asim Ihsan\n * SPDX-License-Identifier: MPL-2.0\n */\n\nspan[data-time-format] {\n    display: none;\n}\n\nbody[data-time-format=\"12\"] span[data-time-format=\"12\"] {\n    display: inline;\n}\n\nbody[data-time-format=\"24\"] span[data-time-format=\"24\"] {\n    display: inline;\n}\n\n.Select {\n    padding: 0 0 0 0.5rem;\n    width: 7.5rem;\n    border-radius: 4px;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\n.dark .Select {\n    background-color: #2f2f2f;\n    color: #fff;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\nhtml {\n    --ce-text-primary: var(--text-primary, #0d0d0d);\n    --ce-menu-primary: #f7f7f8;\n    --ce-menu-secondary: #ececf1;\n    --ce-border-light: rgba(0, 0, 0, .14);\n}\n\n.dark {\n    --ce-text-primary: var(--text-primary, #ececec);\n    --ce-menu-primary: #202123;\n    --ce-menu-secondary: #2d2f34;\n    --ce-border-light: rgba(255, 255, 255, .16);\n}\n\n.ce-text-menu {\n    color: var(--ce-text-primary);\n}\n\n.ce-bg-menu {\n    background-color: var(--ce-menu-primary);\n}\n\n.ce-border-menu {\n    border-color: var(--ce-border-light);\n}\n\n.ce-menu-content,\n.ce-menu-content[data-state=\"open\"],\n.ce-menu-content[data-state=\"closed\"] {\n    display: flex !important;\n    flex-direction: column !important;\n    padding: 0.5rem 0.5rem 0.25rem !important;\n    opacity: 1 !important;\n    background-color: var(--ce-menu-primary) !important;\n    border-width: 1px !important;\n    border-style: solid !important;\n    border-radius: 0.375rem !important;\n    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18) !important;\n    backdrop-filter: none !important;\n    filter: none !important;\n    mix-blend-mode: normal !important;\n    isolation: isolate !important;\n}\n\n.ce-menu-item {\n    height: 46px;\n    width: 100%;\n    background-color: var(--ce-menu-primary) !important;\n    color: var(--ce-text-primary) !important;\n    border-width: 1px !important;\n    border-style: solid !important;\n}\n\n.ce-menu-item[aria-disabled=\"false\"]:hover {\n    background-color: var(--ce-menu-secondary) !important;\n}\n\n.ce-menu-trigger-success {\n    background-color: color-mix(in srgb, var(--ce-menu-secondary) 82%, #1f9f54 18%) !important;\n    border-color: color-mix(in srgb, var(--ce-border-light) 50%, #1f9f54 50%) !important;\n}\n\n.ce-menu-item[aria-disabled=\"true\"] {\n    filter: brightness(0.5);\n}\n\n.inputFieldSet {\n    display: block;\n    border-width: 2px;\n    border-style: groove;\n}\n\n.inputFieldSet legend {\n    margin-left: 4px;\n}\n\n.inputFieldSet input {\n    background-color: transparent;\n    box-shadow: none!important;\n}\n\n.dropdown-backdrop {\n    display: block;\n    position: fixed;\n    top: 0;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    background-color: rgba(0,0,0,.5);\n    animation-name: cePointerFadeIn;\n    animation-duration: .3s;\n}\n\n@keyframes ceFadeIn {\n    from {\n        opacity: 0;\n    }\n    to {\n        opacity: 1;\n    }\n}\n\n@keyframes ceSlideUp {\n    from {\n        transform: translateY(100%);\n    }\n    to {\n        transform: translateY(0);\n    }\n}\n\n@keyframes cePointerFadeIn {\n    from {\n        opacity: 0;\n        pointer-events: none;\n    }\n    to {\n        opacity: 1;\n        pointer-events: auto;\n    }\n}\n\n@keyframes rotate {\n    from {\n        transform: rotate(0deg);\n    }\n    to {\n        transform: rotate(360deg);\n    }\n}\n\n@keyframes circularDash {\n    0% {\n        stroke-dasharray: 1px, 200px;\n        stroke-dashoffset: 0;\n    }\n    50% {\n        stroke-dasharray: 100px, 200px;\n        stroke-dashoffset: -15px;\n    }\n    100% {\n        stroke-dasharray: 100px, 200px;\n        stroke-dashoffset: -125px;\n    }\n}\n");
+	_css("/**\n * Copyright 2022-Present Pionxzh\n * Copyright 2026 Asim Ihsan\n * SPDX-License-Identifier: MPL-2.0\n */\n\n.ce-dialog-overlay {\n    background-color: rgba(0, 0, 0, 0.44);\n    position: fixed;\n    inset: 0;\n    z-index: 1000;\n    animation: fadeIn 150ms cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.ce-dialog-content {\n    background-color: #f3f3f3;\n    border-radius: 6px;\n    box-shadow: hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px;\n    position: fixed;\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%, -50%);\n    width: 90vw;\n    max-width: 560px;\n    max-height: 85vh;\n    overflow-x: hidden;\n    overflow-y: auto;\n    padding: 16px 24px;\n    z-index: 1001;\n    outline: none;\n    animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.dark .ce-dialog-content {\n    background-color: #2a2a2a;\n    border-color: #40414f;\n    border-width: 1px;\n}\n\n.ce-dialog-content input[type=\"checkbox\"] {\n    border: none;\n    outline: none;\n    box-shadow: none;\n}\n\n.ce-dialog-title {\n    margin: 0 0 16px 0;\n    font-weight: 500;\n    color: #1a1523;\n    font-size: 20px;\n}\n\n.dark .ce-dialog-title {\n    color: #fff;\n}\n\n.Button {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 4px;\n    padding: 0 15px;\n    font-size: 15px;\n    line-height: 1;\n    height: 35px;\n}\n.Button.green {\n    background-color: #ddf3e4;\n    color: #18794e;\n}\n.Button.red {\n    background-color: #f9d9d9;\n    color: #a71d2a;\n}\n.Button.green:hover {\n    background-color: #ccebd7;\n}\n.Button:disabled {\n    opacity: 0.5;\n    color: #6f6e77;\n    background-color: #e0e0e0;\n    cursor: not-allowed;\n}\n.Button:disabled:hover {\n    background-color: #e0e0e0;\n}\n\n.IconButton {\n    font-family: inherit;\n    border-radius: 100%;\n    height: 25px;\n    width: 25px;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    color: #6f6e77;\n}\n.IconButton:hover {\n    background-color: rgba(0, 0, 0, 0.06);\n}\n\n.CloseButton {\n    position: absolute;\n    top: 10px;\n    right: 10px;\n}\n\n.Fieldset {\n    display: flex;\n    gap: 20px;\n    align-items: center;\n    margin-bottom: 15px;\n}\n\n.Label {\n    font-size: 15px;\n    color: #1a1523;\n    min-width: 90px;\n    text-align: right;\n}\n\n.dark .Label {\n    color: #fff;\n}\n\n.Input {\n    width: 100%;\n    flex: 1;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 4px;\n    padding: 0 10px;\n    font-size: 15px;\n    line-height: 1;\n    color: #000;\n    background-color: #fafafa;\n    box-shadow: 0 0 0 1px #6f6e77;\n    height: 35px;\n    outline: none;\n}\n\n.dark .Input {\n    background-color: #2f2f2f;\n    color: #fff;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\n.Description {\n    font-size: 13px;\n    color: #5a5865;\n    text-align: right;\n    margin-bottom: 4px;\n}\n\n.dark .Description {\n    color: #bcbcbc;\n}\n\n.SelectToolbar {\n    display: flex;\n    align-items: center;\n    padding: 12px 16px;\n    border-radius: 4px 4px 0 0;\n    border: 1px solid #6f6e77;\n    border-bottom: none;\n}\n\n.SelectList {\n    position: relative;\n    width: 100%;\n    height: 270px;\n    padding: 12px 16px;\n    overflow-x: hidden;\n    overflow-y: auto;\n    border: 1px solid #6f6e77;\n    border-radius: 0 0 4px 4px;\n    white-space: nowrap;\n}\n\n.SelectItem {\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n\n.SelectItem label, .SelectItem input {\n    cursor: pointer;\n}\n\n.SelectItem span {\n    vertical-align: middle;\n}\n\n@keyframes contentShow {\n    from {\n        opacity: 0;\n        transform: translate(-50%, -48%) scale(0.96);\n    }\n    to {\n        opacity: 1;\n        transform: translate(-50%, -50%) scale(1);\n    }\n}\n");
 	init_hooks_module();
 	function MenuInner({ container }) {
 		const { t } = useTranslation();
@@ -23308,35 +23244,35 @@ u$1(Close, {
 			align: "start",
 			alignOffset: isMobile ? 0 : -64,
 			collisionPadding: isMobile ? 0 : 8,
-			children: [ u$1("div", {
+			children: [u$1("div", {
 				ref: menuRef,
 				children: [
-u$1(MenuItem, {
+					u$1(MenuItem, {
 						text: t("Setting"),
 						icon: IconSetting,
 						onClick: onClickSetting
 					}),
 					hasSingleItemExports && u$1(S$1, { children: [
-u$1(MenuItem, {
+						u$1(MenuItem, {
 							text: t("Copy Text"),
 							successText: t("Copied!"),
 							icon: IconCopy,
 							disabled: !capabilities.canExportText,
 							onClick: onClickText
 						}),
-u$1(MenuItem, {
+						u$1(MenuItem, {
 							text: t("Screenshot"),
 							icon: IconCamera,
 							disabled: !capabilities.canExportPng,
 							onClick: onClickPng
 						}),
-u$1(MenuItem, {
+						u$1(MenuItem, {
 							text: t("Markdown"),
 							icon: IconMarkdown,
 							disabled: !capabilities.canExportMarkdown,
 							onClick: onClickMarkdown
 						}),
-u$1(MenuItem, {
+						u$1(MenuItem, {
 							text: t("HTML"),
 							icon: FileCode,
 							disabled: !capabilities.canExportHtml,
@@ -23345,22 +23281,22 @@ u$1(MenuItem, {
 						capabilities.canExportJson && u$1(Root$1, {
 							open: jsonOpen,
 							onOpenChange: setJsonOpen,
-							children: [ u$1(Trigger$1, {
+							children: [u$1(Trigger$1, {
 								asChild: true,
 								children: u$1(MenuItem, {
 									text: t("JSON"),
 									icon: IconJSON,
 									onClick: onClickJSON
 								})
-							}), u$1(Portal$1, { children: [ u$1(Overlay, { className: EXPORT_DIALOG_CLASS_NAMES.overlay }), u$1(Content$1, {
+							}), u$1(Portal$1, { children: [u$1(Overlay, { className: EXPORT_DIALOG_CLASS_NAMES.overlay }), u$1(Content$1, {
 								className: EXPORT_DIALOG_CLASS_NAMES.content,
 								style: { width: "320px" },
 								children: [
-u$1(Title, {
+									u$1(Title, {
 										className: EXPORT_DIALOG_CLASS_NAMES.title,
 										children: t("JSON")
 									}),
-u$1(MenuItem, {
+									u$1(MenuItem, {
 										text: t("OpenAI Official Format"),
 										icon: IconCopy,
 										onClick: onClickOfficialJSON
@@ -23412,9 +23348,9 @@ u$1(MenuItem, {
 				className: "dropdown-backdrop ce-animate-fade-in",
 				onClick: () => setOpen(false)
 			}),
-u$1(Root2, {
+			u$1(Root2, {
 				open: isMenuOpen,
-				children: [ u$1(Trigger, { children: u$1("div", {
+				children: [u$1(Trigger, { children: u$1("div", {
 					ref: triggerRef,
 					children: u$1(MenuItem, {
 						className: `mt-1 ${shortcutCopied ? "ce-menu-trigger-success" : ""}`,
@@ -23428,13 +23364,13 @@ u$1(Root2, {
 					children: menuContent
 				})]
 			}),
-u$1(Divider, {})
+			u$1(Divider, {})
 		] });
 	}
 	function Menu({ container }) {
 		return u$1(SettingProvider, { children: u$1(MenuInner, { container }) });
 	}
-	_virtual_monkey_css_side_effects_default("/**\n * Copyright 2022-Present Pionxzh\n * Copyright 2026 Asim Ihsan\n * SPDX-License-Identifier: MPL-2.0 AND MIT\n */\n\n/* Utility fallback layer for Tailwind-like classes until a dedicated Tailwind build step is introduced. */\n.ce-animate-fade-in  {\n    animation: ceFadeIn .3s;\n}\n\n.ce-animate-slide-up  {\n    animation: ceSlideUp .3s;\n}\n\n.bg-blue-600 {\n    background-color: rgb(28 100 242);\n}\n\n.hover\\:bg-gray-500\\/10:hover {\n    background-color: hsla(0, 0%, 61%, .1)\n}\n\n.border-\\[\\#6f6e77\\] {\n    border-color: #6f6e77;\n}\n\n.cursor-help {\n    cursor: help;\n}\n\n.dark .dark\\:bg-white\\/5 {\n    background-color: rgb(255 255 255 / 5%);\n}\n\n.dark .dark\\:text-gray-200 {\n    color: rgb(229 231 235 / 1);\n}\n\n.dark .dark\\:text-gray-300 {\n    color: rgb(209 213 219 / 1);\n}\n\n.dark .dark\\:border-gray-\\[\\#86858d\\] {\n    border-color: #86858d;\n}\n\n.gap-x-1 {\n    column-gap: 0.25rem;\n}\n\n.h-2\\.5 {\n    height: 0.625rem;\n}\n\n.h-4 {\n    height: 1rem;\n}\n\n.inline-flex {\n    display: inline-flex;\n}\n\n.items-center {\n    align-items: center;\n}\n\n.ml-3 {\n    margin-left: 0.75rem;\n}\n\n.ml-4 {\n    margin-left: 1rem;\n}\n\n.mr-8 {\n    margin-right: 2rem;\n}\n\n.pb-0 {\n    padding-bottom: 0;\n}\n\n.pr-8 {\n    padding-right: 2rem;\n}\n\n.right-4 {\n    right: 1rem;\n}\n\n.rounded-full {\n    border-radius: 9999px;\n}\n\n.select-all {\n    user-select: all!important;\n}\n\n.space-y-6>:not([hidden])~:not([hidden]) {\n    --tw-space-y-reverse: 0;\n    margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));\n    margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));\n}\n\n.truncate {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n\n.whitespace-nowrap {\n    white-space: nowrap;\n}\n\n@media (min-width:768px) {\n    /* md */\n}\n\n@media (min-width:1024px) {\n    .lg\\:mt-0 {\n        margin-top: 0;\n    }\n\n    .lg\\:top-8 {\n        top: 2rem;\n    }\n}\n\n\n.toggle-switch {\n    position: relative;\n    outline: none;\n    background-color: rgb(229 231 235);\n    border: 1px solid rgb(107 114 128);\n    border-radius: 9999px;\n    cursor: pointer;\n    height: 20px;\n    width: 32px;\n}\n\n.dark .toggle-switch {\n    background-color: rgb(255 255 255 / 5%);\n    border-color: rgb(255 255 255 / 1);\n}\n\n.toggle-switch[data-state=\"checked\"] {\n    background-color: rgb(0 0 0);\n    border-color: rgb(0 0 0);\n}\n\n.dark .toggle-switch[data-state=\"checked\"] {\n    background-color: rgb(22 163 74);\n    border-color: rgb(22 163 74);\n}\n\n.toggle-switch-handle {\n    display: block;\n    background-color: rgb(255 255 255);\n    border-radius: 9999px;\n    height: 16px;\n    width: 16px;\n    transition: transform 0.1s;\n    will-change: transform;\n    transform: translateX(1px);\n}\n\n.toggle-switch-handle[data-state=\"checked\"] {\n    transform: translateX(14px);\n}\n\n.toggle-switch-handle:hover {\n    background-color: rgb(243 244 246);\n}\n\n.toggle-switch-label {\n    color: rgb(107 114 128);\n    margin-left: 0.75rem;\n    font-size: 0.875rem;\n    font-weight: 500;\n}\n\n.toggle-switch-label:hover {\n    color: rgb(71 85 105);\n}\n");
+	_css("/**\n * Copyright 2022-Present Pionxzh\n * Copyright 2026 Asim Ihsan\n * SPDX-License-Identifier: MPL-2.0\n */\n\n/* Utility fallback layer for Tailwind-like classes until a dedicated Tailwind build step is introduced. */\n.ce-animate-fade-in  {\n    animation: ceFadeIn .3s;\n}\n\n.ce-animate-slide-up  {\n    animation: ceSlideUp .3s;\n}\n\n.bg-blue-600 {\n    background-color: rgb(28 100 242);\n}\n\n.hover\\:bg-gray-500\\/10:hover {\n    background-color: hsla(0, 0%, 61%, .1)\n}\n\n.border-\\[\\#6f6e77\\] {\n    border-color: #6f6e77;\n}\n\n.cursor-help {\n    cursor: help;\n}\n\n.dark .dark\\:bg-white\\/5 {\n    background-color: rgb(255 255 255 / 5%);\n}\n\n.dark .dark\\:text-gray-200 {\n    color: rgb(229 231 235 / 1);\n}\n\n.dark .dark\\:text-gray-300 {\n    color: rgb(209 213 219 / 1);\n}\n\n.dark .dark\\:border-gray-\\[\\#86858d\\] {\n    border-color: #86858d;\n}\n\n.gap-x-1 {\n    column-gap: 0.25rem;\n}\n\n.h-2\\.5 {\n    height: 0.625rem;\n}\n\n.h-4 {\n    height: 1rem;\n}\n\n.inline-flex {\n    display: inline-flex;\n}\n\n.items-center {\n    align-items: center;\n}\n\n.ml-3 {\n    margin-left: 0.75rem;\n}\n\n.ml-4 {\n    margin-left: 1rem;\n}\n\n.mr-8 {\n    margin-right: 2rem;\n}\n\n.pb-0 {\n    padding-bottom: 0;\n}\n\n.pr-8 {\n    padding-right: 2rem;\n}\n\n.right-4 {\n    right: 1rem;\n}\n\n.rounded-full {\n    border-radius: 9999px;\n}\n\n.select-all {\n    user-select: all!important;\n}\n\n.space-y-6>:not([hidden])~:not([hidden]) {\n    --tw-space-y-reverse: 0;\n    margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));\n    margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));\n}\n\n.truncate {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n\n.whitespace-nowrap {\n    white-space: nowrap;\n}\n\n@media (min-width:768px) {\n    /* md */\n}\n\n@media (min-width:1024px) {\n    .lg\\:mt-0 {\n        margin-top: 0;\n    }\n\n    .lg\\:top-8 {\n        top: 2rem;\n    }\n}\n\n\n.toggle-switch {\n    position: relative;\n    outline: none;\n    background-color: rgb(229 231 235);\n    border: 1px solid rgb(107 114 128);\n    border-radius: 9999px;\n    cursor: pointer;\n    height: 20px;\n    width: 32px;\n}\n\n.dark .toggle-switch {\n    background-color: rgb(255 255 255 / 5%);\n    border-color: rgb(255 255 255 / 1);\n}\n\n.toggle-switch[data-state=\"checked\"] {\n    background-color: rgb(0 0 0);\n    border-color: rgb(0 0 0);\n}\n\n.dark .toggle-switch[data-state=\"checked\"] {\n    background-color: rgb(22 163 74);\n    border-color: rgb(22 163 74);\n}\n\n.toggle-switch-handle {\n    display: block;\n    background-color: rgb(255 255 255);\n    border-radius: 9999px;\n    height: 16px;\n    width: 16px;\n    transition: transform 0.1s;\n    will-change: transform;\n    transform: translateX(1px);\n}\n\n.toggle-switch-handle[data-state=\"checked\"] {\n    transform: translateX(14px);\n}\n\n.toggle-switch-handle:hover {\n    background-color: rgb(243 244 246);\n}\n\n.toggle-switch-label {\n    color: rgb(107 114 128);\n    margin-left: 0.75rem;\n    font-size: 0.875rem;\n    font-weight: 500;\n}\n\n.toggle-switch-label:hover {\n    color: rgb(71 85 105);\n}\n");
 	init_preact_module();
 	main();
 	function main() {
@@ -23506,7 +23442,7 @@ u$1(Divider, {})
 					const securityMountTarget = findSecuritySidebarMountTarget();
 					if (securityMountTarget && !injectionMap.has(securityMountTarget)) injectSecurityMenu(securityMountTarget);
 				}, 300);
-let chatId = "";
+				let chatId = "";
 				const addMessageTimestamps = async () => {
 					const currentChatId = getChatIdFromUrl();
 					if (!currentChatId || currentChatId === chatId) return;
@@ -23550,7 +23486,7 @@ let chatId = "";
 	function getMenuContainer() {
 		const container = document.createElement("div");
 		container.style.zIndex = "99";
-		R$1( u$1(Menu, { container }), container);
+		R$1(u$1(Menu, { container }), container);
 		return container;
 	}
 })(JSZip, html2canvas);

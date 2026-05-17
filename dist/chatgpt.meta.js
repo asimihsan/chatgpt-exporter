@@ -8,7 +8,7 @@
 // @description        Easily export the whole ChatGPT conversation history for further analysis or sharing.
 // @description:zh-CN  轻松导出 ChatGPT 聊天记录，以便进一步分析或分享。
 // @description:zh-TW  輕鬆匯出 ChatGPT 聊天紀錄，以便進一步分析或分享。
-// @license            MPL-2.0 AND MIT
+// @license            MPL-2.0
 // @icon               https://chat.openai.com/favicon.ico
 // @homepage           https://github.com/asimihsan/chatgpt-exporter
 // @homepageURL        https://github.com/asimihsan/chatgpt-exporter

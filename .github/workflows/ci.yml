@@ -1,3 +1,6 @@
+# Copyright 2026 Asim Ihsan
+# SPDX-License-Identifier: MPL-2.0
+
 name: CI
 
 on:
@@ -21,19 +24,14 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
 
-      - name: Fetch upstream licensing baseline
-        run: |
-          git remote add upstream https://github.com/pionxzh/chatgpt-exporter.git
-          git fetch --no-tags upstream master
-
-      - uses: jdx/mise-action@v3
+      - uses: jdx/mise-action@v4.0.1
 
       - name: Cache Bun package cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.5
         with:
           path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-cache-${{ hashFiles('bun.lock', 'mise.toml') }}
@@ -59,14 +57,14 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6.0.2
         with:
           fetch-depth: 0
 
-      - uses: jdx/mise-action@v3
+      - uses: jdx/mise-action@v4.0.1
 
       - name: Cache Bun package cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5.0.5
         with:
           path: ~/.bun/install/cache
           key: ${{ runner.os }}-bun-cache-${{ hashFiles('bun.lock', 'mise.toml') }}

@@ -9,6 +9,7 @@ import {
     getConversationApiUrl,
     getConversationsApiUrl,
     getFileDownloadApiUrl,
+    getLegacyFileDownloadApiUrl,
     getProjectConversationsApiUrl,
     getProjectsApiUrl,
     getSecurityFindingApiUrl,
@@ -26,7 +27,11 @@ vi.mock('../page', () => ({
 describe('http api url builders', () => {
     it('encodes path parameters for conversation and file routes', () => {
         expect(getConversationApiUrl('chat/id with spaces')).toBe(`${apiUrl}/conversation/chat%2Fid%20with%20spaces`)
-        expect(getFileDownloadApiUrl('file/id')).toBe(`${apiUrl}/files/file%2Fid/download`)
+        expect(getFileDownloadApiUrl('file/id')).toBe(`${apiUrl}/files/download/file%2Fid?post_id=&inline=false`)
+        expect(getFileDownloadApiUrl('file/id', { conversationId: 'chat/id', inline: true })).toBe(
+            `${apiUrl}/files/download/file%2Fid?post_id=&conversation_id=chat%2Fid&inline=true`,
+        )
+        expect(getLegacyFileDownloadApiUrl('file/id')).toBe(`${apiUrl}/files/file%2Fid/download`)
     })
 
     it('adds query parameters for collection routes', () => {

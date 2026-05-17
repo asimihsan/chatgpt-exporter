@@ -28,7 +28,7 @@ export interface Citation {
 }
 
 export interface ContentReference {
-    type: 'grouped_webpages' | 'sources_footnote' | 'nav_list' | 'alt_text' & (string & {})
+    type: 'grouped_webpages' | 'sources_footnote' | 'nav_list' | 'alt_text' | 'webpage_extended' | 'file' | (string & {})
     /** The text that was matched in the content, e.g., "citeturn0search3" */
     matched_text?: string
     start_idx: number
@@ -50,6 +50,15 @@ export interface ContentReference {
     // Legacy fields (may still be present in some responses)
     url?: string
     title?: string
+    attribution?: string
+    source_name?: string
+    snippet?: string
+    pub_date?: string | null
+    icon_type?: string | null
+    cite_key?: string
+    file_id?: string
+    file_name?: string
+    filepath?: string
 }
 
 interface CiteMetadata {
@@ -102,6 +111,11 @@ interface MessageMeta {
     _cite_metadata?: CiteMetadata
     /** New-style content references for web search citations */
     content_references?: ContentReference[]
+    /** File references from generated downloadable files, e.g. {{file:file-...}} */
+    n7jupd_crefs?: ContentReference[]
+    /** Source references that belong to generated file content. */
+    content_references_by_file?: Record<string, ContentReference[]>
+    n7jupd_crefs_by_file?: Record<string, ContentReference[]>
     /** Whether this message is hidden in the UI (e.g., internal system prompts) */
     is_visually_hidden_from_conversation?: boolean
     /** Pro thinking headline, e.g. "Reasoning" */

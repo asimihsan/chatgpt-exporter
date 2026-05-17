@@ -7,14 +7,9 @@ set -euo pipefail
 repo_root="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "${repo_root}"
 
-base_rev="${SPDX_BASE_REV:-master@upstream}"
-git_base_ref="${SPDX_GIT_BASE_REF:-}"
-
-# shellcheck source=./classify-changes.sh
-source "${repo_root}/scripts/license/classify-changes.sh"
-
 mapfile -t target_files < <(
     rg --files \
+        --hidden \
         -g '*.ts' \
         -g '*.tsx' \
         -g '*.js' \
@@ -37,27 +32,6 @@ if ((${#target_files[@]} == 0)); then
     exit 0
 fi
 
-declare -A added_files=()
-declare -A modified_files=()
-
-if ! collect_spdx_change_summary "${base_rev}" "${git_base_ref}"; then
-    exit 1
-fi
-
-if [[ -n "${SPDX_CHANGE_SUMMARY}" ]]; then
-    while read -r status path; do
-        [[ -z "${status}" || -z "${path}" ]] && continue
-        case "${status}" in
-            A)
-                added_files["${path}"]=1
-                ;;
-            M)
-                modified_files["${path}"]=1
-                ;;
-        esac
-    done <<< "${SPDX_CHANGE_SUMMARY}"
-fi
-
 failures=0
 
 for file_path in "${target_files[@]}"; do
@@ -69,31 +43,15 @@ for file_path in "${target_files[@]}"; do
         continue
     fi
 
-    if [[ -v "added_files[$file_path]" ]]; then
-        if [[ "${actual}" != "MPL-2.0" ]]; then
-            echo "Incorrect SPDX header: ${file_path} (expected MPL-2.0, got ${actual})"
-            failures=$((failures + 1))
-        fi
-        continue
-    fi
-
-    if [[ -v "modified_files[$file_path]" ]]; then
-        if [[ "${actual}" != "MPL-2.0 AND MIT" && "${actual}" != "MIT" ]]; then
-            echo "Incorrect SPDX header: ${file_path} (expected MPL-2.0 AND MIT or MIT, got ${actual})"
-            failures=$((failures + 1))
-        fi
-        continue
-    fi
-
-    if [[ "${actual}" != "MIT" ]]; then
-        echo "Incorrect SPDX header: ${file_path} (expected MIT, got ${actual})"
+    if [[ "${actual}" != "MPL-2.0" ]]; then
+        echo "Incorrect SPDX header: ${file_path} (expected MPL-2.0, got ${actual})"
         failures=$((failures + 1))
     fi
 done
 
 if ((failures > 0)); then
-    echo "SPDX check failed with ${failures} file(s) out of policy relative to ${SPDX_CLASSIFICATION_BASE_LABEL:-${base_rev}}." >&2
+    echo "SPDX check failed with ${failures} file(s) out of policy." >&2
     exit 1
 fi
 
-echo "SPDX headers verified against base revision: ${SPDX_CLASSIFICATION_BASE_LABEL:-${base_rev}}"
+echo "SPDX headers verified: MPL-2.0"

@@ -1,7 +1,7 @@
 /**
  * Copyright 2022-Present Pionxzh
  * Copyright 2026 Asim Ihsan
- * SPDX-License-Identifier: MPL-2.0 AND MIT
+ * SPDX-License-Identifier: MPL-2.0
  */
 
 import i18n from 'i18next'

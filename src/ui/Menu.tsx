@@ -1,7 +1,7 @@
 /**
  * Copyright 2022-Present Pionxzh
  * Copyright 2026 Asim Ihsan
- * SPDX-License-Identifier: MPL-2.0 AND MIT
+ * SPDX-License-Identifier: MPL-2.0
  */
 
 import * as Dialog from '@radix-ui/react-dialog'

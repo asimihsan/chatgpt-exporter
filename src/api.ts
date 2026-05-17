@@ -1,7 +1,7 @@
 /**
  * Copyright 2022-Present Pionxzh
  * Copyright 2026 Asim Ihsan
- * SPDX-License-Identifier: MPL-2.0 AND MIT
+ * SPDX-License-Identifier: MPL-2.0
  */
 
 export * from './api/types'
@@ -16,6 +16,8 @@ export {
 } from './api/conversationApi'
 
 export { processConversation } from './api/processing'
+
+export { inlineGeneratedTextFiles } from './api/assets'
 
 export { getTeamAccountId } from './api/http'
 

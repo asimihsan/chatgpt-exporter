@@ -15,7 +15,7 @@ const {
 } = vi.hoisted(() => ({
     getChatIdFromUrlMock: vi.fn<() => string | null>(),
     getConversationFromSharePageMock: vi.fn<() => ApiConversation | null>(),
-    replaceImageAssetsMock: vi.fn<(conversation: ApiConversation) => Promise<void>>(),
+    replaceImageAssetsMock: vi.fn<(conversation: ApiConversation, options?: { conversationId?: string }) => Promise<void>>(),
     fetchApiMock: vi.fn(),
     getConversationApiUrlMock: vi.fn<(id: string) => string>(),
 }))
@@ -104,7 +104,7 @@ describe('conversationApi shared conversation handling', () => {
         await fetchConversation('__share__shared-123', true)
 
         expect(replaceImageAssetsMock).toHaveBeenCalledTimes(1)
-        expect(replaceImageAssetsMock).toHaveBeenCalledWith(shareConversation)
+        expect(replaceImageAssetsMock).toHaveBeenCalledWith(shareConversation, { conversationId: 'shared-123' })
     })
 
     it('throws a helpful error when shared conversation data is unavailable', async () => {

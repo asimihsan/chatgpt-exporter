@@ -139,7 +139,20 @@ const accountsCheckApiUrl = buildUrl(apiUrl, '/accounts/check/v4-2023-04-27')
 
 export const getConversationApiUrl = (id: string) => buildUrl(apiUrl, '/conversation/:id', { id })
 export const getConversationsApiUrl = (offset: number, limit: number) => buildUrl(apiUrl, '/conversations', { offset, limit })
-export const getFileDownloadApiUrl = (id: string) => buildUrl(apiUrl, '/files/:id/download', { id })
+export const getFileDownloadApiUrl = (
+    id: string,
+    options: {
+        conversationId?: string
+        inline?: boolean
+        postId?: string
+    } = {},
+) => buildUrl(apiUrl, '/files/download/:id', {
+    id,
+    post_id: options.postId ?? '',
+    conversation_id: options.conversationId,
+    inline: options.inline ?? false,
+})
+export const getLegacyFileDownloadApiUrl = (id: string) => buildUrl(apiUrl, '/files/:id/download', { id })
 export const getProjectsApiUrl = () => buildUrl(apiUrl, '/gizmos/snorlax/sidebar', { conversations_per_gizmo: 0 })
 export const getProjectConversationsApiUrl = (gizmo: string, offset: number, limit: number) => {
     return buildUrl(apiUrl, '/gizmos/:gizmo/conversations', { gizmo, cursor: offset, limit })

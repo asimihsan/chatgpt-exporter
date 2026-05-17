@@ -1,6 +1,6 @@
 /**
  * Copyright 2022-Present Pionxzh
- * SPDX-License-Identifier: MIT
+ * SPDX-License-Identifier: MPL-2.0
  */
 
 export function getBase64FromImg(el: HTMLImageElement) {

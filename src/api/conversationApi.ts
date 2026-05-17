@@ -65,7 +65,7 @@ export async function fetchConversation(chatId: string, shouldReplaceAssets: boo
         }
 
         if (shouldReplaceAssets) {
-            await replaceImageAssets(shareConversation)
+            await replaceImageAssets(shareConversation, { conversationId: shareConversation.conversation_id ?? shareConversationId })
         }
 
         return {
@@ -78,7 +78,7 @@ export async function fetchConversation(chatId: string, shouldReplaceAssets: boo
     const conversation = await fetchApi<ApiConversation>(url)
 
     if (shouldReplaceAssets) {
-        await replaceImageAssets(conversation)
+        await replaceImageAssets(conversation, { conversationId: conversation.conversation_id ?? chatId })
     }
 
     return {

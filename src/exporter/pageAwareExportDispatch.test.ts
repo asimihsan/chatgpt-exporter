@@ -11,6 +11,7 @@ const {
     checkIfConversationStartedMock,
     getCurrentChatIdMock,
     fetchConversationMock,
+    inlineGeneratedTextFilesMock,
     processConversationMock,
     copyToClipboardMock,
     downloadFileMock,
@@ -26,6 +27,7 @@ const {
     checkIfConversationStartedMock: vi.fn(),
     getCurrentChatIdMock: vi.fn(),
     fetchConversationMock: vi.fn(),
+    inlineGeneratedTextFilesMock: vi.fn(),
     processConversationMock: vi.fn(),
     copyToClipboardMock: vi.fn(),
     downloadFileMock: vi.fn(),
@@ -50,6 +52,7 @@ vi.mock('../page', () => ({
 vi.mock('../api', () => ({
     getCurrentChatId: getCurrentChatIdMock,
     fetchConversation: fetchConversationMock,
+    inlineGeneratedTextFiles: inlineGeneratedTextFilesMock,
     processConversation: processConversationMock,
 }))
 
@@ -139,6 +142,31 @@ describe('page-aware exporter dispatch', () => {
         expect(loadCurrentSecurityDocumentMock).toHaveBeenCalledTimes(1)
         expect(copyToClipboardMock).toHaveBeenCalledWith('security text')
         expect(fetchConversationMock).not.toHaveBeenCalled()
+    })
+
+    it('uses the resolved conversation id for text export generated file inlining', async () => {
+        getPageContextMock.mockReturnValue({
+            kind: 'conversation',
+            findingId: null,
+            repoId: null,
+            chatId: 'shared-123',
+            isSharePage: true,
+            isShareContinuePage: false,
+        })
+        getCurrentChatIdMock.mockResolvedValue('__share__shared-123')
+        fetchConversationMock.mockResolvedValue({
+            id: 'shared-123',
+            mapping: {},
+        })
+
+        const success = await exportToText()
+
+        expect(success).toBe(true)
+        expect(fetchConversationMock).toHaveBeenCalledWith('__share__shared-123', false)
+        expect(inlineGeneratedTextFilesMock).toHaveBeenCalledWith(
+            { id: 'shared-123', mapping: {} },
+            { conversationId: 'shared-123' },
+        )
     })
 
     it('routes markdown export through the security document path and metadata filename tokens', async () => {

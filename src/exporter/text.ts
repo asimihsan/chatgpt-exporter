@@ -1,10 +1,10 @@
 /**
  * Copyright 2022-Present Pionxzh
  * Copyright 2026 Asim Ihsan
- * SPDX-License-Identifier: MPL-2.0 AND MIT
+ * SPDX-License-Identifier: MPL-2.0
  */
 
-import { fetchConversation, getCurrentChatId, processConversation } from '../api'
+import { fetchConversation, getCurrentChatId, inlineGeneratedTextFiles, processConversation } from '../api'
 import i18n from '../i18n'
 import { checkIfConversationStarted } from '../page'
 import { getPageContext } from '../pageContext'
@@ -48,6 +48,7 @@ export async function exportToText() {
     // All image in text output will be replaced with `[image]`
     // So we don't need to waste time to download them
     const rawConversation = await fetchConversation(chatId, false)
+    await inlineGeneratedTextFiles(rawConversation, { conversationId: rawConversation.conversation_id ?? rawConversation.id ?? chatId })
 
     const { conversationNodes } = processConversation(rawConversation)
     const text = conversationNodes
