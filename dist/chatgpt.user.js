@@ -1305,7 +1305,7 @@
 		}));
 	}
 	function buildCandidate(turn, viewport) {
-		const messageElement = turn.querySelector(MESSAGE_SELECTOR) ?? turn;
+		const messageElement = getPrimaryMessageElement(turn, viewport);
 		const messageId = getMessageId(turn, messageElement);
 		if (!messageId) return null;
 		const mountTarget = getMountTarget(messageElement, (findActionButton(messageElement) ?? findActionButton(turn))?.parentElement ?? null);
@@ -1314,9 +1314,14 @@
 			messageId,
 			messageElement,
 			mountTarget,
+			turnElement: turn,
 			visible,
 			blocks: visible ? collectVisibleBlocks(messageElement, messageId, viewport) : []
 		};
+	}
+	function getPrimaryMessageElement(turn, viewport) {
+		const messageElements = Array.from(turn.querySelectorAll(MESSAGE_SELECTOR));
+		return messageElements.findLast((message) => isElementVisibleInViewport(message, viewport)) ?? messageElements.at(-1) ?? turn;
 	}
 	function getMountTarget(messageElement, actionRow) {
 		if (actionRow && isMountGeometrySupported(actionRow)) return actionRow;
@@ -17054,9 +17059,9 @@
 		const candidates = discoverMessageMarkdownCandidates(root);
 		for (const candidate of candidates) {
 			if (!candidate.mountTarget) continue;
-			const existing = mounts.get(candidate.messageElement);
+			const existing = mounts.get(candidate.turnElement);
 			if (existing) {
-				if (existing.target === candidate.mountTarget && existing.target.contains(existing.container)) continue;
+				if (existing.messageId === candidate.messageId && existing.target === candidate.mountTarget && existing.target.contains(existing.container)) continue;
 				R$1(null, existing.container);
 				existing.container.remove();
 			}
@@ -17064,8 +17069,9 @@
 			container.dataset.ceMessageMarkdownRoot = "true";
 			candidate.mountTarget.append(container);
 			R$1(u$1(MessageMarkdownPicker, { clickedMessageId: candidate.messageId }), container);
-			mounts.set(candidate.messageElement, {
+			mounts.set(candidate.turnElement, {
 				container,
+				messageId: candidate.messageId,
 				target: candidate.mountTarget
 			});
 		}

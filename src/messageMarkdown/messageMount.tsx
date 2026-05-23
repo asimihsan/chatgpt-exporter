@@ -9,6 +9,7 @@ import { MessageMarkdownPicker } from '../ui/MessageMarkdownPicker'
 
 export interface MessageMarkdownMountRecord {
     container: HTMLElement
+    messageId: string
     target: HTMLElement
 }
 
@@ -23,9 +24,13 @@ export function mountMessageMarkdownButtons(
     for (const candidate of candidates) {
         if (!candidate.mountTarget) continue
 
-        const existing = mounts.get(candidate.messageElement)
+        const existing = mounts.get(candidate.turnElement)
         if (existing) {
-            if (existing.target === candidate.mountTarget && existing.target.contains(existing.container)) continue
+            if (
+                existing.messageId === candidate.messageId
+                && existing.target === candidate.mountTarget
+                && existing.target.contains(existing.container)
+            ) continue
             render(null, existing.container)
             existing.container.remove()
         }
@@ -40,8 +45,9 @@ export function mountMessageMarkdownButtons(
             />,
             container,
         )
-        mounts.set(candidate.messageElement, {
+        mounts.set(candidate.turnElement, {
             container,
+            messageId: candidate.messageId,
             target: candidate.mountTarget,
         })
     }

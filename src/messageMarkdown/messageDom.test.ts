@@ -135,6 +135,46 @@ describe('message markdown DOM discovery', () => {
         })
     })
 
+    it('uses the last visible message id when ChatGPT renders continuation ids in one turn', () => {
+        installConversationDom()
+        const turn = document.querySelector('[data-testid="conversation-turn-1"]')
+        const firstMessage = document.querySelector('[data-message-id="message-1"]')
+        if (!turn || !firstMessage) throw new Error('missing fixture elements')
+
+        firstMessage.insertAdjacentHTML('afterend', `
+            <div data-message-id="message-1-final">
+                <p>Final response</p>
+                <pre><code>console.log("final")</code></pre>
+            </div>
+        `)
+        const finalMessage = document.querySelector('[data-message-id="message-1-final"]')
+        if (!finalMessage) throw new Error('missing final message')
+        setRect(finalMessage, {
+            top: 40,
+            bottom: 160,
+            width: 400,
+            height: 120,
+        })
+        setRect(finalMessage.querySelector('pre')!, {
+            top: 80,
+            bottom: 120,
+            width: 360,
+            height: 40,
+        })
+
+        const candidates = discoverMessageMarkdownCandidates(document)
+        const items = buildPickerItemsForMessage(candidates, 'message-1-final')
+
+        expect(candidates[0]).toMatchObject({
+            messageId: 'message-1-final',
+            messageElement: finalMessage,
+        })
+        expect(items[0]?.children?.[0]?.block).toMatchObject({
+            sourceMessageId: 'message-1-final',
+            domFingerprint: 'console.log("final")',
+        })
+    })
+
     it('keeps the clicked message in picker items even when it is offscreen', () => {
         installConversationDom()
 

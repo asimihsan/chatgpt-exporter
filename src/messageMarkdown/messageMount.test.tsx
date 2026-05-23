@@ -10,7 +10,9 @@ import { mountMessageMarkdownButtons, cleanupMessageMarkdownMounts } from './mes
 import type { MessageMarkdownMountMap } from './messageMount'
 
 vi.mock('../ui/MessageMarkdownPicker', () => ({
-    MessageMarkdownPicker: () => <button aria-label="Copy message Markdown">M</button>,
+    MessageMarkdownPicker: ({ clickedMessageId }: { clickedMessageId: string }) => (
+        <button aria-label="Copy message Markdown">{clickedMessageId}</button>
+    ),
 }))
 
 function setRect(element: Element, rect: Partial<DOMRect>): void {
@@ -74,6 +76,76 @@ describe('message markdown mount lifecycle', () => {
 
         expect(document.querySelectorAll('[data-ce-message-markdown-root]')).toHaveLength(1)
         expect(document.querySelectorAll('[aria-label="Copy message Markdown"]')).toHaveLength(1)
+    })
+
+    it('replaces the trigger when a multi-id turn changes its primary visible message', () => {
+        document.body.innerHTML = `
+            <main>
+                <article data-testid="conversation-turn-1">
+                    <div data-message-id="message-partial">
+                        <p>Partial</p>
+                        <div class="actions"><button data-testid="copy-turn-action-button">Copy</button></div>
+                    </div>
+                    <div data-message-id="message-final">
+                        <p>Final</p>
+                    </div>
+                </article>
+            </main>
+        `
+        const partial = document.querySelector('[data-message-id="message-partial"]')!
+        const final = document.querySelector('[data-message-id="message-final"]')!
+        const actionRow = document.querySelector('.actions')!
+        setRect(partial, { top: 10, bottom: 80, width: 240, height: 70 })
+        setRect(final, { top: 900, bottom: 980, width: 240, height: 80 })
+        setRect(actionRow, { top: 70, bottom: 102, width: 240, height: 32 })
+
+        const mounts: MessageMarkdownMountMap = new Map()
+        mountMessageMarkdownButtons(mounts)
+        expect(document.querySelector('[aria-label="Copy message Markdown"]')?.textContent).toBe('message-partial')
+
+        setRect(partial, { top: -120, bottom: -40, width: 240, height: 80 })
+        setRect(final, { top: 10, bottom: 90, width: 240, height: 80 })
+        mountMessageMarkdownButtons(mounts)
+
+        expect(document.querySelectorAll('[data-ce-message-markdown-root]')).toHaveLength(1)
+        expect(document.querySelector('[aria-label="Copy message Markdown"]')?.textContent).toBe('message-final')
+    })
+
+    it('removes fallback triggers when the same turn later mounts into its action row', () => {
+        document.body.innerHTML = `
+            <main>
+                <article data-testid="conversation-turn-1">
+                    <div data-message-id="message-partial">
+                        <p>Partial</p>
+                        <div class="actions"><button data-testid="copy-turn-action-button">Copy</button></div>
+                    </div>
+                    <div data-message-id="message-final">
+                        <p>Final</p>
+                    </div>
+                </article>
+            </main>
+        `
+        const partial = document.querySelector('[data-message-id="message-partial"]')!
+        const final = document.querySelector('[data-message-id="message-final"]')!
+        const actionRow = document.querySelector('.actions')!
+        setRect(partial, { top: 10, bottom: 90, width: 240, height: 80 })
+        setRect(final, { top: 900, bottom: 980, width: 240, height: 80 })
+        setRect(actionRow, { top: 70, bottom: 72, width: 10, height: 2 })
+
+        const mounts: MessageMarkdownMountMap = new Map()
+        mountMessageMarkdownButtons(mounts)
+        expect(document.querySelector('[data-message-id="message-partial"] > [data-ce-message-markdown-root]')).not.toBeNull()
+        expect(document.querySelector('[aria-label="Copy message Markdown"]')?.textContent).toBe('message-partial')
+
+        setRect(partial, { top: -120, bottom: -40, width: 240, height: 80 })
+        setRect(final, { top: 10, bottom: 90, width: 240, height: 80 })
+        setRect(actionRow, { top: 70, bottom: 102, width: 240, height: 32 })
+        mountMessageMarkdownButtons(mounts)
+
+        expect(document.querySelectorAll('[data-ce-message-markdown-root]')).toHaveLength(1)
+        expect(document.querySelector('[data-message-id="message-partial"] > [data-ce-message-markdown-root]')).toBeNull()
+        expect(actionRow.querySelector('[data-ce-message-markdown-root]')).not.toBeNull()
+        expect(document.querySelector('[aria-label="Copy message Markdown"]')?.textContent).toBe('message-final')
     })
 
     it('cleans up stale roots when host rows detach', () => {

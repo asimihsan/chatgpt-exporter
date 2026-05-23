@@ -10,6 +10,7 @@ export interface MessageMarkdownCandidate {
     messageId: string
     messageElement: HTMLElement
     mountTarget: HTMLElement | null
+    turnElement: HTMLElement
     visible: boolean
     blocks: SelectableBlockDescriptor[]
 }
@@ -61,7 +62,7 @@ export function buildPickerItemsForMessage(
 }
 
 function buildCandidate(turn: HTMLElement, viewport: ViewportBounds): MessageMarkdownCandidate | null {
-    const messageElement = turn.querySelector<HTMLElement>(MESSAGE_SELECTOR) ?? turn
+    const messageElement = getPrimaryMessageElement(turn, viewport)
     const messageId = getMessageId(turn, messageElement)
     if (!messageId) return null
 
@@ -74,9 +75,17 @@ function buildCandidate(turn: HTMLElement, viewport: ViewportBounds): MessageMar
         messageId,
         messageElement,
         mountTarget,
+        turnElement: turn,
         visible,
         blocks: visible ? collectVisibleBlocks(messageElement, messageId, viewport) : [],
     }
+}
+
+function getPrimaryMessageElement(turn: HTMLElement, viewport: ViewportBounds): HTMLElement {
+    const messageElements = Array.from(turn.querySelectorAll<HTMLElement>(MESSAGE_SELECTOR))
+    return messageElements.findLast(message => isElementVisibleInViewport(message, viewport))
+        ?? messageElements.at(-1)
+        ?? turn
 }
 
 function getMountTarget(messageElement: HTMLElement, actionRow: HTMLElement | null): HTMLElement | null {
