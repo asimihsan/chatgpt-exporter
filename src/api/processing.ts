@@ -13,6 +13,10 @@ import type {
     ModelSlug,
 } from './types'
 
+export interface ProcessConversationOptions {
+    mergeContinuations?: boolean
+}
+
 const MODEL_MAPPING: { [key in ModelSlug]: string } & { [key: string]: string } = {
     'text-davinci-002-render-sha': 'GPT-3.5',
     'text-davinci-002-render-paid': 'GPT-3.5',
@@ -25,7 +29,10 @@ const MODEL_MAPPING: { [key in ModelSlug]: string } & { [key: string]: string } 
     'text-davinci-002': 'GPT-3.5',
 }
 
-export function processConversation(conversation: ApiConversationWithId): ConversationResult {
+export function processConversation(
+    conversation: ApiConversationWithId,
+    options: ProcessConversationOptions = {},
+): ConversationResult {
     const title = conversation.title || 'ChatGPT Conversation'
     const createTime = conversation.create_time
     const updateTime = conversation.update_time
@@ -36,7 +43,9 @@ export function processConversation(conversation: ApiConversationWithId): Conver
     if (!startNodeId) throw new Error('Failed to find start node.')
 
     const conversationNodes = extractConversationResult(conversation.mapping, startNodeId)
-    const mergedConversationNodes = mergeContinuationNodes(conversationNodes)
+    const resultNodes = options.mergeContinuations === false
+        ? conversationNodes
+        : mergeContinuationNodes(conversationNodes)
 
     return {
         id: conversation.id,
@@ -45,7 +54,7 @@ export function processConversation(conversation: ApiConversationWithId): Conver
         modelSlug,
         createTime,
         updateTime,
-        conversationNodes: mergedConversationNodes,
+        conversationNodes: resultNodes,
     }
 }
 

@@ -95,6 +95,115 @@ html {
     filter: brightness(0.5);
 }
 
+.ce-message-markdown {
+    display: inline-flex;
+    align-items: center;
+    position: relative;
+    flex: 0 0 auto;
+}
+
+.ce-message-markdown-trigger {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    min-width: 32px;
+    min-height: 32px;
+    padding: 0;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    color: var(--ce-text-primary);
+    background: transparent;
+    cursor: pointer;
+}
+
+.ce-message-markdown-trigger:hover,
+.ce-message-markdown-trigger:focus-visible {
+    background-color: var(--ce-menu-secondary);
+    border-color: var(--ce-border-light);
+}
+
+.ce-message-markdown-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+.ce-message-markdown-panel {
+    position: fixed;
+    z-index: 2147483000;
+    padding: 10px;
+    border-width: 1px;
+    border-style: solid;
+    border-radius: 8px;
+    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
+    overflow: auto;
+}
+
+.ce-message-markdown-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+}
+
+.ce-message-markdown-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.ce-message-markdown-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-height: 32px;
+    font-size: 13px;
+    line-height: 1.25;
+}
+
+.ce-message-markdown-row input {
+    flex: 0 0 auto;
+}
+
+.ce-message-markdown-child {
+    padding-left: 22px;
+    color: color-mix(in srgb, var(--ce-text-primary) 78%, transparent);
+}
+
+.ce-message-markdown-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    position: sticky;
+    bottom: -10px;
+    padding-top: 8px;
+    background-color: var(--ce-menu-primary);
+}
+
+.ce-message-markdown-actions button {
+    min-height: 32px;
+    padding: 0 10px;
+    border: 1px solid var(--ce-border-light);
+    border-radius: 6px;
+    background-color: var(--ce-menu-primary);
+    color: var(--ce-text-primary);
+}
+
+.ce-message-markdown-actions button:not(:disabled):hover,
+.ce-message-markdown-actions button:not(:disabled):focus-visible {
+    background-color: var(--ce-menu-secondary);
+}
+
+.ce-message-markdown-actions button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
 .inputFieldSet {
     display: block;
     border-width: 2px;

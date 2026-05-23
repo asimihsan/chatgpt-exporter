@@ -161,68 +161,10 @@ export function conversationToMarkdown(conversation: ConversationResult, metaLis
     const timeStampMarkdown = ScriptStorage.get<boolean>(KEY_TIMESTAMP_MARKDOWN) ?? false
     const timeStamp24H = ScriptStorage.get<boolean>(KEY_TIMESTAMP_24H) ?? false
 
-    const content = conversationNodes.map(({ message }) => {
-        const exportMessage = resolveExportMessage(message)
-        if (!exportMessage?.content) return null
-        if (!shouldIncludeMessageForExport(exportMessage)) return null
-
-        const timestamp = exportMessage.create_time ?? ''
-        const showTimestamp = enableTimestamp && timeStampMarkdown && timestamp
-        let timestampHtml = ''
-        if (showTimestamp) {
-            const date = new Date(timestamp * 1000)
-            // format: 20:12 / 08:12 PM
-            const conversationTime = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: !timeStamp24H })
-            timestampHtml = `<time datetime="${date.toISOString()}" title="${date.toLocaleString()}">${conversationTime}</time>\n\n`
-        }
-
-        const author = getExportAuthorLabel(exportMessage)
-
-        const postSteps: Array<(input: string) => string> = []
-        if (exportMessage.author.role === 'assistant') {
-            // Handle new-style content references (web search citations with Unicode markers)
-            postSteps.push(input => transformContentReferences(input, exportMessage.metadata))
-            // Handle old-style footnotes (【11†(PrintWiki)】 format)
-            postSteps.push(input => transformFootNotes(input, exportMessage.metadata))
-        }
-        // Only message from assistant will be reformatted
-        if (exportMessage.author.role === 'assistant') {
-            postSteps.push((input) => {
-                // Replace mathematical formula annotation
-                input = input
-                    .replace(/^\\\[(.+)\\\]$/gm, '$$$$$1$$$$')
-                    .replace(/\\\[/g, '$')
-                    .replace(/\\\]/g, '$')
-                    .replace(/\\\(/g, '$')
-                    .replace(/\\\)/g, '$')
-                const matches = input.match(LatexRegex)
-                // Skip code block as the following steps can potentially break the code
-                const isCodeBlock = /```/.test(input)
-                if (!isCodeBlock && matches) {
-                    let index = 0
-                    input = input.replace(LatexRegex, () => {
-                        // Replace it with `╬${index}╬` to avoid markdown processor ruin the formula
-                        return `╬${index++}╬`
-                    })
-                }
-
-                let transformed = toMarkdown(fromMarkdown(input))
-
-                if (!isCodeBlock && matches) {
-                    // Replace `╬${index}╬` back to the original latex
-                    transformed = transformed.replace(/╬(\d+)╬/g, (_, index) => {
-                        return matches[+index]
-                    })
-                }
-
-                return transformed
-            })
-        }
-        const postProcess = (input: string) => postSteps.reduce((acc, fn) => fn(acc), input)
-        const content = sanitizeLLMText(transformContent(exportMessage.content, exportMessage.metadata, postProcess))
-
-        return `#### ${author}:\n${timestampHtml}${content}`
-    }).filter(Boolean).join('\n\n')
+    const content = conversationNodes.map(({ message }) => transformMessageForMarkdownExport(message, {
+        enableTimestamp: Boolean(enableTimestamp && timeStampMarkdown),
+        timeStamp24H,
+    })).filter(Boolean).join('\n\n')
 
     const sources = renderMarkdownSources(collectMarkdownSourcesFromConversation(conversation))
     const markdown = [ `${frontMatter}# ${title}\n\n${content}`, sources ]
@@ -230,6 +172,87 @@ export function conversationToMarkdown(conversation: ConversationResult, metaLis
         .join('\n\n')
 
     return markdown
+}
+
+export interface MarkdownMessageRenderOptions {
+    enableTimestamp?: boolean
+    timeStamp24H?: boolean
+}
+
+export function transformMessageForMarkdownExport(
+    message?: ConversationNodeMessage,
+    options: MarkdownMessageRenderOptions = {},
+): string | null {
+    const exportMessage = resolveExportMessage(message)
+    const content = transformMessageContentForMarkdownExport(exportMessage)
+    if (!exportMessage || content === null) return null
+
+    const timestampHtml = renderMarkdownTimestamp(exportMessage, options)
+    const author = getExportAuthorLabel(exportMessage)
+
+    return `#### ${author}:\n${timestampHtml}${content}`
+}
+
+export function transformMessageContentForMarkdownExport(message?: ConversationNodeMessage | null): string | null {
+    if (!message?.content) return null
+    if (!shouldIncludeMessageForExport(message)) return null
+
+    const postProcess = createMarkdownPostProcessor(message)
+    return sanitizeLLMText(transformContent(message.content, message.metadata, postProcess))
+}
+
+function renderMarkdownTimestamp(
+    message: ConversationNodeMessage,
+    options: MarkdownMessageRenderOptions,
+): string {
+    const timestamp = message.create_time ?? ''
+    const showTimestamp = options.enableTimestamp && timestamp
+    if (!showTimestamp) return ''
+
+    const date = new Date(timestamp * 1000)
+    const conversationTime = date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: !options.timeStamp24H,
+    })
+    return `<time datetime="${date.toISOString()}" title="${date.toLocaleString()}">${conversationTime}</time>\n\n`
+}
+
+function createMarkdownPostProcessor(message: ConversationNodeMessage): (input: string) => string {
+    const postSteps: Array<(input: string) => string> = []
+    if (message.author.role === 'assistant') {
+        postSteps.push(input => transformContentReferences(input, message.metadata))
+        postSteps.push(input => transformFootNotes(input, message.metadata))
+        postSteps.push(reformatAssistantMarkdown)
+    }
+    return (input: string) => postSteps.reduce((acc, fn) => fn(acc), input)
+}
+
+function reformatAssistantMarkdown(input: string): string {
+    input = input
+        .replace(/^\\\[(.+)\\\]$/gm, '$$$$$1$$$$')
+        .replace(/\\\[/g, '$')
+        .replace(/\\\]/g, '$')
+        .replace(/\\\(/g, '$')
+        .replace(/\\\)/g, '$')
+    const matches = input.match(LatexRegex)
+    const isCodeBlock = /```/.test(input)
+    if (!isCodeBlock && matches) {
+        let index = 0
+        input = input.replace(LatexRegex, () => {
+            return `╬${index++}╬`
+        })
+    }
+
+    let transformed = toMarkdown(fromMarkdown(input))
+
+    if (!isCodeBlock && matches) {
+        transformed = transformed.replace(/╬(\d+)╬/g, (_, index) => {
+            return matches[+index]
+        })
+    }
+
+    return transformed
 }
 
 /**

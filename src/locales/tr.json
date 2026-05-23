@@ -44,5 +44,9 @@
   "Select Project": "Proje Seç",
   "(no project)": "(proje yok)",
   "Export All Limit": "Tümünü Dışa Aktarma Limiti",
-  "Export All Limit Description": "'Tümünü Dışa Aktar' iletişim kutusunda yüklenecek maksimum konuşma sayısını ayarlayın."
+  "Export All Limit Description": "'Tümünü Dışa Aktar' iletişim kutusunda yüklenecek maksimum konuşma sayısını ayarlayın.",
+  "Copy Markdown": "Markdown'u Kopyala",
+  "Copy failed": "Kopyalama başarısız",
+  "Markdown excerpt picker": "Markdown alıntı seçici",
+  "Cancel": "İptal"
 }

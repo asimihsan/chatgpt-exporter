@@ -7,6 +7,7 @@
 import { render } from 'preact'
 import sentinel from 'sentinel-js'
 import { fetchConversation, processConversation } from './api'
+import { cleanupMessageMarkdownMounts, mountMessageMarkdownButtons, type MessageMarkdownMountMap } from './messageMarkdown/messageMount'
 import { type InjectionKind, type InjectionRecord, shouldKeepInjectedContainer } from './menuInjection'
 import { findMemorySummaryModalMountTarget } from './memoryModalMount'
 import { findSecuritySidebarMountTarget } from './menuMount'
@@ -33,6 +34,7 @@ function main() {
         document.head.append(styleEl)
 
         const injectionMap = new Map<HTMLElement, InjectionRecord>()
+        const messageMarkdownMounts: MessageMarkdownMountMap = new Map()
 
         const injectNavMenu = (nav: HTMLElement) => {
             const pageContext = getPageContext()
@@ -130,6 +132,11 @@ function main() {
                 const memoryModalMountTarget = findMemorySummaryModalMountTarget()
                 if (memoryModalMountTarget && !injectionMap.has(memoryModalMountTarget)) {
                     injectMemoryModalButton(memoryModalMountTarget)
+                }
+
+                cleanupMessageMarkdownMounts(messageMarkdownMounts)
+                if (isConversationPageContext(getPageContext())) {
+                    mountMessageMarkdownButtons(messageMarkdownMounts)
                 }
             }, 300)
 

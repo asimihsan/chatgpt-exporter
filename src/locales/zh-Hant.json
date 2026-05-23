@@ -44,5 +44,9 @@
   "Select Project": "選擇專案",
   "(no project)": "（無專案）",
   "Export All Limit": "批量匯出上限",
-  "Export All Limit Description": "設定「批量匯出」對話方塊中載入的最大對話數量。"
+  "Export All Limit Description": "設定「批量匯出」對話方塊中載入的最大對話數量。",
+  "Copy Markdown": "複製 Markdown",
+  "Copy failed": "複製失敗",
+  "Markdown excerpt picker": "Markdown 摘錄選擇器",
+  "Cancel": "取消"
 }

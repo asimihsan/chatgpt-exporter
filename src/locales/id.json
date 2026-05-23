@@ -44,5 +44,9 @@
   "Select Project": "Pilih Proyek",
   "(no project)": "(tidak ada proyek)",
   "Export All Limit": "Batas Ekspor Semua",
-  "Export All Limit Description": "Atur jumlah maksimum percakapan yang akan dimuat dalam dialog 'Ekspor Semua'."
+  "Export All Limit Description": "Atur jumlah maksimum percakapan yang akan dimuat dalam dialog 'Ekspor Semua'.",
+  "Copy Markdown": "Salin Markdown",
+  "Copy failed": "Gagal menyalin",
+  "Markdown excerpt picker": "Pemilih kutipan Markdown",
+  "Cancel": "Batal"
 }

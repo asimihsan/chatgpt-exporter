@@ -45,5 +45,9 @@
   "Select Project": "Select Project",
   "(no project)": "(no project)",
   "Export All Limit": "Export All Limit",
-  "Export All Limit Description": "Set the maximum number of conversations to load in the 'Export All' dialog."
+  "Export All Limit Description": "Set the maximum number of conversations to load in the 'Export All' dialog.",
+  "Copy Markdown": "Copy Markdown",
+  "Copy failed": "Copy failed",
+  "Markdown excerpt picker": "Markdown excerpt picker",
+  "Cancel": "Cancel"
 }

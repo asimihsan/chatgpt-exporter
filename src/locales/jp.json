@@ -44,5 +44,9 @@
   "Select Project": "プロジェクトを選択",
   "(no project)": "（プロジェクトなし）",
   "Export All Limit": "すべてエクスポートの上限",
-  "Export All Limit Description": "「すべてエクスポート」ダイアログで読み込む会話の最大数を設定します。"
+  "Export All Limit Description": "「すべてエクスポート」ダイアログで読み込む会話の最大数を設定します。",
+  "Copy Markdown": "Markdownをコピー",
+  "Copy failed": "コピーに失敗しました",
+  "Markdown excerpt picker": "Markdown抜粋ピッカー",
+  "Cancel": "キャンセル"
 }
