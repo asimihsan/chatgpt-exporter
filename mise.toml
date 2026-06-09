@@ -31,7 +31,10 @@ outputs = ["node_modules/.bin"]
 [tasks.dev]
 alias = "d"
 description = "Start local development server"
-depends = ["install"]
+# Run the security audit before booting the dev server so a freshly published
+# advisory (which `bun run test`/`lint` do not catch) surfaces locally instead
+# of only in CI. Run the full suite with `mise run check`.
+depends = ["install", "audit"]
 run = "bun run dev"
 
 [tasks.build]
