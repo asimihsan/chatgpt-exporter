@@ -14,7 +14,12 @@ if ! command -v mise >/dev/null 2>&1; then
     exit 1
 fi
 
-mapfile -t target_files < <(
+# Use a portable read loop rather than `mapfile`, which is a bash >= 4 builtin
+# and is unavailable on the bash 3.2 shipped with macOS.
+target_files=()
+while IFS= read -r target_file; do
+    target_files+=("${target_file}")
+done < <(
     rg --files \
         --hidden \
         -g '*.ts' \
