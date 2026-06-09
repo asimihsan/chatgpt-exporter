@@ -15,6 +15,13 @@ export {
     getCurrentChatId,
 } from './api/conversationApi'
 
+export {
+    fetchMemoryExport,
+    fetchMemorySummary,
+    fetchSavedMemories,
+    parseSummarySse,
+} from './api/memoryApi'
+
 export { processConversation } from './api/processing'
 
 export { inlineGeneratedTextFiles } from './api/assets'

@@ -15,6 +15,7 @@ export interface ExportCapabilities {
     canExportTavern: boolean
     canExportOoba: boolean
     canExportAll: boolean
+    canExportMemory: boolean
     historyDisabledApplies: boolean
     copyShortcutEnabled: boolean
 }
@@ -32,6 +33,7 @@ export function getExportCapabilities(context: PageContext = getPageContext()) :
                 canExportTavern: true,
                 canExportOoba: true,
                 canExportAll: true,
+                canExportMemory: true,
                 historyDisabledApplies: true,
                 copyShortcutEnabled: true,
             }
@@ -45,6 +47,7 @@ export function getExportCapabilities(context: PageContext = getPageContext()) :
                 canExportTavern: false,
                 canExportOoba: false,
                 canExportAll: true,
+                canExportMemory: false,
                 historyDisabledApplies: false,
                 copyShortcutEnabled: false,
             }
@@ -58,6 +61,7 @@ export function getExportCapabilities(context: PageContext = getPageContext()) :
                 canExportTavern: false,
                 canExportOoba: false,
                 canExportAll: false,
+                canExportMemory: false,
                 historyDisabledApplies: false,
                 copyShortcutEnabled: false,
             }
@@ -71,6 +75,7 @@ export function getExportCapabilities(context: PageContext = getPageContext()) :
                 canExportTavern: false,
                 canExportOoba: false,
                 canExportAll: true,
+                canExportMemory: false,
                 historyDisabledApplies: false,
                 copyShortcutEnabled: false,
             }
@@ -84,6 +89,7 @@ export function getExportCapabilities(context: PageContext = getPageContext()) :
                 canExportTavern: false,
                 canExportOoba: false,
                 canExportAll: false,
+                canExportMemory: false,
                 historyDisabledApplies: false,
                 copyShortcutEnabled: false,
             }

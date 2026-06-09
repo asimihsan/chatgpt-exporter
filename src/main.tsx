@@ -8,12 +8,14 @@ import { render } from 'preact'
 import sentinel from 'sentinel-js'
 import { fetchConversation, processConversation } from './api'
 import { type InjectionKind, type InjectionRecord, shouldKeepInjectedContainer } from './menuInjection'
+import { findMemorySummaryModalMountTarget } from './memoryModalMount'
 import { findSecuritySidebarMountTarget } from './menuMount'
 import { getChatIdFromUrl, isSharePage } from './page'
 import { getPageContext, isConversationPageContext, isSecurityMenuPageContext } from './pageContext'
 import { registerExportCopyShortcut } from './shortcuts/exportCopyShortcut'
 import { registerSettingsMenuCommand } from './settings/menuCommand'
 import { Menu } from './ui/Menu'
+import { MemoryExportButton } from './ui/MemoryExportButton'
 import { onloadSafe } from './utils/utils'
 
 import './i18n'
@@ -71,6 +73,14 @@ function main() {
             target.prepend(container)
         }
 
+        const injectMemoryModalButton = (target: HTMLElement) => {
+            if (injectionMap.has(target)) return
+
+            const container = getMemoryModalButtonContainer()
+            injectionMap.set(target, { container, kind: 'memory-modal' })
+            target.append(container)
+        }
+
         const shouldKeepInjection = (target: HTMLElement, kind: InjectionKind) => {
             const pageContext = getPageContext()
             const record = injectionMap.get(target)
@@ -86,6 +96,12 @@ function main() {
                 const mountTarget = findSecuritySidebarMountTarget()
                 if (mountTarget) {
                     injectSecurityMenu(mountTarget)
+                }
+            })
+            sentinel.on('[role="dialog"]', () => {
+                const mountTarget = findMemorySummaryModalMountTarget()
+                if (mountTarget) {
+                    injectMemoryModalButton(mountTarget)
                 }
             })
 
@@ -109,6 +125,11 @@ function main() {
                 const securityMountTarget = findSecuritySidebarMountTarget()
                 if (securityMountTarget && !injectionMap.has(securityMountTarget)) {
                     injectSecurityMenu(securityMountTarget)
+                }
+
+                const memoryModalMountTarget = findMemorySummaryModalMountTarget()
+                if (memoryModalMountTarget && !injectionMap.has(memoryModalMountTarget)) {
+                    injectMemoryModalButton(memoryModalMountTarget)
                 }
             }, 300)
 
@@ -161,5 +182,13 @@ function getMenuContainer() {
     // to overlap on the list section
     container.style.zIndex = '99'
     render(<Menu container={container} />, container)
+    return container
+}
+
+function getMemoryModalButtonContainer() {
+    const container = document.createElement('div')
+    container.style.display = 'inline-flex'
+    container.style.alignItems = 'center'
+    render(<MemoryExportButton />, container)
     return container
 }

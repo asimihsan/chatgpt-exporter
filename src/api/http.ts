@@ -187,7 +187,19 @@ export const getSecurityScanConfigurationStatsApiUrl = (id: string) => {
 }
 export const getSecurityRepoApiUrl = (repoId: string) => buildUrl(apiUrl, '/wham/github/repositories/:repoId', { repoId })
 
-export async function fetchApi<T>(url: string, options?: RequestInit): Promise<T> {
+export const getMemorySummaryStreamApiUrl = () => buildUrl(apiUrl, '/memories/about_you/summary/stream')
+export const getMemoriesApiUrl = () => buildUrl(apiUrl, '/memories', {
+    exclusive_to_gizmo: false,
+    include_memory_entries: true,
+})
+
+/**
+ * Performs an authenticated request and returns the raw {@link Response}.
+ *
+ * Use this when the response is not JSON (e.g. the Server-Sent Events stream
+ * from the memory summary endpoint). For JSON responses prefer {@link fetchApi}.
+ */
+export async function fetchApiRaw(url: string, options?: RequestInit): Promise<Response> {
     const accessToken = await getAccessToken()
     const accountId = await getTeamAccountId()
 
@@ -203,6 +215,11 @@ export async function fetchApi<T>(url: string, options?: RequestInit): Promise<T
     if (!response.ok) {
         throw new ApiHttpError(url, response)
     }
+    return response
+}
+
+export async function fetchApi<T>(url: string, options?: RequestInit): Promise<T> {
+    const response = await fetchApiRaw(url, options)
     return response.json()
 }
 

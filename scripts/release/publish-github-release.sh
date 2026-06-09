@@ -31,7 +31,9 @@ fi
 release_subject="chore: release v${version}"
 head_subject="$(git log -1 --format=%s HEAD)"
 if [[ "${head_subject}" != "${release_subject}" ]]; then
-    echo "Tag commit mismatch: HEAD subject ${head_subject@Q} does not match expected ${release_subject@Q}." >&2
+    # Use literal single quotes rather than the ${var@Q} transformation, which
+    # requires bash >= 4.4 and breaks on the bash 3.2 shipped with macOS.
+    echo "Tag commit mismatch: HEAD subject '${head_subject}' does not match expected '${release_subject}'." >&2
     exit 1
 fi
 

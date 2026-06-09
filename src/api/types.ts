@@ -330,3 +330,47 @@ export interface ConversationResult {
     projectName?: string
     projectId?: string
 }
+
+/** A single titled section of the "Memory summary" profile. */
+export interface ApiMemorySummarySection {
+    id: string
+    title: string
+    description: string
+}
+
+/**
+ * A raw saved-memory entry from `GET /memories?include_memory_entries=true`.
+ * Fields beyond `id`/`content` are optional because the backend populates them
+ * inconsistently across entries (older entries omit `created_timestamp`).
+ */
+export interface ApiMemoryEntry {
+    id: string
+    content: string
+    updated_at?: string | null
+    created_timestamp?: number | null
+    last_updated?: string | null
+    status?: string | null
+    gizmo_id?: string | null
+    conversation_id?: string | null
+    labels?: string[] | null
+}
+
+export interface ApiMemoriesResponse {
+    memories: ApiMemoryEntry[]
+    memory_max_tokens?: number
+    memory_num_tokens?: number
+}
+
+/** The parsed result of the memory summary SSE stream. */
+export interface MemorySummary {
+    generatedAtIso: string | null
+    sourceChecksum: string | null
+    emptyStateMessage: string | null
+    sections: ApiMemorySummarySection[]
+}
+
+/** Combined payload exported by the "Memory Summary" feature. */
+export interface MemoryExport {
+    summary: MemorySummary
+    savedMemories: ApiMemoryEntry[]
+}
