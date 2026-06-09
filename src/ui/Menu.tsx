@@ -12,6 +12,7 @@ import { exportToHtml } from '../exporter/html'
 import { exportToPng } from '../exporter/image'
 import { exportToJson, exportToOoba, exportToTavern } from '../exporter/json'
 import { exportToMarkdown } from '../exporter/markdown'
+import { exportMemoryToJson, exportMemoryToMarkdown } from '../exporter/memory'
 import { getExportCapabilities } from '../exporter/pageExport'
 import { exportToText } from '../exporter/text'
 import { useLocation } from '../hooks/useLocation'
@@ -23,7 +24,7 @@ import { openSettingsPanel } from '../settings/panel'
 import { EXPORT_DIALOG_CLASS_NAMES } from './dialogClassNames'
 import { Divider } from './Divider'
 import { ExportDialog } from './ExportDialog'
-import { FileCode, IconArrowRightFromBracket, IconCamera, IconCopy, IconJSON, IconMarkdown, IconSetting, IconZip } from './Icons'
+import { FileCode, IconArrowRightFromBracket, IconBrain, IconCamera, IconCopy, IconJSON, IconMarkdown, IconSetting, IconZip } from './Icons'
 import { MenuItem } from './MenuItem'
 import { SecurityFindingsExportDialog } from './SecurityFindingsExportDialog'
 import { SettingProvider, useSettingContext } from './SettingContext'
@@ -40,6 +41,7 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
 
     const [open, setOpen] = useState(false)
     const [jsonOpen, setJsonOpen] = useState(false)
+    const [memoryOpen, setMemoryOpen] = useState(false)
     const [exportOpen, setExportOpen] = useState(false)
     const [shortcutCopied, setShortcutCopied] = useState(false)
     const triggerRef = useRef<HTMLDivElement | null>(null)
@@ -65,6 +67,12 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
     const onClickOfficialJSON = useCallback(() => exportToJson(format), [format])
     const onClickTavern = useCallback(() => exportToTavern(format), [format])
     const onClickOoba = useCallback(() => exportToOoba(format), [format])
+    const onClickMemory = useCallback(() => {
+        setMemoryOpen(true)
+        return true
+    }, [])
+    const onClickMemoryMarkdown = useCallback(() => exportMemoryToMarkdown(), [])
+    const onClickMemoryJSON = useCallback(() => exportMemoryToJson(), [])
     const onClickSetting = useCallback(() => {
         openSettingsPanel()
         return true
@@ -72,7 +80,7 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
 
     const width = useWindowResize(() => window.innerWidth)
     const isMobile = width < 768
-    const hasOverlayOpen = jsonOpen || exportOpen
+    const hasOverlayOpen = jsonOpen || memoryOpen || exportOpen
     const isMenuOpen = open || hasOverlayOpen
     const desktopMenuWidth = 228
     const hasSingleItemExports = capabilities.canExportText
@@ -272,6 +280,36 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                             </Dialog.Root>
                         )}
                     </>
+                )}
+                {capabilities.canExportMemory && (
+                    <Dialog.Root
+                        open={memoryOpen}
+                        onOpenChange={setMemoryOpen}
+                    >
+                        <Dialog.Trigger asChild>
+                            <MenuItem
+                                text={t('Memory Summary')}
+                                icon={IconBrain}
+                                onClick={onClickMemory}
+                            />
+                        </Dialog.Trigger>
+                        <Dialog.Portal>
+                            <Dialog.Overlay className={EXPORT_DIALOG_CLASS_NAMES.overlay} />
+                            <Dialog.Content className={EXPORT_DIALOG_CLASS_NAMES.content} style={{ width: '320px' }}>
+                                <Dialog.Title className={EXPORT_DIALOG_CLASS_NAMES.title}>{t('Memory Summary')}</Dialog.Title>
+                                <MenuItem
+                                    text={t('Markdown')}
+                                    icon={IconMarkdown}
+                                    onClick={onClickMemoryMarkdown}
+                                />
+                                <MenuItem
+                                    text={t('JSON')}
+                                    icon={IconJSON}
+                                    onClick={onClickMemoryJSON}
+                                />
+                            </Dialog.Content>
+                        </Dialog.Portal>
+                    </Dialog.Root>
                 )}
                 {capabilities.canExportAll && (
                     (pageContext.kind === 'security-findings-list' || pageContext.kind === 'security-finding')

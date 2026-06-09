@@ -682,7 +682,12 @@
 		return `${getSecurityScanConfigurationApiUrl(id)}/stats`;
 	};
 	var getSecurityRepoApiUrl = (repoId) => buildUrl(apiUrl, "/wham/github/repositories/:repoId", { repoId });
-	async function fetchApi(url, options) {
+	var getMemorySummaryStreamApiUrl = () => buildUrl(apiUrl, "/memories/about_you/summary/stream");
+	var getMemoriesApiUrl = () => buildUrl(apiUrl, "/memories", {
+		exclusive_to_gizmo: false,
+		include_memory_entries: true
+	});
+	async function fetchApiRaw(url, options) {
 		const accessToken = await getAccessToken();
 		const accountId = await getTeamAccountId();
 		const response = await fetch(url, {
@@ -695,7 +700,10 @@
 			}
 		});
 		if (!response.ok) throw new ApiHttpError(url, response);
-		return response.json();
+		return response;
+	}
+	async function fetchApi(url, options) {
+		return (await fetchApiRaw(url, options)).json();
 	}
 	async function _fetchSession() {
 		const response = await fetch(sessionApiUrl);
@@ -991,6 +999,87 @@
 		});
 		return success;
 	}
+	function splitSseEvents(text) {
+		const blocks = text.replace(/\r\n/g, "\n").split(/\n\n+/);
+		const events = [];
+		for (const block of blocks) {
+			const trimmed = block.trim();
+			if (!trimmed) continue;
+			let event = null;
+			const dataLines = [];
+			for (const line of trimmed.split("\n")) if (line.startsWith("event:")) event = line.slice(6).trim();
+			else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim());
+			if (dataLines.length === 0) continue;
+			events.push({
+				event,
+				data: dataLines.join("\n")
+			});
+		}
+		return events;
+	}
+	function tryParse(data) {
+		try {
+			return JSON.parse(data);
+		} catch {
+			return null;
+		}
+	}
+	function parseSummarySse(text) {
+		const events = splitSseEvents(text);
+		let generatedAtIso = null;
+		let sourceChecksum = null;
+		let emptyStateMessage = null;
+		let doneSections = null;
+		const streamedSections = [];
+		let sectionTypes = [];
+		for (const { event, data } of events) {
+			if (data === "[DONE]") continue;
+			const payload = tryParse(data);
+			if (!payload) continue;
+			if (payload.generatedAtIso) generatedAtIso = payload.generatedAtIso;
+			if (payload.sourceChecksum) sourceChecksum = payload.sourceChecksum;
+			switch (event) {
+				case "done":
+					if (payload.emptyStateMessage) emptyStateMessage = payload.emptyStateMessage;
+					if (Array.isArray(payload.sections)) doneSections = payload.sections;
+					break;
+				case "section":
+					if (payload.section?.id) streamedSections.push(payload.section);
+					break;
+				case "section_types":
+					if (Array.isArray(payload.sections)) sectionTypes = payload.sections.map((s) => ({
+						id: s.id,
+						title: s.title,
+						description: ""
+					}));
+					break;
+			}
+		}
+		const sections = doneSections?.length ? doneSections : streamedSections.length ? streamedSections : sectionTypes;
+		return {
+			generatedAtIso,
+			sourceChecksum,
+			emptyStateMessage,
+			sections
+		};
+	}
+	async function fetchMemorySummary() {
+		return parseSummarySse(await (await fetchApiRaw(getMemorySummaryStreamApiUrl(), {
+			method: "POST",
+			headers: { Accept: "text/event-stream" }
+		})).text());
+	}
+	async function fetchSavedMemories() {
+		const response = await fetchApi(getMemoriesApiUrl());
+		return Array.isArray(response.memories) ? response.memories : [];
+	}
+	async function fetchMemoryExport() {
+		const [summary, savedMemories] = await Promise.all([fetchMemorySummary(), fetchSavedMemories().catch(() => [])]);
+		return {
+			summary,
+			savedMemories
+		};
+	}
 	var MODEL_MAPPING = {
 		"text-davinci-002-render-sha": "GPT-3.5",
 		"text-davinci-002-render-paid": "GPT-3.5",
@@ -1180,7 +1269,22 @@
 			case "conversation-nav": return pageContext.kind === "conversation" && !pageContext.isSharePage && !pageContext.isShareContinuePage;
 			case "share-wrapper": return pageContext.isSharePage;
 			case "security-sidebar": return pageContext.kind === "security-finding" || pageContext.kind === "security-scan" || pageContext.kind === "security-findings-list";
+			case "memory-modal": return true;
 		}
+	}
+	var MEMORY_SUMMARY_HEADINGS = new Set(["memory summary"]);
+	function isMemorySummaryHeading(heading) {
+		const text = heading.textContent?.trim().toLowerCase() ?? "";
+		return MEMORY_SUMMARY_HEADINGS.has(text);
+	}
+	function findMemorySummaryModalMountTarget(root = document) {
+		const dialogs = Array.from(root.querySelectorAll("[role=\"dialog\"]"));
+		const scopes = dialogs.length > 0 ? dialogs : [root];
+		for (const scope of scopes) {
+			const target = Array.from(scope.querySelectorAll("h1, h2")).find(isMemorySummaryHeading)?.parentElement;
+			if (target instanceof HTMLElement) return target;
+		}
+		return null;
 	}
 	function hasSecuritySidebarMarker(element) {
 		return element.style.getPropertyValue("--codex-security-left-pane-width") !== "" || element.getAttribute("style")?.includes("--codex-security-left-pane-width") === true;
@@ -4186,6 +4290,7 @@
 		Markdown: "Markdown",
 		HTML: "HTML",
 		JSON: "JSON",
+		"Memory Summary": "Memory Summary",
 		Archive: "Archive",
 		Save: "Save",
 		Delete: "Delete",
@@ -15971,6 +16076,7 @@
 				canExportTavern: true,
 				canExportOoba: true,
 				canExportAll: true,
+				canExportMemory: true,
 				historyDisabledApplies: true,
 				copyShortcutEnabled: true
 			};
@@ -15983,6 +16089,7 @@
 				canExportTavern: false,
 				canExportOoba: false,
 				canExportAll: true,
+				canExportMemory: false,
 				historyDisabledApplies: false,
 				copyShortcutEnabled: false
 			};
@@ -15995,6 +16102,7 @@
 				canExportTavern: false,
 				canExportOoba: false,
 				canExportAll: false,
+				canExportMemory: false,
 				historyDisabledApplies: false,
 				copyShortcutEnabled: false
 			};
@@ -16007,6 +16115,7 @@
 				canExportTavern: false,
 				canExportOoba: false,
 				canExportAll: true,
+				canExportMemory: false,
 				historyDisabledApplies: false,
 				copyShortcutEnabled: false
 			};
@@ -16019,6 +16128,7 @@
 				canExportTavern: false,
 				canExportOoba: false,
 				canExportAll: false,
+				canExportMemory: false,
 				historyDisabledApplies: false,
 				copyShortcutEnabled: false
 			};
@@ -21523,6 +21633,63 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 			default: return postProcess(`[Unsupported Content: ${content.content_type}]`);
 		}
 	}
+	var FILE_NAME_FORMAT = "chatgpt-memory-summary-{date}";
+	function formatGeneratedDate(generatedAtIso) {
+		if (!generatedAtIso) return null;
+		const match = generatedAtIso.match(/^\d{4}-\d{2}-\d{2}/);
+		return match ? match[0] : generatedAtIso;
+	}
+	function formatEntryMeta(entry) {
+		const parts = [];
+		if (entry.updated_at) parts.push(`updated ${entry.updated_at}`);
+		if (entry.conversation_id) parts.push(`[source](${baseUrl}/c/${entry.conversation_id})`);
+		if (parts.length === 0) return "";
+		return ` _(${parts.join(" — ")})_`;
+	}
+	function memoryToMarkdown(data) {
+		const { summary, savedMemories } = data;
+		const lines = ["# Memory summary"];
+		const generatedDate = formatGeneratedDate(summary.generatedAtIso);
+		if (generatedDate) lines.push("", `_Generated ${generatedDate}_`);
+		for (const section of summary.sections) lines.push("", `## ${section.title}`, "", section.description);
+		if (savedMemories.length > 0) {
+			lines.push("", "---", "", "## Saved memories", "");
+			for (const entry of savedMemories) lines.push(`- ${entry.content}${formatEntryMeta(entry)}`);
+		}
+		return `${lines.join("\n")}\n`;
+	}
+	function memoryToJson(data) {
+		const payload = {
+			generatedAtIso: data.summary.generatedAtIso,
+			sourceChecksum: data.summary.sourceChecksum,
+			summary: { sections: data.summary.sections },
+			savedMemories: data.savedMemories
+		};
+		return JSON.stringify(payload, null, 2);
+	}
+	function isEmpty(data) {
+		return data.summary.sections.length === 0 && data.savedMemories.length === 0;
+	}
+	async function loadMemoryExport() {
+		const data = await fetchMemoryExport();
+		if (isEmpty(data)) {
+			alert(data.summary.emptyStateMessage ?? "No memory summary is available to export.");
+			return null;
+		}
+		return data;
+	}
+	async function exportMemoryToMarkdown() {
+		const data = await loadMemoryExport();
+		if (!data) return false;
+		downloadFile(getFileNameWithFormat(FILE_NAME_FORMAT, "md"), "text/markdown", memoryToMarkdown(data));
+		return true;
+	}
+	async function exportMemoryToJson() {
+		const data = await loadMemoryExport();
+		if (!data) return false;
+		downloadFile(getFileNameWithFormat(FILE_NAME_FORMAT, "json"), "application/json", memoryToJson(data));
+		return true;
+	}
 	init_compat_module();
 	var historyPatched = false;
 	function useLocation() {
@@ -21728,6 +21895,15 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 				fillRule: "evenodd",
 				clipRule: "evenodd"
 			})
+		});
+	}
+	function IconBrain() {
+		return u$1("svg", {
+			xmlns: "http://www.w3.org/2000/svg",
+			viewBox: "0 0 512 512",
+			className: "w-4 h-4",
+			fill: "currentColor",
+			children: u$1("path", { d: "M184 0c30.9 0 56 25.1 56 56V456c0 30.9-25.1 56-56 56c-28.9 0-52.7-21.9-55.7-50.1c-5.2 1.4-10.7 2.1-16.3 2.1c-35.3 0-64-28.7-64-64c0-7.4 1.3-14.6 3.6-21.2C21.4 367.4 0 338.2 0 304c0-31.9 18.7-59.5 45.8-72.3C37.1 220.8 32 207 32 192c0-30.7 21.6-56.3 50.4-62.6C80.8 123.9 80 118 80 112c0-29.9 20.6-55.1 48.3-62.1C131.3 21.9 155.1 0 184 0zM328 0c28.9 0 52.6 21.9 55.7 49.9c27.8 7 48.3 32.1 48.3 62.1c0 6-.8 11.9-2.4 17.4c28.8 6.2 50.4 31.9 50.4 62.6c0 15-5.1 28.8-13.8 39.7C493.3 244.5 512 272.1 512 304c0 34.2-21.4 63.4-51.6 74.8c2.3 6.6 3.6 13.8 3.6 21.2c0 35.3-28.7 64-64 64c-5.6 0-11.1-.7-16.3-2.1c-3 28.2-26.8 50.1-55.7 50.1c-30.9 0-56-25.1-56-56V56c0-30.9 25.1-56 56-56z" })
 		});
 	}
 	function IconCross() {
@@ -23133,6 +23309,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 		const disabled = capabilities.historyDisabledApplies && getHistoryDisabled();
 		const [open, setOpen] = d$1(false);
 		const [jsonOpen, setJsonOpen] = d$1(false);
+		const [memoryOpen, setMemoryOpen] = d$1(false);
 		const [exportOpen, setExportOpen] = d$1(false);
 		const [shortcutCopied, setShortcutCopied] = d$1(false);
 		const triggerRef = A$2(null);
@@ -23151,12 +23328,18 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 		const onClickOfficialJSON = q$1(() => exportToJson(format), [format]);
 		const onClickTavern = q$1(() => exportToTavern(format), [format]);
 		const onClickOoba = q$1(() => exportToOoba(format), [format]);
+		const onClickMemory = q$1(() => {
+			setMemoryOpen(true);
+			return true;
+		}, []);
+		const onClickMemoryMarkdown = q$1(() => exportMemoryToMarkdown(), []);
+		const onClickMemoryJSON = q$1(() => exportMemoryToJson(), []);
 		const onClickSetting = q$1(() => {
 			openSettingsPanel();
 			return true;
 		}, []);
 		const isMobile = useWindowResize(() => window.innerWidth) < 768;
-		const isMenuOpen = open || jsonOpen || exportOpen;
+		const isMenuOpen = open || jsonOpen || memoryOpen || exportOpen;
 		const desktopMenuWidth = 228;
 		const hasSingleItemExports = capabilities.canExportText || capabilities.canExportPng || capabilities.canExportMarkdown || capabilities.canExportHtml || capabilities.canExportJson;
 		y$1(() => {
@@ -23315,6 +23498,37 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 							})] })]
 						})
 					] }),
+					capabilities.canExportMemory && u$1(Root$1, {
+						open: memoryOpen,
+						onOpenChange: setMemoryOpen,
+						children: [u$1(Trigger$1, {
+							asChild: true,
+							children: u$1(MenuItem, {
+								text: t("Memory Summary"),
+								icon: IconBrain,
+								onClick: onClickMemory
+							})
+						}), u$1(Portal$1, { children: [u$1(Overlay, { className: EXPORT_DIALOG_CLASS_NAMES.overlay }), u$1(Content$1, {
+							className: EXPORT_DIALOG_CLASS_NAMES.content,
+							style: { width: "320px" },
+							children: [
+								u$1(Title, {
+									className: EXPORT_DIALOG_CLASS_NAMES.title,
+									children: t("Memory Summary")
+								}),
+								u$1(MenuItem, {
+									text: t("Markdown"),
+									icon: IconMarkdown,
+									onClick: onClickMemoryMarkdown
+								}),
+								u$1(MenuItem, {
+									text: t("JSON"),
+									icon: IconJSON,
+									onClick: onClickMemoryJSON
+								})
+							]
+						})] })]
+					}),
 					capabilities.canExportAll && (pageContext.kind === "security-findings-list" || pageContext.kind === "security-finding" ? u$1(SecurityFindingsExportDialog, {
 						format,
 						open: exportOpen,
@@ -23370,6 +23584,43 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 	function Menu({ container }) {
 		return u$1(SettingProvider, { children: u$1(MenuInner, { container }) });
 	}
+	init_hooks_module();
+	function MemoryExportButton() {
+		const { t } = useTranslation();
+		const [loading, setLoading] = d$1(false);
+		const onClick = async () => {
+			if (loading) return;
+			try {
+				setLoading(true);
+				await exportMemoryToMarkdown();
+			} catch (error) {
+				console.error("Failed to export memory summary:", error);
+			} finally {
+				setLoading(false);
+			}
+		};
+		return u$1("button", {
+			type: "button",
+			onClick: () => void onClick(),
+			disabled: loading,
+			title: t("Memory Summary"),
+			style: {
+				display: "inline-flex",
+				alignItems: "center",
+				gap: "6px",
+				padding: "6px 12px",
+				borderRadius: "9999px",
+				border: "1px solid var(--ce-border-light, rgba(0,0,0,0.15))",
+				background: "transparent",
+				color: "inherit",
+				font: "inherit",
+				fontSize: "14px",
+				cursor: loading ? "default" : "pointer",
+				opacity: loading ? .6 : 1
+			},
+			children: [loading ? u$1(IconLoading, { className: "w-4 h-4" }) : u$1(IconBrain, {}), u$1("span", { children: t("ExportHelper") })]
+		});
+	}
 	_css("/**\n * Copyright 2022-Present Pionxzh\n * Copyright 2026 Asim Ihsan\n * SPDX-License-Identifier: MPL-2.0\n */\n\n/* Utility fallback layer for Tailwind-like classes until a dedicated Tailwind build step is introduced. */\n.ce-animate-fade-in  {\n    animation: ceFadeIn .3s;\n}\n\n.ce-animate-slide-up  {\n    animation: ceSlideUp .3s;\n}\n\n.bg-blue-600 {\n    background-color: rgb(28 100 242);\n}\n\n.hover\\:bg-gray-500\\/10:hover {\n    background-color: hsla(0, 0%, 61%, .1)\n}\n\n.border-\\[\\#6f6e77\\] {\n    border-color: #6f6e77;\n}\n\n.cursor-help {\n    cursor: help;\n}\n\n.dark .dark\\:bg-white\\/5 {\n    background-color: rgb(255 255 255 / 5%);\n}\n\n.dark .dark\\:text-gray-200 {\n    color: rgb(229 231 235 / 1);\n}\n\n.dark .dark\\:text-gray-300 {\n    color: rgb(209 213 219 / 1);\n}\n\n.dark .dark\\:border-gray-\\[\\#86858d\\] {\n    border-color: #86858d;\n}\n\n.gap-x-1 {\n    column-gap: 0.25rem;\n}\n\n.h-2\\.5 {\n    height: 0.625rem;\n}\n\n.h-4 {\n    height: 1rem;\n}\n\n.inline-flex {\n    display: inline-flex;\n}\n\n.items-center {\n    align-items: center;\n}\n\n.ml-3 {\n    margin-left: 0.75rem;\n}\n\n.ml-4 {\n    margin-left: 1rem;\n}\n\n.mr-8 {\n    margin-right: 2rem;\n}\n\n.pb-0 {\n    padding-bottom: 0;\n}\n\n.pr-8 {\n    padding-right: 2rem;\n}\n\n.right-4 {\n    right: 1rem;\n}\n\n.rounded-full {\n    border-radius: 9999px;\n}\n\n.select-all {\n    user-select: all!important;\n}\n\n.space-y-6>:not([hidden])~:not([hidden]) {\n    --tw-space-y-reverse: 0;\n    margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));\n    margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));\n}\n\n.truncate {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n\n.whitespace-nowrap {\n    white-space: nowrap;\n}\n\n@media (min-width:768px) {\n    /* md */\n}\n\n@media (min-width:1024px) {\n    .lg\\:mt-0 {\n        margin-top: 0;\n    }\n\n    .lg\\:top-8 {\n        top: 2rem;\n    }\n}\n\n\n.toggle-switch {\n    position: relative;\n    outline: none;\n    background-color: rgb(229 231 235);\n    border: 1px solid rgb(107 114 128);\n    border-radius: 9999px;\n    cursor: pointer;\n    height: 20px;\n    width: 32px;\n}\n\n.dark .toggle-switch {\n    background-color: rgb(255 255 255 / 5%);\n    border-color: rgb(255 255 255 / 1);\n}\n\n.toggle-switch[data-state=\"checked\"] {\n    background-color: rgb(0 0 0);\n    border-color: rgb(0 0 0);\n}\n\n.dark .toggle-switch[data-state=\"checked\"] {\n    background-color: rgb(22 163 74);\n    border-color: rgb(22 163 74);\n}\n\n.toggle-switch-handle {\n    display: block;\n    background-color: rgb(255 255 255);\n    border-radius: 9999px;\n    height: 16px;\n    width: 16px;\n    transition: transform 0.1s;\n    will-change: transform;\n    transform: translateX(1px);\n}\n\n.toggle-switch-handle[data-state=\"checked\"] {\n    transform: translateX(14px);\n}\n\n.toggle-switch-handle:hover {\n    background-color: rgb(243 244 246);\n}\n\n.toggle-switch-label {\n    color: rgb(107 114 128);\n    margin-left: 0.75rem;\n    font-size: 0.875rem;\n    font-weight: 500;\n}\n\n.toggle-switch-label:hover {\n    color: rgb(71 85 105);\n}\n");
 	init_preact_module();
 	main();
@@ -23417,6 +23668,15 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 				});
 				target.prepend(container);
 			};
+			const injectMemoryModalButton = (target) => {
+				if (injectionMap.has(target)) return;
+				const container = getMemoryModalButtonContainer();
+				injectionMap.set(target, {
+					container,
+					kind: "memory-modal"
+				});
+				target.append(container);
+			};
 			const shouldKeepInjection = (target, kind) => {
 				const pageContext = getPageContext();
 				const record = injectionMap.get(target);
@@ -23430,6 +23690,10 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 					const mountTarget = findSecuritySidebarMountTarget();
 					if (mountTarget) injectSecurityMenu(mountTarget);
 				});
+				import_sentinel_umd.default.on("[role=\"dialog\"]", () => {
+					const mountTarget = findMemorySummaryModalMountTarget();
+					if (mountTarget) injectMemoryModalButton(mountTarget);
+				});
 				setInterval(() => {
 					injectionMap.forEach((record, target) => {
 						if (!shouldKeepInjection(target, record.kind)) {
@@ -23441,6 +23705,8 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 					if (isSharePage()) Array.from(document.querySelectorAll("div[role=\"presentation\"] > .w-full > div >.flex.w-full")).filter((target) => !injectionMap.has(target)).forEach(injectShareMenu);
 					const securityMountTarget = findSecuritySidebarMountTarget();
 					if (securityMountTarget && !injectionMap.has(securityMountTarget)) injectSecurityMenu(securityMountTarget);
+					const memoryModalMountTarget = findMemorySummaryModalMountTarget();
+					if (memoryModalMountTarget && !injectionMap.has(memoryModalMountTarget)) injectMemoryModalButton(memoryModalMountTarget);
 				}, 300);
 				let chatId = "";
 				const addMessageTimestamps = async () => {
@@ -23487,6 +23753,13 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 		const container = document.createElement("div");
 		container.style.zIndex = "99";
 		R$1(u$1(Menu, { container }), container);
+		return container;
+	}
+	function getMemoryModalButtonContainer() {
+		const container = document.createElement("div");
+		container.style.display = "inline-flex";
+		container.style.alignItems = "center";
+		R$1(u$1(MemoryExportButton, {}), container);
 		return container;
 	}
 })(JSZip, html2canvas);

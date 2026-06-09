@@ -32,6 +32,7 @@ describe('getExportCapabilities', () => {
             canExportTavern: true,
             canExportOoba: true,
             canExportAll: true,
+            canExportMemory: true,
             historyDisabledApplies: true,
             copyShortcutEnabled: true,
         })
@@ -51,6 +52,7 @@ describe('getExportCapabilities', () => {
             canExportTavern: false,
             canExportOoba: false,
             canExportAll: true,
+            canExportMemory: false,
             historyDisabledApplies: false,
             copyShortcutEnabled: false,
         })
@@ -70,6 +72,7 @@ describe('getExportCapabilities', () => {
             canExportTavern: false,
             canExportOoba: false,
             canExportAll: false,
+            canExportMemory: false,
             historyDisabledApplies: false,
             copyShortcutEnabled: false,
         })
@@ -89,6 +92,7 @@ describe('getExportCapabilities', () => {
             canExportTavern: false,
             canExportOoba: false,
             canExportAll: true,
+            canExportMemory: false,
             historyDisabledApplies: false,
             copyShortcutEnabled: false,
         })
