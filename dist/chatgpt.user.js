@@ -3,7 +3,7 @@
 // @name:zh-CN         ChatGPT Exporter
 // @name:zh-TW         ChatGPT Exporter
 // @namespace          asimihsan
-// @version            2.29.20
+// @version            2.29.21
 // @author             asimihsan
 // @description        Easily export the whole ChatGPT conversation history for further analysis or sharing.
 // @description:zh-CN  轻松导出 ChatGPT 聊天记录，以便进一步分析或分享。
@@ -4284,7 +4284,9 @@
 		ExportHelper: "Export",
 		Setting: "Setting",
 		Language: "Language",
-		"Copy Text": "Copy Text",
+		"Copy Markdown": "Copy Markdown",
+		"Enable Copy Markdown Shortcut": "Enable Copy Markdown Shortcut",
+		"Copy Markdown Shortcut": "Copy Markdown Shortcut",
 		"Copied!": "Copied!",
 		Screenshot: "Screenshot",
 		Markdown: "Markdown",
@@ -4331,7 +4333,9 @@
 		ExportHelper: "Exportar",
 		Setting: "Ajustes",
 		Language: "Idioma",
-		"Copy Text": "Copiar Texto",
+		"Copy Markdown": "Copiar Markdown",
+		"Enable Copy Markdown Shortcut": "Activar atajo de Copiar Markdown",
+		"Copy Markdown Shortcut": "Atajo de Copiar Markdown",
 		"Copied!": "¡Copiado!",
 		Screenshot: "Captura De Pantalla",
 		Markdown: "Markdown",
@@ -4377,7 +4381,9 @@
 		ExportHelper: "Exporter",
 		Setting: "Paramètre",
 		Language: "Langue",
-		"Copy Text": "Copier le texte",
+		"Copy Markdown": "Copier Markdown",
+		"Enable Copy Markdown Shortcut": "Activer le raccourci Copier Markdown",
+		"Copy Markdown Shortcut": "Raccourci Copier Markdown",
 		"Copied!": "Copié !",
 		Screenshot: "Capture d'écran",
 		Markdown: "Markdown",
@@ -4423,7 +4429,9 @@
 		ExportHelper: "Ekspor",
 		Setting: "Pengaturan",
 		Language: "Bahasa",
-		"Copy Text": "Salin Teks",
+		"Copy Markdown": "Salin Markdown",
+		"Enable Copy Markdown Shortcut": "Aktifkan Pintasan Salin Markdown",
+		"Copy Markdown Shortcut": "Pintasan Salin Markdown",
 		"Copied!": "Disalin!",
 		Screenshot: "Tangkapan Layar",
 		Markdown: "Markdown",
@@ -4469,7 +4477,9 @@
 		ExportHelper: "エクスポート",
 		Setting: "設定",
 		Language: "言語",
-		"Copy Text": "テキストをコピー",
+		"Copy Markdown": "Markdownをコピー",
+		"Enable Copy Markdown Shortcut": "Markdownコピーのショートカットを有効化",
+		"Copy Markdown Shortcut": "Markdownコピーのショートカット",
 		"Copied!": "コピーしました！",
 		Screenshot: "スクリーンショット",
 		Markdown: "Markdown",
@@ -4515,7 +4525,9 @@
 		ExportHelper: "Export",
 		Setting: "Параметры",
 		Language: "Язык",
-		"Copy Text": "Копировать текст",
+		"Copy Markdown": "Копировать Markdown",
+		"Enable Copy Markdown Shortcut": "Включить сочетание для копирования Markdown",
+		"Copy Markdown Shortcut": "Сочетание для копирования Markdown",
 		"Copied!": "Скопировано!",
 		Screenshot: "Скриншот",
 		Markdown: "Markdown",
@@ -4561,7 +4573,9 @@
 		ExportHelper: "Dışa Aktar",
 		Setting: "Ayarlar",
 		Language: "Dil",
-		"Copy Text": "Metni Kopyala",
+		"Copy Markdown": "Markdown Kopyala",
+		"Enable Copy Markdown Shortcut": "Markdown Kopyalama Kısayolunu Etkinleştir",
+		"Copy Markdown Shortcut": "Markdown Kopyalama Kısayolu",
 		"Copied!": "Kopyalandı!",
 		Screenshot: "Ekran Alıntısı",
 		Markdown: "Markdown",
@@ -4607,7 +4621,9 @@
 		ExportHelper: "导出助手",
 		Setting: "设置",
 		Language: "语言",
-		"Copy Text": "复制文字",
+		"Copy Markdown": "复制 Markdown",
+		"Enable Copy Markdown Shortcut": "启用复制 Markdown 快捷键",
+		"Copy Markdown Shortcut": "复制 Markdown 快捷键",
 		"Copied!": "已复制!",
 		Screenshot: "截屏",
 		Markdown: "Markdown",
@@ -4653,7 +4669,9 @@
 		ExportHelper: "Export",
 		Setting: "設定",
 		Language: "語言",
-		"Copy Text": "複製文字",
+		"Copy Markdown": "複製 Markdown",
+		"Enable Copy Markdown Shortcut": "啟用複製 Markdown 快捷鍵",
+		"Copy Markdown Shortcut": "複製 Markdown 快捷鍵",
 		"Copied!": "已複製!",
 		Screenshot: "截圖",
 		Markdown: "Markdown",
@@ -4918,6 +4936,137 @@
 			document.execCommand("copy");
 			document.body.removeChild(textarea);
 		}
+	}
+	var require_truncate = __commonJSMin(((exports, module) => {
+		function isHighSurrogate(codePoint) {
+			return codePoint >= 55296 && codePoint <= 56319;
+		}
+		function isLowSurrogate(codePoint) {
+			return codePoint >= 56320 && codePoint <= 57343;
+		}
+		module.exports = function truncate(getLength, string, byteLength) {
+			if (typeof string !== "string") throw new Error("Input must be string");
+			var charLength = string.length;
+			var curByteLength = 0;
+			var codePoint;
+			var segment;
+			for (var i = 0; i < charLength; i += 1) {
+				codePoint = string.charCodeAt(i);
+				segment = string[i];
+				if (isHighSurrogate(codePoint) && isLowSurrogate(string.charCodeAt(i + 1))) {
+					i += 1;
+					segment += string[i];
+				}
+				curByteLength += getLength(segment);
+				if (curByteLength === byteLength) return string.slice(0, i + 1);
+				else if (curByteLength > byteLength) return string.slice(0, i - segment.length + 1);
+			}
+			return string;
+		};
+	}));
+	var require_browser$1 = __commonJSMin(((exports, module) => {
+		function isHighSurrogate(codePoint) {
+			return codePoint >= 55296 && codePoint <= 56319;
+		}
+		function isLowSurrogate(codePoint) {
+			return codePoint >= 56320 && codePoint <= 57343;
+		}
+		module.exports = function getByteLength(string) {
+			if (typeof string !== "string") throw new Error("Input must be string");
+			var charLength = string.length;
+			var byteLength = 0;
+			var codePoint = null;
+			var prevCodePoint = null;
+			for (var i = 0; i < charLength; i++) {
+				codePoint = string.charCodeAt(i);
+				if (isLowSurrogate(codePoint)) if (prevCodePoint != null && isHighSurrogate(prevCodePoint)) byteLength += 1;
+				else byteLength += 3;
+				else if (codePoint <= 127) byteLength += 1;
+				else if (codePoint >= 128 && codePoint <= 2047) byteLength += 2;
+				else if (codePoint >= 2048 && codePoint <= 65535) byteLength += 3;
+				prevCodePoint = codePoint;
+			}
+			return byteLength;
+		};
+	}));
+	var require_browser = __commonJSMin(((exports, module) => {
+		var truncate = require_truncate();
+		var getLength = require_browser$1();
+		module.exports = truncate.bind(null, getLength);
+	}));
+	var import_sanitize_filename = __toESM(__commonJSMin(((exports, module) => {
+		var truncate = require_browser();
+		var illegalRe = /[\/\?<>\\:\*\|"]/g;
+		var controlRe = /[\x00-\x1f\x80-\x9f]/g;
+		var reservedRe = /^\.+$/;
+		var windowsReservedRe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
+		function replaceTrailingDotsAndSpaces(str, replacement) {
+			var end = str.length;
+			while (end > 0 && (str[end - 1] === "." || str[end - 1] === " ")) end--;
+			return end < str.length ? str.slice(0, end) + replacement : str;
+		}
+		function sanitize(input, replacement) {
+			if (typeof input !== "string") throw new Error("Input must be string");
+			var sanitized = input.replace(illegalRe, replacement).replace(controlRe, replacement).replace(reservedRe, replacement).replace(windowsReservedRe, replacement);
+			sanitized = replaceTrailingDotsAndSpaces(sanitized, replacement);
+			return truncate(sanitized, 255);
+		}
+		module.exports = function(input, options) {
+			var replacement = options && options.replacement || "";
+			var output = sanitize(input, replacement);
+			if (replacement === "") return output;
+			return sanitize(output, "");
+		};
+	}))(), 1);
+	function nonNullable(x) {
+		return x != null;
+	}
+	function onloadSafe(fn) {
+		if (document.readyState === "complete") fn();
+		else window.addEventListener("load", fn);
+	}
+	function sleep(ms) {
+		return new Promise((resolve) => setTimeout(resolve, ms));
+	}
+	function dateStr(date = new Date()) {
+		return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
+	}
+	function timestamp() {
+		return new Date().toISOString().replace(/:/g, "-").replace(/\..+/, "");
+	}
+	function getColorScheme() {
+		return document.documentElement.style.getPropertyValue("color-scheme");
+	}
+	function unixTimestampToISOString(timestamp) {
+		if (!timestamp) return "";
+		return new Date(timestamp * 1e3).toISOString();
+	}
+	function jsonlStringify(list) {
+		return list.map((msg) => JSON.stringify(msg)).join("\n");
+	}
+	function downloadFile(filename, type, content) {
+		const blob = content instanceof Blob ? content : new Blob([content], { type });
+		const url = URL.createObjectURL(blob);
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = filename;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+	}
+	function downloadUrl(filename, url) {
+		const a = document.createElement("a");
+		a.href = url;
+		a.download = filename;
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+	}
+	function getFileNameWithFormat(format, ext, { title = document.title, chatId = "", createTime = Math.floor(Date.now() / 1e3), updateTime = Math.floor(Date.now() / 1e3) } = {}) {
+		const _title = (0, import_sanitize_filename.default)(title).replace(/\s+/g, "_");
+		const _createTime = unixTimestampToISOString(createTime);
+		const _updateTime = unixTimestampToISOString(updateTime);
+		return format.replace("{title}", _title).replace("{date}", dateStr()).replace("{timestamp}", timestamp()).replace("{chat_id}", chatId).replace("{create_time}", _createTime).replace("{update_time}", _updateTime).concat(`.${ext}`);
 	}
 	var htmlVoidElements = [
 		"area",
@@ -15224,18 +15373,209 @@
 	function toHtml(node) {
 		return toHtml$1(toHast(node));
 	}
-	function flatMap(tree, fn) {
-		function transform(node, i, parent) {
-			if ("children" in node) {
-				const p = node;
-				p.children = p.children.flatMap((item, i) => transform(item, i, p));
-			}
-			return fn(node, i, parent);
-		}
-		return transform(tree, 0, void 0)[0];
-	}
 	function standardizeLineBreaks(text) {
 		return text.replace(/\r\n/g, "\n").replace(/\r/g, "\n");
+	}
+	var INTERNAL_CONTENT_TYPES = new Set([
+		"thoughts",
+		"reasoning_recap",
+		"model_editable_context"
+	]);
+	var THINKING_CONTENT_TYPES = new Set(["thoughts", "reasoning_recap"]);
+	function isProThinkingMeta(message) {
+		const initialText = message.metadata?.initial_text?.toLowerCase() || "";
+		const finishedText = message.metadata?.finished_text?.toLowerCase() || "";
+		return message.metadata?.async_task_type === "pro_mode" || initialText.includes("reason") || finishedText.startsWith("reasoned for");
+	}
+	function isInternalContentType(contentType) {
+		return INTERNAL_CONTENT_TYPES.has(contentType);
+	}
+	function shouldSkipAsInternal(message) {
+		if (!message?.content) return true;
+		if (message.metadata?.is_visually_hidden_from_conversation) return true;
+		return isInternalContentType(message.content.content_type);
+	}
+	function isAnalysisCodeMessage(message) {
+		if (!message?.content) return false;
+		if (message.author.role !== "assistant") return false;
+		if (message.content.content_type !== "code") return false;
+		return message.recipient === "python" || message.channel === "commentary";
+	}
+	function isAnalysisExecutionOutput(message) {
+		if (!message?.content) return false;
+		if (message.author.role !== "tool") return false;
+		if (message.content.content_type !== "execution_output") return false;
+		return message.author.name === "python" || message.channel === "commentary";
+	}
+	function isThinkingMessage(message) {
+		if (!message?.content) return false;
+		if (THINKING_CONTENT_TYPES.has(message.content.content_type)) return true;
+		if (message.author.role !== "tool") return false;
+		if (message.content.content_type !== "text") return false;
+		return isProThinkingMeta(message);
+	}
+	function hasExecutionOutputImage(message) {
+		if (message.content.content_type !== "execution_output") return false;
+		return getExecutionOutputImages(message.metadata).length > 0;
+	}
+	function isThinkingToolTextMessage(message) {
+		return isThinkingMessage(message) && message.author.role === "tool" && message.content.content_type === "text";
+	}
+	function shouldIncludeMessageForExport(message) {
+		if (!message?.content) return false;
+		if (shouldSkipAsInternal(message)) return false;
+		if (isAnalysisCodeMessage(message)) return true;
+		if (isAnalysisExecutionOutput(message)) return true;
+		if (isThinkingToolTextMessage(message)) return true;
+		if (message.recipient !== "all") return false;
+		if (message.author.role !== "tool") return true;
+		return message.content.content_type === "multimodal_text" || hasExecutionOutputImage(message);
+	}
+	var UI_TOKEN_REGEX = /\uE200([a-z0-9_]+)\uE202([\s\S]*?)\uE201/giu;
+	var UNICODE_SPACE_REGEX = /[\u00A0\u202F\u2007\u2060]/gu;
+	var UNICODE_HYPHEN_REGEX = /[\u2010-\u2015\u2212]/gu;
+	function stripUiTokens(input) {
+		return input.replace(UI_TOKEN_REGEX, (_match, tokenType, payload) => {
+			return tokenType.toLowerCase() === "cite" ? payload : "";
+		});
+	}
+	function normalizeReferenceText(input) {
+		return input.replaceAll(UNICODE_SPACE_REGEX, " ").replaceAll(UNICODE_HYPHEN_REGEX, "-");
+	}
+	function getReferenceTokens(matchedText) {
+		if (!matchedText) return [];
+		return Array.from(new Set([normalizeReferenceText(matchedText), normalizeReferenceText(stripUiTokens(matchedText))])).filter(Boolean);
+	}
+	function replaceReferenceTokens(input, matchedText, replacement) {
+		const matchedTokens = getReferenceTokens(matchedText);
+		let output = input;
+		for (const token of matchedTokens) output = output.replaceAll(token, replacement);
+		return output;
+	}
+	function parseWidgetState(widgetState) {
+		if (!widgetState) return null;
+		if (typeof widgetState === "string") try {
+			const parsed = JSON.parse(widgetState);
+			if (parsed && typeof parsed === "object") return parsed;
+		} catch {
+			return null;
+		}
+		if (typeof widgetState === "object") return widgetState;
+		return null;
+	}
+	function isDeepResearchWidgetMessage(message) {
+		const chatgptSdk = message?.metadata?.chatgpt_sdk;
+		return chatgptSdk?.html_asset_pointer === "internal://deep-research" || chatgptSdk?.resolved_pineapple_uri === "connectors://connector_openai_deep_research";
+	}
+	function isConversationNodeMessageLike(value) {
+		if (!value || typeof value !== "object") return false;
+		const candidate = value;
+		return typeof candidate.id === "string" && typeof candidate.status === "string" && typeof candidate.weight === "number" && !!candidate.author && typeof candidate.author.role === "string" && !!candidate.content && typeof candidate.content.content_type === "string" && typeof candidate.recipient === "string";
+	}
+	function extractDeepResearchReportMessage(message) {
+		if (!isDeepResearchWidgetMessage(message)) return null;
+		const reportMessage = parseWidgetState(message?.metadata?.chatgpt_sdk?.widget_state)?.report_message;
+		if (!isConversationNodeMessageLike(reportMessage)) return null;
+		if (reportMessage.author.role !== "assistant") return null;
+		if (reportMessage.recipient !== "all") return null;
+		return reportMessage;
+	}
+	function resolveExportMessage(message) {
+		if (!message?.content) return null;
+		return extractDeepResearchReportMessage(message) ?? message;
+	}
+	function isExecutionOutputImage(value) {
+		if (typeof value !== "object" || value === null) return false;
+		const maybeImage = value;
+		return maybeImage.message_type === "image" && typeof maybeImage.image_url === "string" && typeof maybeImage.height === "number" && typeof maybeImage.width === "number";
+	}
+	function getExecutionOutputImages(metadata) {
+		const messages = metadata?.aggregate_result?.messages;
+		if (!Array.isArray(messages)) return [];
+		return messages.filter(isExecutionOutputImage);
+	}
+	function getExecutionOutputText(content) {
+		return stripUiTokens(content.text || "");
+	}
+	var MarkdownSourceCollector = class {
+		sourcesByUrl = new Map();
+		add(title, url) {
+			const trimmedUrl = url?.trim();
+			if (!trimmedUrl || this.sourcesByUrl.has(trimmedUrl)) return;
+			this.sourcesByUrl.set(trimmedUrl, {
+				title: sourceTitle(title, trimmedUrl),
+				url: trimmedUrl
+			});
+		}
+		values() {
+			return [...this.sourcesByUrl.values()];
+		}
+	};
+	function escapeMarkdownLinkText(input) {
+		return input.replaceAll("\\", "\\\\").replaceAll("[", "\\[").replaceAll("]", "\\]");
+	}
+	function escapeMarkdownUrl(input) {
+		return input.replaceAll(">", "%3E").replaceAll("\n", "");
+	}
+	function sourceTitle(title, fallbackUrl) {
+		return title?.trim() || fallbackUrl;
+	}
+	function addContentReferenceSource(collector, ref) {
+		if (ref.type === "grouped_webpages") {
+			for (const item of ref.items ?? []) {
+				collector.add(item.attribution || item.title, item.url);
+				for (const supportingWebsite of item.supporting_websites ?? []) collector.add(supportingWebsite.attribution || supportingWebsite.title, supportingWebsite.url);
+			}
+			return;
+		}
+		collector.add(ref.title || ref.source_name || ref.attribution, ref.url);
+	}
+	function addCitationSource(collector, citation) {
+		collector.add(citation.metadata?.title, citation.metadata?.url);
+	}
+	function addBrowsingDisplaySources(collector, metadata) {
+		for (const source of metadata?._cite_metadata?.metadata_list ?? []) collector.add(source.title, source.url);
+	}
+	function addGeneratedFileSources(collector, metadata) {
+		for (const fileId of metadata?.exported_generated_file_ids ?? []) {
+			const sourceRefs = [...metadata?.content_references_by_file?.[fileId] ?? [], ...metadata?.n7jupd_crefs_by_file?.[fileId] ?? []];
+			for (const ref of sourceRefs) addContentReferenceSource(collector, ref);
+		}
+	}
+	function collectMarkdownSourcesFromConversation(conversation) {
+		const collector = new MarkdownSourceCollector();
+		for (const { message } of conversation.conversationNodes) {
+			const exportMessage = resolveExportMessage(message);
+			if (!exportMessage?.content) continue;
+			if (!shouldIncludeMessageForExport(exportMessage)) continue;
+			for (const ref of exportMessage.metadata?.content_references ?? []) addContentReferenceSource(collector, ref);
+			for (const citation of exportMessage.metadata?.citations ?? []) addCitationSource(collector, citation);
+			addBrowsingDisplaySources(collector, exportMessage.metadata);
+			addGeneratedFileSources(collector, exportMessage.metadata);
+		}
+		return collector.values();
+	}
+	function renderMarkdownSources(sources) {
+		if (sources.length === 0) return "";
+		return `## Sources\n\n${sources.map((source, index) => {
+			const title = escapeMarkdownLinkText(source.title);
+			const url = escapeMarkdownUrl(source.url);
+			return `${index + 1}. [${title}](<${url}>)`;
+		}).join("\n")}`;
+	}
+	function getExportAuthorLabel(message) {
+		if (isThinkingMessage(message)) return "ChatGPT (Thinking)";
+		if (isAnalysisCodeMessage(message)) return "ChatGPT (Analysis)";
+		if (isAnalysisExecutionOutput(message)) {
+			if (message.author.name === "python") return "Python (Analysis)";
+			return `Plugin${message.author.name ? ` (${message.author.name})` : ""} (Analysis)`;
+		}
+		switch (message.author.role) {
+			case "assistant": return "ChatGPT";
+			case "user": return "You";
+			case "tool": return `Plugin${message.author.name ? ` (${message.author.name})` : ""}`;
+			default: return message.author.role;
+		}
 	}
 	var template_default = "<!DOCTYPE html>\n<!--\n Copyright 2022-Present Pionxzh\n Copyright 2026 Asim Ihsan\n SPDX-License-Identifier: MPL-2.0\n-->\n\n<html lang=\"{{lang}}\" data-theme=\"{{theme}}\">\n<head>\n    <meta charset=\"UTF-8\" />\n    <link rel=\"icon\" href=\"https://chat.openai.com/favicon.ico\" />\n    <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n    <title>{{title}}</title>\n    <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/styles/github-dark.min.css\">\n    <script src=\"https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.7.0/highlight.min.js\"><\/script>\n    <script>\n        hljs.highlightAll()\n    <\/script>\n    <link rel=\"stylesheet\" href=\"https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.3/katex.min.css\">\n    <script src=\"https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.3/katex.min.js\"><\/script>\n    <script src=\"https://cdnjs.cloudflare.com/ajax/libs/KaTeX/0.16.3/contrib/auto-render.min.js\"><\/script>\n    <script>\n        document.addEventListener(\"DOMContentLoaded\", function() {\n            renderMathInElement(document.body, {\n                delimiters: [\n                    { left: \"$$\", right: \"$$\", display: true },\n                    { left: \"$\", right: \"$\", display: false },\n                    { left: \"\\\\[\", right: \"\\\\]\", display: true },\n                    { left: \"\\\\(\", right: \"\\\\)\", display: false }\n                ],\n                throwOnError: false,\n                ignoredClasses: [\"no-katex\"],\n                preProcess: function(math) {\n                    return `\\\\displaystyle \\\\Large ${math}`;\n                }\n            });\n            document.querySelectorAll('.katex').forEach(function(el) {\n                const parent = el.parentNode;\n                const grandparent = parent.parentNode;\n                if (grandparent.tagName === 'P' && isOnlyContent(grandparent, parent)) {\n                    el.style.width = '100%';\n                    el.style.display = 'block';\n                    el.style.textAlign = 'center';\n                    parent.style.textAlign = 'center';\n                } else {\n                    el.style.display = 'inline-block';\n                    el.style.width = 'fit-content';\n                }\n            });\n            function isOnlyContent(parent, element) {\n                let onlyKaTeX = true;\n                parent.childNodes.forEach(function(child) {\n                    console.log(child.textContent);\n                    if (child !== element) {\n                        if (child.nodeType === Node.TEXT_NODE) {\n                            if (child.textContent.trim().length > 0) {\n                                onlyKaTeX = false;\n                            }\n                        } else if (child.nodeType === Node.ELEMENT_NODE) {\n                            onlyKaTeX = false;\n                        }\n                    }\n                });\n                return onlyKaTeX;\n            }\n        });\n    <\/script>\n\n    <style>\n        :root {\n            --page-text: #0d0d0d;\n            --page-bg: #fff;\n            --td-borders: #374151;\n            --th-borders: #4b5563;\n            --tw-prose-code: var(--page-text);\n            --tw-prose-counters: #9b9b9b;\n            --tw-prose-headings: var(--page-text);\n            --tw-prose-hr: rgba(0,0,0,.25);\n            --tw-prose-links: var(--page-text);\n            --tw-prose-quotes: var(--page-text);\n            --meta-title: #616c77;\n        }\n\n        [data-theme=\"dark\"] {\n            --page-text: #ececec;\n            --page-bg: #212121;\n            --tw-prose-code: var(--page-text);\n            --tw-prose-counters: #9b9b9b;\n            --tw-prose-headings: var(--page-text);\n            --tw-prose-hr: hsla(0,0%,100%,.25);\n            --tw-prose-links: var(--page-text);\n            --tw-prose-quotes: var(--page-text);\n            --meta-title: #959faa;\n        }\n\n        * {\n            box-sizing: border-box;\n            font-size: 16px;\n        }\n\n        ::-webkit-scrollbar {\n            height: 1rem;\n            width: .5rem\n        }\n\n        ::-webkit-scrollbar:horizontal {\n            height: .5rem;\n            width: 1rem\n        }\n\n        ::-webkit-scrollbar-track {\n            background-color: transparent;\n            border-radius: 9999px\n        }\n\n        ::-webkit-scrollbar-thumb {\n            --tw-border-opacity: 1;\n            background-color: rgba(217,217,227,.8);\n            border-color: rgba(255,255,255,var(--tw-border-opacity));\n            border-radius: 9999px;\n            border-width: 1px\n        }\n\n        ::-webkit-scrollbar-thumb:hover {\n            --tw-bg-opacity: 1;\n            background-color: rgba(236,236,241,var(--tw-bg-opacity))\n        }\n\n        .dark ::-webkit-scrollbar-thumb {\n            --tw-bg-opacity: 1;\n            background-color: rgba(86,88,105,var(--tw-bg-opacity))\n        }\n\n        .dark ::-webkit-scrollbar-thumb:hover {\n            --tw-bg-opacity: 1;\n            background-color: rgba(172,172,190,var(--tw-bg-opacity))\n        }\n\n        @media (min-width: 768px) {\n            .scrollbar-trigger ::-webkit-scrollbar-thumb {\n                visibility:hidden\n            }\n\n            .scrollbar-trigger:hover ::-webkit-scrollbar-thumb {\n                visibility: visible\n            }\n        }\n\n        body {\n            font-family: Söhne,ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Cantarell,Noto Sans,sans-serif,Helvetica Neue,Arial,Apple Color Emoji,Segoe UI Emoji,Segoe UI Symbol,Noto Color Emoji;\n            font-size: 14px;\n            line-height: 1.5;\n            color: var(--page-text);\n            background-color: var(--page-bg);\n            margin: 0;\n            padding: 0;\n        }\n\n        [data-theme=\"light\"] .sun {\n            display: none;\n        }\n\n        [data-theme=\"dark\"] .moon {\n            display: none;\n        }\n\n        .toggle {\n            display: inline-flex;\n            justify-content: center;\n            align-items: center;\n            width: 32px;\n            height: 32px;\n            border-radius: 4px;\n            background-color: #fff;\n            border: 1px solid #e2e8f0;\n        }\n\n        [data-width=\"narrow\"] .width-toggle .expand {\n            display: block;\n        }\n\n        [data-width=\"wide\"] .width-toggle .narrow {\n            display: block;\n        }\n\n        .width-toggle {\n            display: inline-flex;\n            justify-content: center;\n            align-items: center;\n            width: 32px;\n            height: 32px;\n            border-radius: 4px;\n            background-color: #fff;\n            border: 1px solid #e2e8f0;\n            margin-left: 8px;\n            cursor: pointer;\n        }\n\n        .width-toggle svg {\n            display: none;\n        }\n\n        .metadata_container {\n            display: flex;\n            flex-direction: column;\n            margin-top: 8px;\n            padding-left: 1rem;\n        }\n\n        .metadata_item {\n            display: flex;\n            flex-direction: row;\n            align-items: center;\n            border-radius: 16px;\n            padding: 4px 0.5rem;\n        }\n\n        .metadata_item:hover {\n            background-color: rgba(0,0,0,.1);\n        }\n\n        .metadata_item > div:first-child {\n            flex: 0 1 100px;\n            color: var(--meta-title);\n        }\n\n        .metadata_item > div:last-child {\n            flex: 1;\n        }\n\n        a {\n            color: var(--tw-prose-links);\n            font-size: 0.8rem;\n            text-decoration-line: underline;\n            text-underline-offset: 2px;\n        }\n\n        .conversation-content > p:first-child,\n        ol:first-child {\n            margin-top: 0;\n        }\n\n        p>code, li>code {\n            color: var(--tw-prose-code);\n            font-weight: 600;\n            font-size: .875em;\n        }\n\n        p>code::before,\n        p>code::after,\n        li>code::before,\n        li>code::after {\n            content: \"`\";\n        }\n\n        hr {\n            width: 100%;\n            height: 0;\n            border: 1px solid var(--tw-prose-hr);\n            margin-bottom: 1em;\n            margin-top: 1em;\n        }\n\n        pre {\n            color: #ffffff;\n            background-color: #000000;\n            overflow-x: auto;\n            margin: 0 0 1rem 0;\n            border-radius: 0.375rem;\n        }\n\n        pre>code {\n            font-family: Söhne Mono, Monaco, Andale Mono, Ubuntu Mono, monospace !important;\n            font-weight: 400;\n            font-size: .875em;\n            line-height: 1.7142857;\n        }\n\n        h1, h2, h3, h4, h5, h6 {\n            color: var(--tw-prose-headings);\n            margin: 0;\n        }\n\n        h1 {\n            font-size: 2.25em;\n            font-weight: 600;\n            line-height: 1.1111111;\n            margin-bottom: 0.8888889em;\n            margin-top: 0;\n        }\n\n        h2 {\n            font-size: 1.5em;\n            font-weight: 700;\n            line-height: 1.3333333;\n            margin-bottom: 1em;\n            margin-top: 2em;\n        }\n\n        h3 {\n            font-size: 1.25em;\n            font-weight: 600;\n            line-height: 1.6;\n            margin-bottom: .6em;\n            margin-top: 1.6em;\n        }\n\n        h4 {\n            font-weight: 400;\n            line-height: 1.5;\n            margin-bottom: .5em;\n            margin-top: 1.5em\n        }\n\n        h3,h4 {\n            margin-bottom: .5rem;\n            margin-top: 1rem;\n        }\n\n        h5 {\n            font-weight: 600;\n        }\n\n        blockquote {\n            border-left: 2px solid rgba(142,142,160,1);\n            color: var(--tw-prose-quotes);\n            font-style: italic;\n            font-style: normal;\n            font-weight: 500;\n            line-height: 1rem;\n            margin: 1.6em 0;\n            padding-left: 1em;\n            quotes: \"\\201C\"\"\\201D\"\"\\2018\"\"\\2019\";\n        }\n\n        blockquote p:first-of-type:before {\n            content: open-quote;\n        }\n\n        blockquote p:last-of-type:after {\n            content: close-quote;\n        }\n\n        ol, ul {\n            padding-left: 1.1rem;\n        }\n\n        ::marker {\n            color: var(--tw-prose-counters);\n            font-weight: 400;\n        }\n\n        table {\n            width: 100%;\n            border-collapse: separate;\n            border-spacing: 0 0;\n            table-layout: auto;\n            text-align: left;\n            font-size: .875em;\n            line-height: 1.7142857;\n        }\n\n        table * {\n            box-sizing: border-box;\n            border-width: 0;\n            border-style: solid;\n            border-color: #d9d9e3;\n        }\n\n        table thead {\n            border-bottom-color: var(--th-borders);\n            border-bottom-width: 1px;\n        }\n\n        table th {\n            background-color: rgba(236,236,241,.2);\n            border-bottom-width: 1px;\n            border-left-width: 1px;\n            border-top-width: 1px;\n            padding: 0.25rem 0.75rem;\n        }\n\n        table th:first-child {\n            border-top-left-radius: 0.375rem;\n        }\n\n        table th:last-child {\n            border-right-width: 1px;\n            border-top-right-radius: 0.375rem;\n        }\n\n        table tbody tr {\n            border-bottom-color: var(--td-borders);\n            border-bottom-width: 1px;\n        }\n\n        table tbody tr:last-child {\n            border-bottom-width: 0;\n        }\n\n        table tbody tr:last-child td:first-child {\n            border-bottom-left-radius: 0.375rem;\n        }\n\n        table tbody tr:last-child td:last-child {\n            border-bottom-right-radius: 0.375rem;\n        }\n\n        table td {\n            border-bottom-width: 1px;\n            border-left-width: 1px;\n            padding: 0.25rem 0.75rem;\n        }\n\n        table td:last-child {\n            border-right-width: 1px;\n        }\n\n        [type=checkbox], [type=radio] {\n            accent-color: #2563eb;\n        }\n\n        .conversation {\n            margin: 0 auto;\n            padding: 1rem;\n            max-width: 64rem;\n        }\n\n        [data-width=\"narrow\"] .conversation {\n            max-width: 64rem;\n        }\n\n        [data-width=\"wide\"] .conversation {\n            max-width: 90%;\n        }\n\n        @media (min-width: 1280px) {\n            .conversation {\n                max-width: 48rem;\n            }\n        }\n\n        @media (min-width: 1024px) {\n            .conversation {\n                max-width: 40rem;\n            }\n        }\n\n        @media (min-width: 768px) {\n            .conversation {\n                max-width: 48rem;\n            }\n        }\n\n        .conversation-header {\n            margin-bottom: 1rem;\n        }\n\n        .conversation-header h1 {\n            margin: 0;\n        }\n\n        .conversation-header h1 a {\n            font-size: 1.5rem;\n        }\n\n        .conversation-header .conversation-export {\n            margin-top: 0.5rem;\n            font-size: 0.8rem;\n        }\n\n        .conversation-header p {\n            margin-top: 0.5rem;\n            font-size: 0.8rem;\n        }\n\n        .conversation-item {\n            display: flex;\n            position: relative;\n            padding: 1rem;\n            border-left: 1px solid rgba(0,0,0,.1);\n            border-right: 1px solid rgba(0,0,0,.1);\n            border-bottom: 1px solid rgba(0,0,0,.1);\n        }\n\n        .conversation-item:first-of-type {\n            border-top: 1px solid rgba(0,0,0,.1);\n        }\n\n        .author {\n            display: flex;\n            flex: 0 0 30px;\n            justify-content: center;\n            align-items: center;\n            width: 30px;\n            height: 30px;\n            border-radius: 0.125rem;\n            margin-right: 1rem;\n            overflow: hidden;\n        }\n\n        .author svg {\n            color: #fff;\n            width: 22px;\n            height: 22px;\n        }\n\n        .author img {\n            content: url({{avatar}});\n            width: 100%;\n            height: 100%;\n        }\n\n        .author.GPT-3 {\n            background-color: rgb(16, 163, 127);\n        }\n\n        .author.GPT-4 {\n            background-color: black;\n        }\n\n        .conversation-content-wrapper {\n            display: flex;\n            position: relative;\n            overflow: hidden;\n            flex: 1 1 auto;\n            flex-direction: column;\n        }\n\n        .conversation-content {\n            font-size: 1rem;\n            line-height: 1.5;\n        }\n\n        .conversation-content p {\n            white-space: pre-wrap;\n            line-height: 28px;\n        }\n\n        .conversation-content img, .conversation-content video {\n            display: block;\n            max-width: 100%;\n            height: auto;\n            margin-bottom: 2em;\n            margin-top: 2em;\n        }\n\n        .time {\n            position: absolute;\n            right: 8px;\n            bottom: 0;\n            font-size: 0.8rem;\n            color: #acacbe\n        }\n\n    </style>\n</head>\n\n<body>\n    <svg aria-hidden=\"true\" style=\"position: absolute; width: 0; height: 0; overflow: hidden;\" version=\"1.1\" xmlns=\"http://www.w3.org/2000/svg\" xmlns:xlink=\"http://www.w3.org/1999/xlink\">\n        <symbol id=\"chatgpt\" viewBox=\"0 0 41 41\">\n            <path d=\"M37.5324 16.8707C37.9808 15.5241 38.1363 14.0974 37.9886 12.6859C37.8409 11.2744 37.3934 9.91076 36.676 8.68622C35.6126 6.83404 33.9882 5.3676 32.0373 4.4985C30.0864 3.62941 27.9098 3.40259 25.8215 3.85078C24.8796 2.7893 23.7219 1.94125 22.4257 1.36341C21.1295 0.785575 19.7249 0.491269 18.3058 0.500197C16.1708 0.495044 14.0893 1.16803 12.3614 2.42214C10.6335 3.67624 9.34853 5.44666 8.6917 7.47815C7.30085 7.76286 5.98686 8.3414 4.8377 9.17505C3.68854 10.0087 2.73073 11.0782 2.02839 12.312C0.956464 14.1591 0.498905 16.2988 0.721698 18.4228C0.944492 20.5467 1.83612 22.5449 3.268 24.1293C2.81966 25.4759 2.66413 26.9026 2.81182 28.3141C2.95951 29.7256 3.40701 31.0892 4.12437 32.3138C5.18791 34.1659 6.8123 35.6322 8.76321 36.5013C10.7141 37.3704 12.8907 37.5973 14.9789 37.1492C15.9208 38.2107 17.0786 39.0587 18.3747 39.6366C19.6709 40.2144 21.0755 40.5087 22.4946 40.4998C24.6307 40.5054 26.7133 39.8321 28.4418 38.5772C30.1704 37.3223 31.4556 35.5506 32.1119 33.5179C33.5027 33.2332 34.8167 32.6547 35.9659 31.821C37.115 30.9874 38.0728 29.9178 38.7752 28.684C39.8458 26.8371 40.3023 24.6979 40.0789 22.5748C39.8556 20.4517 38.9639 18.4544 37.5324 16.8707ZM22.4978 37.8849C20.7443 37.8874 19.0459 37.2733 17.6994 36.1501C17.7601 36.117 17.8666 36.0586 17.936 36.0161L25.9004 31.4156C26.1003 31.3019 26.2663 31.137 26.3813 30.9378C26.4964 30.7386 26.5563 30.5124 26.5549 30.2825V19.0542L29.9213 20.998C29.9389 21.0068 29.9541 21.0198 29.9656 21.0359C29.977 21.052 29.9842 21.0707 29.9867 21.0902V30.3889C29.9842 32.375 29.1946 34.2791 27.7909 35.6841C26.3872 37.0892 24.4838 37.8806 22.4978 37.8849ZM6.39227 31.0064C5.51397 29.4888 5.19742 27.7107 5.49804 25.9832C5.55718 26.0187 5.66048 26.0818 5.73461 26.1244L13.699 30.7248C13.8975 30.8408 14.1233 30.902 14.3532 30.902C14.583 30.902 14.8088 30.8408 15.0073 30.7248L24.731 25.1103V28.9979C24.7321 29.0177 24.7283 29.0376 24.7199 29.0556C24.7115 29.0736 24.6988 29.0893 24.6829 29.1012L16.6317 33.7497C14.9096 34.7416 12.8643 35.0097 10.9447 34.4954C9.02506 33.9811 7.38785 32.7263 6.39227 31.0064ZM4.29707 13.6194C5.17156 12.0998 6.55279 10.9364 8.19885 10.3327C8.19885 10.4013 8.19491 10.5228 8.19491 10.6071V19.808C8.19351 20.0378 8.25334 20.2638 8.36823 20.4629C8.48312 20.6619 8.64893 20.8267 8.84863 20.9404L18.5723 26.5542L15.206 28.4979C15.1894 28.5089 15.1703 28.5155 15.1505 28.5173C15.1307 28.5191 15.1107 28.516 15.0924 28.5082L7.04046 23.8557C5.32135 22.8601 4.06716 21.2235 3.55289 19.3046C3.03862 17.3858 3.30624 15.3413 4.29707 13.6194ZM31.955 20.0556L22.2312 14.4411L25.5976 12.4981C25.6142 12.4872 25.6333 12.4805 25.6531 12.4787C25.6729 12.4769 25.6928 12.4801 25.7111 12.4879L33.7631 17.1364C34.9967 17.849 36.0017 18.8982 36.6606 20.1613C37.3194 21.4244 37.6047 22.849 37.4832 24.2684C37.3617 25.6878 36.8382 27.0432 35.9743 28.1759C35.1103 29.3086 33.9415 30.1717 32.6047 30.6641C32.6047 30.5947 32.6047 30.4733 32.6047 30.3889V21.188C32.6066 20.9586 32.5474 20.7328 32.4332 20.5338C32.319 20.3348 32.154 20.1698 31.955 20.0556ZM35.3055 15.0128C35.2464 14.9765 35.1431 14.9142 35.069 14.8717L27.1045 10.2712C26.906 10.1554 26.6803 10.0943 26.4504 10.0943C26.2206 10.0943 25.9948 10.1554 25.7963 10.2712L16.0726 15.8858V11.9982C16.0715 11.9783 16.0753 11.9585 16.0837 11.9405C16.0921 11.9225 16.1048 11.9068 16.1207 11.8949L24.1719 7.25025C25.4053 6.53903 26.8158 6.19376 28.2383 6.25482C29.6608 6.31589 31.0364 6.78077 32.2044 7.59508C33.3723 8.40939 34.2842 9.53945 34.8334 10.8531C35.3826 12.1667 35.5464 13.6095 35.3055 15.0128ZM14.2424 21.9419L10.8752 19.9981C10.8576 19.9893 10.8423 19.9763 10.8309 19.9602C10.8195 19.9441 10.8122 19.9254 10.8098 19.9058V10.6071C10.8107 9.18295 11.2173 7.78848 11.9819 6.58696C12.7466 5.38544 13.8377 4.42659 15.1275 3.82264C16.4173 3.21869 17.8524 2.99464 19.2649 3.1767C20.6775 3.35876 22.0089 3.93941 23.1034 4.85067C23.0427 4.88379 22.937 4.94215 22.8668 4.98473L14.9024 9.58517C14.7025 9.69878 14.5366 9.86356 14.4215 10.0626C14.3065 10.2616 14.2466 10.4877 14.2479 10.7175L14.2424 21.9419ZM16.071 17.9991L20.4018 15.4978L24.7325 17.9975V22.9985L20.4018 25.4983L16.071 22.9985V17.9991Z\" fill=\"currentColor\"></path>\n        </symbol>\n    </svg>\n    <div class=\"conversation\">\n        <div class=\"conversation-header\">\n            <h1>\n                <a href=\"{{source}}\" target=\"_blank\" rel=\"noopener noreferrer\">{{title}}</a>\n                <button class=\"toggle\">\n                    <svg class=\"sun\" stroke=\"currentColor\" fill=\"none\" stroke-width=\"2\" viewBox=\"0 0 24 24\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"w-4 h-4\" height=\"1em\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\"><circle cx=\"12\" cy=\"12\" r=\"5\"></circle><line x1=\"12\" y1=\"1\" x2=\"12\" y2=\"3\"></line><line x1=\"12\" y1=\"21\" x2=\"12\" y2=\"23\"></line><line x1=\"4.22\" y1=\"4.22\" x2=\"5.64\" y2=\"5.64\"></line><line x1=\"18.36\" y1=\"18.36\" x2=\"19.78\" y2=\"19.78\"></line><line x1=\"1\" y1=\"12\" x2=\"3\" y2=\"12\"></line><line x1=\"21\" y1=\"12\" x2=\"23\" y2=\"12\"></line><line x1=\"4.22\" y1=\"19.78\" x2=\"5.64\" y2=\"18.36\"></line><line x1=\"18.36\" y1=\"5.64\" x2=\"19.78\" y2=\"4.22\"></line></svg>\n                    <svg class=\"moon\" stroke=\"currentColor\" fill=\"none\" stroke-width=\"2\" viewBox=\"0 0 24 24\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"w-4 h-4\" height=\"1em\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z\"></path></svg>\n                </button>\n                <button class=\"toggle width-toggle\">\n                    <svg class=\"expand\" stroke=\"currentColor\" fill=\"none\" stroke-width=\"2\" viewBox=\"0 0 24 24\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"w-4 h-4\" height=\"1em\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\" style=\"display: block;\">\n                        <path d=\"M3 12h18M6 8l-4 4 4 4M18 8l4 4-4 4\"></path>\n                    </svg>\n                    <svg class=\"narrow\" stroke=\"currentColor\" fill=\"none\" stroke-width=\"2\" viewBox=\"0 0 24 24\" stroke-linecap=\"round\" stroke-linejoin=\"round\" class=\"w-4 h-4\" height=\"1em\" width=\"1em\" xmlns=\"http://www.w3.org/2000/svg\" style=\"display: none;\">\n                        <path d=\"M3 12h7M14 12h7M6 16l4-4-4-4M18 16l-4-4 4-4\"></path>\n                    </svg>\n                </button>\n            </h1>\n            <div class=\"conversation-export\">\n                <p>Exported by\n                <a href=\"https://github.com/asimihsan/chatgpt-exporter.git\">ChatGPT Exporter</a>\n                at {{time}}</p>\n            </div>\n            {{details}}\n        </div>\n\n        {{content}}\n    </div>\n\n\n    <script>\n        function toggleDarkMode(mode) {\n            const html = document.querySelector('html');\n            const isDarkMode = html.getAttribute('data-theme') === 'dark';\n            const newMode = mode || (isDarkMode ? 'light' : 'dark');\n            if (newMode !== 'dark' && newMode !== 'light') return;\n            html.setAttribute('data-theme', newMode);\n\n            const url = new URL(window.location);\n            url.searchParams.set('theme', newMode);\n            window.history.replaceState({}, '', url);\n        }\n        function toggleWidthMode(mode) {\n            const body = document.querySelector('body');\n            const widthToggleButton = document.querySelector('.width-toggle');\n            const isWide = body.getAttribute('data-width') === 'wide';\n            const newWidthMode = mode || (isWide ? 'narrow' : 'wide');\n            if (newWidthMode !== 'narrow' && newWidthMode !== 'wide') return;\n            body.setAttribute('data-width', newWidthMode);\n\n            const url = new URL(window.location);\n            url.searchParams.set('width', newWidthMode);\n            window.history.replaceState({}, '', url);\n\n            // Update the icon based on the current mode\n            const narrowIcon = widthToggleButton.querySelector('.narrow');\n            const expandIcon = widthToggleButton.querySelector('.expand');\n\n            if (newWidthMode === 'wide') {\n                expandIcon.style.display = \"none\";\n                narrowIcon.style.display = \"block\";\n            } else {\n                expandIcon.style.display = \"block\";\n                narrowIcon.style.display = \"none\";\n            }\n        }\n\n        const urlParams = new URLSearchParams(window.location.search);\n        const theme = urlParams.get('theme');\n        const width = urlParams.get('width');\n\n        if (theme) toggleDarkMode(theme);\n        if (width) toggleWidthMode(width);\n\n        document.querySelector('.toggle').addEventListener('click', () => toggleDarkMode());\n        document.querySelector('.width-toggle').addEventListener('click', () => toggleWidthMode());\n    <\/script>\n</body>\n\n</html>\n";
 	function toUnixSeconds$1(value) {
@@ -15596,32 +15936,6 @@
 			parsedProjectOverview: bundle.parsedProjectOverview
 		};
 	}
-	function nonNullable(x) {
-		return x != null;
-	}
-	function onloadSafe(fn) {
-		if (document.readyState === "complete") fn();
-		else window.addEventListener("load", fn);
-	}
-	function sleep(ms) {
-		return new Promise((resolve) => setTimeout(resolve, ms));
-	}
-	function dateStr(date = new Date()) {
-		return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}-${String(date.getDate()).padStart(2, "0")}`;
-	}
-	function timestamp() {
-		return new Date().toISOString().replace(/:/g, "-").replace(/\..+/, "");
-	}
-	function getColorScheme() {
-		return document.documentElement.style.getPropertyValue("color-scheme");
-	}
-	function unixTimestampToISOString(timestamp) {
-		if (!timestamp) return "";
-		return new Date(timestamp * 1e3).toISOString();
-	}
-	function jsonlStringify(list) {
-		return list.map((msg) => JSON.stringify(msg)).join("\n");
-	}
 	function escapeHtml$1(input) {
 		return input.replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll("\"", "&quot;").replaceAll("'", "&#039;");
 	}
@@ -15700,10 +16014,6 @@
 			default: return null;
 		}
 	}
-	function securityDocumentToText(document) {
-		const sections = document.sections.map((section) => `## ${section.title}\n\n${section.content}`).join("\n\n");
-		return `Title: ${normalizeSingleLineText(document.title)}\nSource: ${document.sourceUrl}\n\n${sections}`.trim();
-	}
 	function securityDocumentToMarkdown(document, metaList) {
 		const frontMatter = buildSecurityFrontMatter(document, metaList);
 		const content = buildSecuritySectionsMarkdown(document);
@@ -15734,141 +16044,6 @@
 	function getSecurityUnsupportedMessage() {
 		if (getPageContext().kind === "security-findings-list") return "Security findings list export is not supported yet.";
 		return `Export is not supported on ${baseUrl}${location.pathname}.`;
-	}
-	var INTERNAL_CONTENT_TYPES = new Set([
-		"thoughts",
-		"reasoning_recap",
-		"model_editable_context"
-	]);
-	var THINKING_CONTENT_TYPES = new Set(["thoughts", "reasoning_recap"]);
-	function isProThinkingMeta(message) {
-		const initialText = message.metadata?.initial_text?.toLowerCase() || "";
-		const finishedText = message.metadata?.finished_text?.toLowerCase() || "";
-		return message.metadata?.async_task_type === "pro_mode" || initialText.includes("reason") || finishedText.startsWith("reasoned for");
-	}
-	function isInternalContentType(contentType) {
-		return INTERNAL_CONTENT_TYPES.has(contentType);
-	}
-	function shouldSkipAsInternal(message) {
-		if (!message?.content) return true;
-		if (message.metadata?.is_visually_hidden_from_conversation) return true;
-		return isInternalContentType(message.content.content_type);
-	}
-	function isAnalysisCodeMessage(message) {
-		if (!message?.content) return false;
-		if (message.author.role !== "assistant") return false;
-		if (message.content.content_type !== "code") return false;
-		return message.recipient === "python" || message.channel === "commentary";
-	}
-	function isAnalysisExecutionOutput(message) {
-		if (!message?.content) return false;
-		if (message.author.role !== "tool") return false;
-		if (message.content.content_type !== "execution_output") return false;
-		return message.author.name === "python" || message.channel === "commentary";
-	}
-	function isThinkingMessage(message) {
-		if (!message?.content) return false;
-		if (THINKING_CONTENT_TYPES.has(message.content.content_type)) return true;
-		if (message.author.role !== "tool") return false;
-		if (message.content.content_type !== "text") return false;
-		return isProThinkingMeta(message);
-	}
-	function hasExecutionOutputImage(message) {
-		if (message.content.content_type !== "execution_output") return false;
-		return getExecutionOutputImages(message.metadata).length > 0;
-	}
-	function isThinkingToolTextMessage(message) {
-		return isThinkingMessage(message) && message.author.role === "tool" && message.content.content_type === "text";
-	}
-	function shouldIncludeMessageForExport(message) {
-		if (!message?.content) return false;
-		if (shouldSkipAsInternal(message)) return false;
-		if (isAnalysisCodeMessage(message)) return true;
-		if (isAnalysisExecutionOutput(message)) return true;
-		if (isThinkingToolTextMessage(message)) return true;
-		if (message.recipient !== "all") return false;
-		if (message.author.role !== "tool") return true;
-		return message.content.content_type === "multimodal_text" || hasExecutionOutputImage(message);
-	}
-	var UI_TOKEN_REGEX = /\uE200([a-z0-9_]+)\uE202([\s\S]*?)\uE201/giu;
-	var UNICODE_SPACE_REGEX = /[\u00A0\u202F\u2007\u2060]/gu;
-	var UNICODE_HYPHEN_REGEX = /[\u2010-\u2015\u2212]/gu;
-	function stripUiTokens(input) {
-		return input.replace(UI_TOKEN_REGEX, (_match, tokenType, payload) => {
-			return tokenType.toLowerCase() === "cite" ? payload : "";
-		});
-	}
-	function normalizeReferenceText(input) {
-		return input.replaceAll(UNICODE_SPACE_REGEX, " ").replaceAll(UNICODE_HYPHEN_REGEX, "-");
-	}
-	function getReferenceTokens(matchedText) {
-		if (!matchedText) return [];
-		return Array.from(new Set([normalizeReferenceText(matchedText), normalizeReferenceText(stripUiTokens(matchedText))])).filter(Boolean);
-	}
-	function replaceReferenceTokens(input, matchedText, replacement) {
-		const matchedTokens = getReferenceTokens(matchedText);
-		let output = input;
-		for (const token of matchedTokens) output = output.replaceAll(token, replacement);
-		return output;
-	}
-	function parseWidgetState(widgetState) {
-		if (!widgetState) return null;
-		if (typeof widgetState === "string") try {
-			const parsed = JSON.parse(widgetState);
-			if (parsed && typeof parsed === "object") return parsed;
-		} catch {
-			return null;
-		}
-		if (typeof widgetState === "object") return widgetState;
-		return null;
-	}
-	function isDeepResearchWidgetMessage(message) {
-		const chatgptSdk = message?.metadata?.chatgpt_sdk;
-		return chatgptSdk?.html_asset_pointer === "internal://deep-research" || chatgptSdk?.resolved_pineapple_uri === "connectors://connector_openai_deep_research";
-	}
-	function isConversationNodeMessageLike(value) {
-		if (!value || typeof value !== "object") return false;
-		const candidate = value;
-		return typeof candidate.id === "string" && typeof candidate.status === "string" && typeof candidate.weight === "number" && !!candidate.author && typeof candidate.author.role === "string" && !!candidate.content && typeof candidate.content.content_type === "string" && typeof candidate.recipient === "string";
-	}
-	function extractDeepResearchReportMessage(message) {
-		if (!isDeepResearchWidgetMessage(message)) return null;
-		const reportMessage = parseWidgetState(message?.metadata?.chatgpt_sdk?.widget_state)?.report_message;
-		if (!isConversationNodeMessageLike(reportMessage)) return null;
-		if (reportMessage.author.role !== "assistant") return null;
-		if (reportMessage.recipient !== "all") return null;
-		return reportMessage;
-	}
-	function resolveExportMessage(message) {
-		if (!message?.content) return null;
-		return extractDeepResearchReportMessage(message) ?? message;
-	}
-	function isExecutionOutputImage(value) {
-		if (typeof value !== "object" || value === null) return false;
-		const maybeImage = value;
-		return maybeImage.message_type === "image" && typeof maybeImage.image_url === "string" && typeof maybeImage.height === "number" && typeof maybeImage.width === "number";
-	}
-	function getExecutionOutputImages(metadata) {
-		const messages = metadata?.aggregate_result?.messages;
-		if (!Array.isArray(messages)) return [];
-		return messages.filter(isExecutionOutputImage);
-	}
-	function getExecutionOutputText(content) {
-		return stripUiTokens(content.text || "");
-	}
-	function getExportAuthorLabel(message) {
-		if (isThinkingMessage(message)) return "ChatGPT (Thinking)";
-		if (isAnalysisCodeMessage(message)) return "ChatGPT (Analysis)";
-		if (isAnalysisExecutionOutput(message)) {
-			if (message.author.name === "python") return "Python (Analysis)";
-			return `Plugin${message.author.name ? ` (${message.author.name})` : ""} (Analysis)`;
-		}
-		switch (message.author.role) {
-			case "assistant": return "ChatGPT";
-			case "user": return "You";
-			case "tool": return `Plugin${message.author.name ? ` (${message.author.name})` : ""}`;
-			default: return message.author.role;
-		}
 	}
 	var DEFAULT_SANITIZE_TEXT_OPTIONS = {
 		normalization: "NFKC",
@@ -15956,7 +16131,7 @@
 		if (resolved.stripChatGptUtmSourceFromMarkdownLinks) output = stripChatGptUtmSourceFromMarkdownLinks(output);
 		return output;
 	}
-	async function exportToText() {
+	async function exportToMarkdown(fileNameFormat, metaList) {
 		const pageContext = getPageContext();
 		if (pageContext.kind === "security-finding" || pageContext.kind === "security-scan") {
 			const document = await loadCurrentSecurityDocument();
@@ -15964,7 +16139,8 @@
 				alert(getSecurityUnsupportedMessage());
 				return false;
 			}
-			await copyToClipboard(standardizeLineBreaks(securityDocumentToText(document)));
+			const markdown = securityDocumentToMarkdown(document, metaList);
+			downloadFile(getFileNameWithFormat(fileNameFormat, "md", getSecurityFileNameOptions(document)), "text/markdown", standardizeLineBreaks(markdown));
 			return true;
 		}
 		if (pageContext.kind !== "conversation") {
@@ -15976,76 +16152,134 @@
 			return false;
 		}
 		const chatId = await getCurrentChatId();
-		const rawConversation = await fetchConversation(chatId, false);
-		await inlineGeneratedTextFiles(rawConversation, { conversationId: rawConversation.conversation_id ?? rawConversation.id ?? chatId });
-		const { conversationNodes } = processConversation(rawConversation);
-		await copyToClipboard(standardizeLineBreaks(conversationNodes.map(({ message }) => transformMessageForTextExport(message)).filter(Boolean).join("\n\n")));
+		const conversation = processConversation(await fetchConversation(chatId, true));
+		const markdown = conversationToMarkdown(conversation, metaList);
+		downloadFile(getFileNameWithFormat(fileNameFormat, "md", {
+			title: conversation.title,
+			chatId,
+			createTime: conversation.createTime,
+			updateTime: conversation.updateTime
+		}), "text/markdown", standardizeLineBreaks(markdown));
 		return true;
 	}
-	var LatexRegex$1 = /(\s\$\$.+\$\$\s|\s\$.+\$\s|\\\[.+\\\]|\\\(.+\\\))|(^\$$[\S\s]+^\$$)|(^\$\$[\S\s]+^\$\$$)/gm;
-	function transformMessageForTextExport(message) {
-		const exportMessage = resolveExportMessage(message);
-		if (!exportMessage?.content) return null;
-		if (!shouldIncludeMessageForExport(exportMessage)) return null;
-		const author = getExportAuthorLabel(exportMessage);
-		let content = transformContent$2(exportMessage.content, exportMessage.metadata);
-		const matches = content.match(LatexRegex$1);
-		if (matches) {
-			let index = 0;
-			content = content.replace(LatexRegex$1, () => {
-				return `╬${index++}╬`;
+	async function copyMarkdownToClipboard(metaList = []) {
+		const pageContext = getPageContext();
+		if (pageContext.kind === "security-finding" || pageContext.kind === "security-scan") {
+			const document = await loadCurrentSecurityDocument();
+			if (!document) {
+				alert(getSecurityUnsupportedMessage());
+				return false;
+			}
+			await copyToClipboard(standardizeLineBreaks(securityDocumentToMarkdown(document, metaList)));
+			return true;
+		}
+		if (pageContext.kind !== "conversation") {
+			alert(getSecurityUnsupportedMessage());
+			return false;
+		}
+		if (!checkIfConversationStarted()) {
+			alert(i18n_default.t("Please start a conversation first"));
+			return false;
+		}
+		await copyToClipboard(standardizeLineBreaks(conversationToMarkdown(processConversation(await fetchConversation(await getCurrentChatId(), true)), metaList)));
+		return true;
+	}
+	async function exportAllToMarkdown(fileNameFormat, apiConversations, metaList) {
+		const zip = new jszip.default();
+		const filenameMap = new Map();
+		apiConversations.map((x) => processConversation(x)).forEach((conversation) => {
+			let fileName = getFileNameWithFormat(fileNameFormat, "md", {
+				title: conversation.title,
+				chatId: conversation.id,
+				createTime: conversation.createTime,
+				updateTime: conversation.updateTime
 			});
-		}
-		if (exportMessage.author.role === "assistant") {
-			content = transformContentReferences$2(content, exportMessage.metadata);
-			content = transformFootNotes$2(content, exportMessage.metadata);
-		}
-		if (exportMessage.author.role === "assistant" && content) content = reformatContent(content);
-		if (matches) content = content.replace(/╬(\d+)╬/g, (_, index) => {
-			return matches[+index];
+			if (filenameMap.has(fileName)) {
+				const count = filenameMap.get(fileName) ?? 1;
+				filenameMap.set(fileName, count + 1);
+				fileName = `${fileName.slice(0, -3)} (${count}).md`;
+			} else filenameMap.set(fileName, 1);
+			const content = conversationToMarkdown(conversation, metaList);
+			zip.file(fileName, content);
 		});
-		content = sanitizeLLMText(content);
-		return `${author}:\n${content}`;
+		downloadFile("chatgpt-export-markdown.zip", "application/zip", await zip.generateAsync({
+			type: "blob",
+			compression: "DEFLATE",
+			compressionOptions: { level: 9 }
+		}));
+		return true;
 	}
-	function transformContent$2(content, metadata) {
-		switch (content.content_type) {
-			case "text": return stripUiTokens(content.parts?.join("\n") || "");
-			case "code": return stripUiTokens(content.text || "");
-			case "execution_output": {
-				const images = getExecutionOutputImages(metadata);
-				if (images.length > 0) return images.map(() => "[image]").join("\n");
-				return getExecutionOutputText(content);
+	var LatexRegex = /(\s\$\$.+\$\$\s|\s\$.+\$\s|\\\[.+\\\]|\\\(.+\\\))|(^\$$[\S\s]+^\$$)|(^\$\$[\S\s]+^\$\$$)/gm;
+	function conversationToMarkdown(conversation, metaList) {
+		const { id, title, model, modelSlug, createTime, updateTime, conversationNodes } = conversation;
+		const source = `${baseUrl}/c/${id}`;
+		const _metaList = metaList?.filter((x) => !!x.name).map(({ name, value }) => {
+			return `${name}: ${value.replace("{title}", title).replace("{date}", dateStr()).replace("{timestamp}", timestamp()).replace("{source}", source).replace("{model}", model).replace("{model_name}", modelSlug).replace("{create_time}", unixTimestampToISOString(createTime)).replace("{update_time}", unixTimestampToISOString(updateTime))}`;
+		}) ?? [];
+		const frontMatter = _metaList.length > 0 ? `---\n${_metaList.join("\n")}\n---\n\n` : "";
+		const enableTimestamp = ScriptStorage.get("exporter:enable_timestamp") ?? false;
+		const timeStampMarkdown = ScriptStorage.get("exporter:timestamp_markdown") ?? false;
+		const timeStamp24H = ScriptStorage.get("exporter:timestamp_24h") ?? false;
+		const content = conversationNodes.map(({ message }) => {
+			const exportMessage = resolveExportMessage(message);
+			if (!exportMessage?.content) return null;
+			if (!shouldIncludeMessageForExport(exportMessage)) return null;
+			const timestamp = exportMessage.create_time ?? "";
+			const showTimestamp = enableTimestamp && timeStampMarkdown && timestamp;
+			let timestampHtml = "";
+			if (showTimestamp) {
+				const date = new Date(timestamp * 1e3);
+				const conversationTime = date.toLocaleTimeString("en-US", {
+					hour: "2-digit",
+					minute: "2-digit",
+					hour12: !timeStamp24H
+				});
+				timestampHtml = `<time datetime="${date.toISOString()}" title="${date.toLocaleString()}">${conversationTime}</time>\n\n`;
 			}
-			case "tether_quote": return `> ${stripUiTokens(content.title || content.text || "")}`;
-			case "tether_browsing_code": return "";
-			case "tether_browsing_display": {
-				const metadataList = metadata?._cite_metadata?.metadata_list;
-				if (Array.isArray(metadataList) && metadataList.length > 0) return metadataList.map(({ title, url }) => `> [${title}](${url})`).join("\n");
-				return "";
+			const author = getExportAuthorLabel(exportMessage);
+			const postSteps = [];
+			if (exportMessage.author.role === "assistant") {
+				postSteps.push((input) => transformContentReferences$1(input, exportMessage.metadata));
+				postSteps.push((input) => transformFootNotes$1(input, exportMessage.metadata));
 			}
-			case "multimodal_text": return content.parts?.map((part) => {
-				if (typeof part === "string") return stripUiTokens(part);
-				if (part.content_type === "image_asset_pointer") return "[image]";
-				if (part.content_type === "audio_transcription") return `[audio] ${stripUiTokens(part.text)}`;
-				if (part.content_type === "audio_asset_pointer") return null;
-				if (part.content_type === "real_time_user_audio_video_asset_pointer") return null;
-				return "[Unsupported multimodal content]";
-			}).join("\n") || "";
-			default: return "[Unsupported Content]";
-		}
+			if (exportMessage.author.role === "assistant") postSteps.push((input) => {
+				input = input.replace(/^\\\[(.+)\\\]$/gm, "$$$$$1$$$$").replace(/\\\[/g, "$").replace(/\\\]/g, "$").replace(/\\\(/g, "$").replace(/\\\)/g, "$");
+				const matches = input.match(LatexRegex);
+				const isCodeBlock = /```/.test(input);
+				if (!isCodeBlock && matches) {
+					let index = 0;
+					input = input.replace(LatexRegex, () => {
+						return `╬${index++}╬`;
+					});
+				}
+				let transformed = toMarkdown(fromMarkdown(input));
+				if (!isCodeBlock && matches) transformed = transformed.replace(/╬(\d+)╬/g, (_, index) => {
+					return matches[+index];
+				});
+				return transformed;
+			});
+			const postProcess = (input) => postSteps.reduce((acc, fn) => fn(acc), input);
+			const content = sanitizeLLMText(transformContent$1(exportMessage.content, exportMessage.metadata, postProcess));
+			return `#### ${author}:\n${timestampHtml}${content}`;
+		}).filter(Boolean).join("\n\n");
+		const sources = renderMarkdownSources(collectMarkdownSourcesFromConversation(conversation));
+		return [`${frontMatter}# ${title}\n\n${content}`, sources].filter(Boolean).join("\n\n");
 	}
-	function reformatContent(input) {
-		const root = fromMarkdown(input);
-		flatMap(root, (item) => {
-			if (item.type === "strong") return item.children;
-			if (item.type === "emphasis") return item.children;
-			return [item];
-		});
-		const result = toMarkdown(root);
-		if (result.startsWith("\\[") && input.startsWith("[")) return result.slice(1);
-		return result;
+	function transformFootNotes$1(input, metadata) {
+		const footNoteMarkRegex = /【(\d+)†\((.+?)\)】/g;
+		const citationList = [];
+		return `${input.replace(footNoteMarkRegex, (match, citeIndex, _evidenceText) => {
+			const citation = metadata?.citations?.find((cite) => cite.metadata?.extra?.cited_message_idx === +citeIndex);
+			if (citation) {
+				citationList.push(citation);
+				return `[^${citeIndex}]`;
+			}
+			return match;
+		})}\n\n${citationList.map((citation) => {
+			return `[^${citation.metadata?.extra?.cited_message_idx ?? 1}]: ${citation.metadata?.title ?? "No title"}`;
+		}).join("\n")}`;
 	}
-	function transformContentReferences$2(input, metadata) {
+	function transformContentReferences$1(input, metadata) {
 		const contentRefs = metadata?.content_references;
 		if (!contentRefs || contentRefs.length === 0) return input;
 		const sortedRefs = [...contentRefs].sort((a, b) => (b.matched_text?.length || 0) - (a.matched_text?.length || 0));
@@ -16054,16 +16288,47 @@
 			if (!ref.matched_text) continue;
 			switch (ref.type) {
 				case "sources_footnote": break;
+				case "grouped_webpages": {
+					const item = ref.items?.[0];
+					if (item) {
+						const links = [];
+						links.push(`[${item.attribution || item.title}](${item.url})`);
+						for (const sw of item.supporting_websites || []) links.push(`[${sw.attribution || sw.title}](${sw.url})`);
+						output = replaceReferenceTokens(output, ref.matched_text, `(${links.join(", ")})`);
+					} else output = replaceReferenceTokens(output, ref.matched_text, ref.alt || "");
+					break;
+				}
 				default: output = replaceReferenceTokens(output, ref.matched_text, ref.alt || "");
 			}
 		}
 		return output;
 	}
-	function transformFootNotes$2(input, metadata) {
-		return input.replace(/【(\d+)†\((.+?)\)】/g, (match, citeIndex, _evidenceText) => {
-			if (metadata?.citations?.find((cite) => cite.metadata?.extra?.cited_message_idx === +citeIndex)) return "";
-			return match;
-		});
+	function transformContent$1(content, metadata, postProcess) {
+		switch (content.content_type) {
+			case "text": return postProcess(stripUiTokens(content.parts?.join("\n") || ""));
+			case "code": return `Code:\n\`\`\`\n${stripUiTokens(content.text)}\n\`\`\``;
+			case "execution_output": {
+				const images = getExecutionOutputImages(metadata);
+				if (images.length > 0) return images.map((image) => `![image](${image.image_url})`).join("\n");
+				return postProcess(`Result:\n\`\`\`\n${getExecutionOutputText(content)}\n\`\`\``);
+			}
+			case "tether_quote": return postProcess(`> ${stripUiTokens(content.title || content.text || "")}`);
+			case "tether_browsing_code": return postProcess("");
+			case "tether_browsing_display": {
+				const metadataList = metadata?._cite_metadata?.metadata_list;
+				if (Array.isArray(metadataList) && metadataList.length > 0) return postProcess(metadataList.map(({ title, url }) => `> [${title}](${url})`).join("\n"));
+				return postProcess("");
+			}
+			case "multimodal_text": return content.parts?.map((part) => {
+				if (typeof part === "string") return postProcess(stripUiTokens(part));
+				if (part.content_type === "image_asset_pointer") return `![image](${part.asset_pointer})`;
+				if (part.content_type === "audio_transcription") return `[audio] ${stripUiTokens(part.text)}`;
+				if (part.content_type === "audio_asset_pointer") return null;
+				if (part.content_type === "real_time_user_audio_video_asset_pointer") return null;
+				return postProcess("[Unsupported multimodal content]");
+			}).join("\n") || "";
+			default: return postProcess(`[Unsupported Content: ${content.content_type}]`);
+		}
 	}
 	function getExportCapabilities(context = getPageContext()) {
 		switch (context.kind) {
@@ -16091,7 +16356,7 @@
 				canExportAll: true,
 				canExportMemory: false,
 				historyDisabledApplies: false,
-				copyShortcutEnabled: false
+				copyShortcutEnabled: true
 			};
 			case "security-scan": return {
 				canExportText: true,
@@ -16104,7 +16369,7 @@
 				canExportAll: false,
 				canExportMemory: false,
 				historyDisabledApplies: false,
-				copyShortcutEnabled: false
+				copyShortcutEnabled: true
 			};
 			case "security-findings-list": return {
 				canExportText: false,
@@ -16410,7 +16675,8 @@
 		event.preventDefault();
 		event.stopPropagation();
 		logShortcut("run:start", event);
-		if (await exportToText()) {
+		const settings = getSettings();
+		if (await copyMarkdownToClipboard(settings.enableMeta ? settings.exportMetaList : [])) {
 			window.dispatchEvent(new CustomEvent(COPY_TEXT_SHORTCUT_SUCCESS_EVENT));
 			logShortcut("run:success", event);
 		} else logShortcut("run:no-op", event);
@@ -16503,13 +16769,13 @@
 
       <section class="ce-group">
         <label class="ce-row ce-toggle-row">
-          <span>${t$2("Enable Copy Text Shortcut", "Enable Copy Text Shortcut")}</span>
+          <span>${t$2("Enable Copy Markdown Shortcut", "Enable Copy Markdown Shortcut")}</span>
           <input type="checkbox" data-ce-role="enable-copy-text-shortcut" />
         </label>
 
         <div class="ce-subgroup" data-ce-role="shortcut-options">
           <label class="ce-row">
-            <span>${t$2("Copy Text Shortcut", "Copy Text Shortcut")}</span>
+            <span>${t$2("Copy Markdown Shortcut", "Copy Markdown Shortcut")}</span>
             <input type="text" data-ce-role="copy-text-shortcut" placeholder="Mod+Shift+E" />
           </label>
           <p class="ce-help">
@@ -20842,111 +21108,6 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 	var Portal = HoverCardPortal;
 	var Content2 = HoverCardContent;
 	var Arrow2 = HoverCardArrow;
-	var require_truncate = __commonJSMin(((exports, module) => {
-		function isHighSurrogate(codePoint) {
-			return codePoint >= 55296 && codePoint <= 56319;
-		}
-		function isLowSurrogate(codePoint) {
-			return codePoint >= 56320 && codePoint <= 57343;
-		}
-		module.exports = function truncate(getLength, string, byteLength) {
-			if (typeof string !== "string") throw new Error("Input must be string");
-			var charLength = string.length;
-			var curByteLength = 0;
-			var codePoint;
-			var segment;
-			for (var i = 0; i < charLength; i += 1) {
-				codePoint = string.charCodeAt(i);
-				segment = string[i];
-				if (isHighSurrogate(codePoint) && isLowSurrogate(string.charCodeAt(i + 1))) {
-					i += 1;
-					segment += string[i];
-				}
-				curByteLength += getLength(segment);
-				if (curByteLength === byteLength) return string.slice(0, i + 1);
-				else if (curByteLength > byteLength) return string.slice(0, i - segment.length + 1);
-			}
-			return string;
-		};
-	}));
-	var require_browser$1 = __commonJSMin(((exports, module) => {
-		function isHighSurrogate(codePoint) {
-			return codePoint >= 55296 && codePoint <= 56319;
-		}
-		function isLowSurrogate(codePoint) {
-			return codePoint >= 56320 && codePoint <= 57343;
-		}
-		module.exports = function getByteLength(string) {
-			if (typeof string !== "string") throw new Error("Input must be string");
-			var charLength = string.length;
-			var byteLength = 0;
-			var codePoint = null;
-			var prevCodePoint = null;
-			for (var i = 0; i < charLength; i++) {
-				codePoint = string.charCodeAt(i);
-				if (isLowSurrogate(codePoint)) if (prevCodePoint != null && isHighSurrogate(prevCodePoint)) byteLength += 1;
-				else byteLength += 3;
-				else if (codePoint <= 127) byteLength += 1;
-				else if (codePoint >= 128 && codePoint <= 2047) byteLength += 2;
-				else if (codePoint >= 2048 && codePoint <= 65535) byteLength += 3;
-				prevCodePoint = codePoint;
-			}
-			return byteLength;
-		};
-	}));
-	var require_browser = __commonJSMin(((exports, module) => {
-		var truncate = require_truncate();
-		var getLength = require_browser$1();
-		module.exports = truncate.bind(null, getLength);
-	}));
-	var import_sanitize_filename = __toESM(__commonJSMin(((exports, module) => {
-		var truncate = require_browser();
-		var illegalRe = /[\/\?<>\\:\*\|"]/g;
-		var controlRe = /[\x00-\x1f\x80-\x9f]/g;
-		var reservedRe = /^\.+$/;
-		var windowsReservedRe = /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(\..*)?$/i;
-		function replaceTrailingDotsAndSpaces(str, replacement) {
-			var end = str.length;
-			while (end > 0 && (str[end - 1] === "." || str[end - 1] === " ")) end--;
-			return end < str.length ? str.slice(0, end) + replacement : str;
-		}
-		function sanitize(input, replacement) {
-			if (typeof input !== "string") throw new Error("Input must be string");
-			var sanitized = input.replace(illegalRe, replacement).replace(controlRe, replacement).replace(reservedRe, replacement).replace(windowsReservedRe, replacement);
-			sanitized = replaceTrailingDotsAndSpaces(sanitized, replacement);
-			return truncate(sanitized, 255);
-		}
-		module.exports = function(input, options) {
-			var replacement = options && options.replacement || "";
-			var output = sanitize(input, replacement);
-			if (replacement === "") return output;
-			return sanitize(output, "");
-		};
-	}))(), 1);
-	function downloadFile(filename, type, content) {
-		const blob = content instanceof Blob ? content : new Blob([content], { type });
-		const url = URL.createObjectURL(blob);
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = filename;
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-	}
-	function downloadUrl(filename, url) {
-		const a = document.createElement("a");
-		a.href = url;
-		a.download = filename;
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
-	}
-	function getFileNameWithFormat(format, ext, { title = document.title, chatId = "", createTime = Math.floor(Date.now() / 1e3), updateTime = Math.floor(Date.now() / 1e3) } = {}) {
-		const _title = (0, import_sanitize_filename.default)(title).replace(/\s+/g, "_");
-		const _createTime = unixTimestampToISOString(createTime);
-		const _updateTime = unixTimestampToISOString(updateTime);
-		return format.replace("{title}", _title).replace("{date}", dateStr()).replace("{timestamp}", timestamp()).replace("{chat_id}", chatId).replace("{create_time}", _createTime).replace("{update_time}", _updateTime).concat(`.${ext}`);
-	}
 	async function exportToHtml(fileNameFormat, metaList) {
 		const pageContext = getPageContext();
 		if (pageContext.kind === "security-finding" || pageContext.kind === "security-scan") {
@@ -21029,8 +21190,8 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 			const avatarEl = exportMessage.author.role === "user" ? `<img alt="${author}" />` : "<svg width=\"41\" height=\"41\"><use xlink:href=\"#chatgpt\" /></svg>";
 			let postSteps = [];
 			if (exportMessage.author.role === "assistant") {
-				postSteps.push((input) => transformFootNotes$1(input, exportMessage.metadata));
-				postSteps.push((input) => transformContentReferences$1(input, exportMessage.metadata));
+				postSteps.push((input) => transformFootNotes(input, exportMessage.metadata));
+				postSteps.push((input) => transformContentReferences(input, exportMessage.metadata));
 				postSteps.push((input) => {
 					const matches = input.match(LatexRegex);
 					const isCodeBlock = /```/.test(input);
@@ -21050,7 +21211,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 			}
 			if (exportMessage.author.role === "user") postSteps = [...postSteps, (input) => `<p class="no-katex">${escapeHtml(input)}</p>`];
 			const postProcess = (input) => postSteps.reduce((acc, fn) => fn(acc), input);
-			const content = sanitizeLLMText(transformContent$1(exportMessage.content, exportMessage.metadata, postProcess));
+			const content = sanitizeLLMText(transformContent(exportMessage.content, exportMessage.metadata, postProcess));
 			const timestamp = exportMessage.create_time ?? "";
 			const showTimestamp = enableTimestamp && timeStampHtml && timestamp;
 			let timestampHtml = "";
@@ -21092,13 +21253,13 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 </details>` : "";
 		return template_default.replaceAll("{{title}}", title).replaceAll("{{date}}", date).replaceAll("{{time}}", time).replaceAll("{{source}}", source).replaceAll("{{lang}}", lang).replaceAll("{{theme}}", theme).replaceAll("{{avatar}}", avatar).replaceAll("{{details}}", detailsHtml).replaceAll("{{content}}", conversationHtml);
 	}
-	function transformFootNotes$1(input, metadata) {
+	function transformFootNotes(input, metadata) {
 		return input.replace(/【(\d+)†\((.+?)\)】/g, (match, citeIndex, _evidenceText) => {
 			if (metadata?.citations?.find((cite) => cite.metadata?.extra?.cited_message_idx === +citeIndex)) return "";
 			return match;
 		});
 	}
-	function transformContentReferences$1(input, metadata) {
+	function transformContentReferences(input, metadata) {
 		const contentRefs = metadata?.content_references;
 		if (!contentRefs || contentRefs.length === 0) return input;
 		const sortedRefs = [...contentRefs].sort((a, b) => (b.matched_text?.length || 0) - (a.matched_text?.length || 0));
@@ -21122,7 +21283,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 		}
 		return output;
 	}
-	function transformContent$1(content, metadata, postProcess) {
+	function transformContent(content, metadata, postProcess) {
 		switch (content.content_type) {
 			case "text": return postProcess(stripUiTokens(content.parts?.join("\n") || ""));
 			case "code": return `Code:\n\`\`\`\n${stripUiTokens(content.text)}\n\`\`\``;
@@ -21527,249 +21688,6 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 	}
 	function conversationToJson(conversation) {
 		return JSON.stringify(conversation);
-	}
-	var MarkdownSourceCollector = class {
-		sourcesByUrl = new Map();
-		add(title, url) {
-			const trimmedUrl = url?.trim();
-			if (!trimmedUrl || this.sourcesByUrl.has(trimmedUrl)) return;
-			this.sourcesByUrl.set(trimmedUrl, {
-				title: sourceTitle(title, trimmedUrl),
-				url: trimmedUrl
-			});
-		}
-		values() {
-			return [...this.sourcesByUrl.values()];
-		}
-	};
-	function escapeMarkdownLinkText(input) {
-		return input.replaceAll("\\", "\\\\").replaceAll("[", "\\[").replaceAll("]", "\\]");
-	}
-	function escapeMarkdownUrl(input) {
-		return input.replaceAll(">", "%3E").replaceAll("\n", "");
-	}
-	function sourceTitle(title, fallbackUrl) {
-		return title?.trim() || fallbackUrl;
-	}
-	function addContentReferenceSource(collector, ref) {
-		if (ref.type === "grouped_webpages") {
-			for (const item of ref.items ?? []) {
-				collector.add(item.attribution || item.title, item.url);
-				for (const supportingWebsite of item.supporting_websites ?? []) collector.add(supportingWebsite.attribution || supportingWebsite.title, supportingWebsite.url);
-			}
-			return;
-		}
-		collector.add(ref.title || ref.source_name || ref.attribution, ref.url);
-	}
-	function addCitationSource(collector, citation) {
-		collector.add(citation.metadata?.title, citation.metadata?.url);
-	}
-	function addBrowsingDisplaySources(collector, metadata) {
-		for (const source of metadata?._cite_metadata?.metadata_list ?? []) collector.add(source.title, source.url);
-	}
-	function addGeneratedFileSources(collector, metadata) {
-		for (const fileId of metadata?.exported_generated_file_ids ?? []) {
-			const sourceRefs = [...metadata?.content_references_by_file?.[fileId] ?? [], ...metadata?.n7jupd_crefs_by_file?.[fileId] ?? []];
-			for (const ref of sourceRefs) addContentReferenceSource(collector, ref);
-		}
-	}
-	function collectMarkdownSourcesFromConversation(conversation) {
-		const collector = new MarkdownSourceCollector();
-		for (const { message } of conversation.conversationNodes) {
-			const exportMessage = resolveExportMessage(message);
-			if (!exportMessage?.content) continue;
-			if (!shouldIncludeMessageForExport(exportMessage)) continue;
-			for (const ref of exportMessage.metadata?.content_references ?? []) addContentReferenceSource(collector, ref);
-			for (const citation of exportMessage.metadata?.citations ?? []) addCitationSource(collector, citation);
-			addBrowsingDisplaySources(collector, exportMessage.metadata);
-			addGeneratedFileSources(collector, exportMessage.metadata);
-		}
-		return collector.values();
-	}
-	function renderMarkdownSources(sources) {
-		if (sources.length === 0) return "";
-		return `## Sources\n\n${sources.map((source, index) => {
-			const title = escapeMarkdownLinkText(source.title);
-			const url = escapeMarkdownUrl(source.url);
-			return `${index + 1}. [${title}](<${url}>)`;
-		}).join("\n")}`;
-	}
-	async function exportToMarkdown(fileNameFormat, metaList) {
-		const pageContext = getPageContext();
-		if (pageContext.kind === "security-finding" || pageContext.kind === "security-scan") {
-			const document = await loadCurrentSecurityDocument();
-			if (!document) {
-				alert(getSecurityUnsupportedMessage());
-				return false;
-			}
-			const markdown = securityDocumentToMarkdown(document, metaList);
-			downloadFile(getFileNameWithFormat(fileNameFormat, "md", getSecurityFileNameOptions(document)), "text/markdown", standardizeLineBreaks(markdown));
-			return true;
-		}
-		if (pageContext.kind !== "conversation") {
-			alert(getSecurityUnsupportedMessage());
-			return false;
-		}
-		if (!checkIfConversationStarted()) {
-			alert(i18n_default.t("Please start a conversation first"));
-			return false;
-		}
-		const chatId = await getCurrentChatId();
-		const conversation = processConversation(await fetchConversation(chatId, true));
-		const markdown = conversationToMarkdown(conversation, metaList);
-		downloadFile(getFileNameWithFormat(fileNameFormat, "md", {
-			title: conversation.title,
-			chatId,
-			createTime: conversation.createTime,
-			updateTime: conversation.updateTime
-		}), "text/markdown", standardizeLineBreaks(markdown));
-		return true;
-	}
-	async function exportAllToMarkdown(fileNameFormat, apiConversations, metaList) {
-		const zip = new jszip.default();
-		const filenameMap = new Map();
-		apiConversations.map((x) => processConversation(x)).forEach((conversation) => {
-			let fileName = getFileNameWithFormat(fileNameFormat, "md", {
-				title: conversation.title,
-				chatId: conversation.id,
-				createTime: conversation.createTime,
-				updateTime: conversation.updateTime
-			});
-			if (filenameMap.has(fileName)) {
-				const count = filenameMap.get(fileName) ?? 1;
-				filenameMap.set(fileName, count + 1);
-				fileName = `${fileName.slice(0, -3)} (${count}).md`;
-			} else filenameMap.set(fileName, 1);
-			const content = conversationToMarkdown(conversation, metaList);
-			zip.file(fileName, content);
-		});
-		downloadFile("chatgpt-export-markdown.zip", "application/zip", await zip.generateAsync({
-			type: "blob",
-			compression: "DEFLATE",
-			compressionOptions: { level: 9 }
-		}));
-		return true;
-	}
-	var LatexRegex = /(\s\$\$.+\$\$\s|\s\$.+\$\s|\\\[.+\\\]|\\\(.+\\\))|(^\$$[\S\s]+^\$$)|(^\$\$[\S\s]+^\$\$$)/gm;
-	function conversationToMarkdown(conversation, metaList) {
-		const { id, title, model, modelSlug, createTime, updateTime, conversationNodes } = conversation;
-		const source = `${baseUrl}/c/${id}`;
-		const _metaList = metaList?.filter((x) => !!x.name).map(({ name, value }) => {
-			return `${name}: ${value.replace("{title}", title).replace("{date}", dateStr()).replace("{timestamp}", timestamp()).replace("{source}", source).replace("{model}", model).replace("{model_name}", modelSlug).replace("{create_time}", unixTimestampToISOString(createTime)).replace("{update_time}", unixTimestampToISOString(updateTime))}`;
-		}) ?? [];
-		const frontMatter = _metaList.length > 0 ? `---\n${_metaList.join("\n")}\n---\n\n` : "";
-		const enableTimestamp = ScriptStorage.get("exporter:enable_timestamp") ?? false;
-		const timeStampMarkdown = ScriptStorage.get("exporter:timestamp_markdown") ?? false;
-		const timeStamp24H = ScriptStorage.get("exporter:timestamp_24h") ?? false;
-		const content = conversationNodes.map(({ message }) => {
-			const exportMessage = resolveExportMessage(message);
-			if (!exportMessage?.content) return null;
-			if (!shouldIncludeMessageForExport(exportMessage)) return null;
-			const timestamp = exportMessage.create_time ?? "";
-			const showTimestamp = enableTimestamp && timeStampMarkdown && timestamp;
-			let timestampHtml = "";
-			if (showTimestamp) {
-				const date = new Date(timestamp * 1e3);
-				const conversationTime = date.toLocaleTimeString("en-US", {
-					hour: "2-digit",
-					minute: "2-digit",
-					hour12: !timeStamp24H
-				});
-				timestampHtml = `<time datetime="${date.toISOString()}" title="${date.toLocaleString()}">${conversationTime}</time>\n\n`;
-			}
-			const author = getExportAuthorLabel(exportMessage);
-			const postSteps = [];
-			if (exportMessage.author.role === "assistant") {
-				postSteps.push((input) => transformContentReferences(input, exportMessage.metadata));
-				postSteps.push((input) => transformFootNotes(input, exportMessage.metadata));
-			}
-			if (exportMessage.author.role === "assistant") postSteps.push((input) => {
-				input = input.replace(/^\\\[(.+)\\\]$/gm, "$$$$$1$$$$").replace(/\\\[/g, "$").replace(/\\\]/g, "$").replace(/\\\(/g, "$").replace(/\\\)/g, "$");
-				const matches = input.match(LatexRegex);
-				const isCodeBlock = /```/.test(input);
-				if (!isCodeBlock && matches) {
-					let index = 0;
-					input = input.replace(LatexRegex, () => {
-						return `╬${index++}╬`;
-					});
-				}
-				let transformed = toMarkdown(fromMarkdown(input));
-				if (!isCodeBlock && matches) transformed = transformed.replace(/╬(\d+)╬/g, (_, index) => {
-					return matches[+index];
-				});
-				return transformed;
-			});
-			const postProcess = (input) => postSteps.reduce((acc, fn) => fn(acc), input);
-			const content = sanitizeLLMText(transformContent(exportMessage.content, exportMessage.metadata, postProcess));
-			return `#### ${author}:\n${timestampHtml}${content}`;
-		}).filter(Boolean).join("\n\n");
-		const sources = renderMarkdownSources(collectMarkdownSourcesFromConversation(conversation));
-		return [`${frontMatter}# ${title}\n\n${content}`, sources].filter(Boolean).join("\n\n");
-	}
-	function transformFootNotes(input, metadata) {
-		const footNoteMarkRegex = /【(\d+)†\((.+?)\)】/g;
-		const citationList = [];
-		return `${input.replace(footNoteMarkRegex, (match, citeIndex, _evidenceText) => {
-			const citation = metadata?.citations?.find((cite) => cite.metadata?.extra?.cited_message_idx === +citeIndex);
-			if (citation) {
-				citationList.push(citation);
-				return `[^${citeIndex}]`;
-			}
-			return match;
-		})}\n\n${citationList.map((citation) => {
-			return `[^${citation.metadata?.extra?.cited_message_idx ?? 1}]: ${citation.metadata?.title ?? "No title"}`;
-		}).join("\n")}`;
-	}
-	function transformContentReferences(input, metadata) {
-		const contentRefs = metadata?.content_references;
-		if (!contentRefs || contentRefs.length === 0) return input;
-		const sortedRefs = [...contentRefs].sort((a, b) => (b.matched_text?.length || 0) - (a.matched_text?.length || 0));
-		let output = normalizeReferenceText(input);
-		for (const ref of sortedRefs) {
-			if (!ref.matched_text) continue;
-			switch (ref.type) {
-				case "sources_footnote": break;
-				case "grouped_webpages": {
-					const item = ref.items?.[0];
-					if (item) {
-						const links = [];
-						links.push(`[${item.attribution || item.title}](${item.url})`);
-						for (const sw of item.supporting_websites || []) links.push(`[${sw.attribution || sw.title}](${sw.url})`);
-						output = replaceReferenceTokens(output, ref.matched_text, `(${links.join(", ")})`);
-					} else output = replaceReferenceTokens(output, ref.matched_text, ref.alt || "");
-					break;
-				}
-				default: output = replaceReferenceTokens(output, ref.matched_text, ref.alt || "");
-			}
-		}
-		return output;
-	}
-	function transformContent(content, metadata, postProcess) {
-		switch (content.content_type) {
-			case "text": return postProcess(stripUiTokens(content.parts?.join("\n") || ""));
-			case "code": return `Code:\n\`\`\`\n${stripUiTokens(content.text)}\n\`\`\``;
-			case "execution_output": {
-				const images = getExecutionOutputImages(metadata);
-				if (images.length > 0) return images.map((image) => `![image](${image.image_url})`).join("\n");
-				return postProcess(`Result:\n\`\`\`\n${getExecutionOutputText(content)}\n\`\`\``);
-			}
-			case "tether_quote": return postProcess(`> ${stripUiTokens(content.title || content.text || "")}`);
-			case "tether_browsing_code": return postProcess("");
-			case "tether_browsing_display": {
-				const metadataList = metadata?._cite_metadata?.metadata_list;
-				if (Array.isArray(metadataList) && metadataList.length > 0) return postProcess(metadataList.map(({ title, url }) => `> [${title}](${url})`).join("\n"));
-				return postProcess("");
-			}
-			case "multimodal_text": return content.parts?.map((part) => {
-				if (typeof part === "string") return postProcess(stripUiTokens(part));
-				if (part.content_type === "image_asset_pointer") return `![image](${part.asset_pointer})`;
-				if (part.content_type === "audio_transcription") return `[audio] ${stripUiTokens(part.text)}`;
-				if (part.content_type === "audio_asset_pointer") return null;
-				if (part.content_type === "real_time_user_audio_video_asset_pointer") return null;
-				return postProcess("[Unsupported multimodal content]");
-			}).join("\n") || "";
-			default: return postProcess(`[Unsupported Content: ${content.content_type}]`);
-		}
 	}
 	var FILE_NAME_FORMAT = "chatgpt-memory-summary-{date}";
 	function formatGeneratedDate(generatedAtIso) {
@@ -23457,7 +23375,7 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 		const copiedTimerRef = A$2(void 0);
 		const { format, enableMeta, exportMetaList } = useSettingContext();
 		const metaList = T$1(() => enableMeta ? exportMetaList : [], [enableMeta, exportMetaList]);
-		const onClickText = q$1(() => exportToText(), []);
+		const onClickCopyMarkdown = q$1(() => copyMarkdownToClipboard(metaList), [metaList]);
 		const onClickPng = q$1(() => exportToPng(format), [format]);
 		const onClickMarkdown = q$1(() => exportToMarkdown(format, metaList), [format, metaList]);
 		const onClickHtml = q$1(() => exportToHtml(format, metaList), [format, metaList]);
@@ -23577,11 +23495,11 @@ For more information, see https://radix-ui.com/primitives/docs/components/${titl
 					}),
 					hasSingleItemExports && u$1(S$1, { children: [
 						u$1(MenuItem, {
-							text: t("Copy Text"),
+							text: t("Copy Markdown"),
 							successText: t("Copied!"),
 							icon: IconCopy,
 							disabled: !capabilities.canExportText,
-							onClick: onClickText
+							onClick: onClickCopyMarkdown
 						}),
 						u$1(MenuItem, {
 							text: t("Screenshot"),
