@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-import { exportToText } from '../exporter/text'
+import { copyMarkdownToClipboard } from '../exporter/markdown'
 import { getExportCapabilities } from '../exporter/pageExport'
 import { getSettings, subscribeSettings } from '../settings/service'
 import { DEFAULT_COPY_TEXT_SHORTCUT, isEditableContext, isMacPlatform, matchesExportCopyShortcut } from './exportCopyShortcutHelpers'
@@ -95,7 +95,8 @@ async function handleShortcutKeydown(event: KeyboardEvent, isMac: boolean): Prom
     event.stopPropagation()
 
     logShortcut('run:start', event)
-    const success = await exportToText()
+    const settings = getSettings()
+    const success = await copyMarkdownToClipboard(settings.enableMeta ? settings.exportMetaList : [])
     if (success) {
         window.dispatchEvent(new CustomEvent(COPY_TEXT_SHORTCUT_SUCCESS_EVENT))
         logShortcut('run:success', event)

@@ -11,10 +11,9 @@ import { useTranslation } from 'react-i18next'
 import { exportToHtml } from '../exporter/html'
 import { exportToPng } from '../exporter/image'
 import { exportToJson, exportToOoba, exportToTavern } from '../exporter/json'
-import { exportToMarkdown } from '../exporter/markdown'
+import { copyMarkdownToClipboard, exportToMarkdown } from '../exporter/markdown'
 import { exportMemoryToJson, exportMemoryToMarkdown } from '../exporter/memory'
 import { getExportCapabilities } from '../exporter/pageExport'
-import { exportToText } from '../exporter/text'
 import { useLocation } from '../hooks/useLocation'
 import { useWindowResize } from '../hooks/useWindowResize'
 import { getHistoryDisabled } from '../page'
@@ -56,7 +55,7 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
 
     const metaList = useMemo(() => enableMeta ? exportMetaList : [], [enableMeta, exportMetaList])
 
-    const onClickText = useCallback(() => exportToText(), [])
+    const onClickCopyMarkdown = useCallback(() => copyMarkdownToClipboard(metaList), [metaList])
     const onClickPng = useCallback(() => exportToPng(format), [format])
     const onClickMarkdown = useCallback(() => exportToMarkdown(format, metaList), [format, metaList])
     const onClickHtml = useCallback(() => exportToHtml(format, metaList), [format, metaList])
@@ -216,11 +215,11 @@ function MenuInner({ container }: { container: HTMLDivElement }) {
                 {hasSingleItemExports && (
                     <>
                         <MenuItem
-                            text={t('Copy Text')}
+                            text={t('Copy Markdown')}
                             successText={t('Copied!')}
                             icon={IconCopy}
                             disabled={!capabilities.canExportText}
-                            onClick={onClickText}
+                            onClick={onClickCopyMarkdown}
                         />
                         <MenuItem
                             text={t('Screenshot')}

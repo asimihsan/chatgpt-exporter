@@ -5,13 +5,13 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 
-const exportToTextMock = vi.fn<() => Promise<boolean>>()
+const copyMarkdownToClipboardMock = vi.fn<(metaList?: Array<{ name: string, value: string }>) => Promise<boolean>>()
 const getExportCapabilitiesMock = vi.fn()
 const getSettingsMock = vi.fn()
 const subscribeSettingsMock = vi.fn()
 
-vi.mock('../exporter/text', () => ({
-    exportToText: exportToTextMock,
+vi.mock('../exporter/markdown', () => ({
+    copyMarkdownToClipboard: copyMarkdownToClipboardMock,
 }))
 
 vi.mock('../exporter/pageExport', () => ({
@@ -27,6 +27,13 @@ interface RuntimeHarness {
     keydownHandler: (event: KeyboardEvent) => void
     updateSettings: (settings: { enableCopyTextShortcut: boolean, copyTextShortcut: string }) => void
     dispatchEvent: ReturnType<typeof vi.fn>
+}
+
+interface TestSettings {
+    enableCopyTextShortcut: boolean
+    copyTextShortcut: string
+    enableMeta: boolean
+    exportMetaList: Array<{ name: string, value: string }>
 }
 
 function createKeyboardEvent(overrides: Partial<KeyboardEvent> = {}): KeyboardEvent {
@@ -52,7 +59,12 @@ async function flushMicrotasks(): Promise<void> {
 
 async function setupRuntimeHarness(
     platform: string,
-    initialSettings = { enableCopyTextShortcut: true, copyTextShortcut: 'Mod+Shift+E' },
+    initialSettings: TestSettings = {
+        enableCopyTextShortcut: true,
+        copyTextShortcut: 'Mod+Shift+E',
+        enableMeta: false,
+        exportMetaList: [],
+    },
 ): Promise<RuntimeHarness> {
     vi.resetModules()
 
@@ -119,7 +131,7 @@ describe('export copy shortcut runtime', () => {
     })
 
     it('registers one keydown handler and triggers copy export success event', async () => {
-        exportToTextMock.mockResolvedValue(true)
+        copyMarkdownToClipboardMock.mockResolvedValue(true)
         const harness = await setupRuntimeHarness('MacIntel')
 
         const shortcutModule = await import('./exportCopyShortcut')
@@ -134,7 +146,8 @@ describe('export copy shortcut runtime', () => {
         harness.keydownHandler(event)
         await flushMicrotasks()
 
-        expect(exportToTextMock).toHaveBeenCalledTimes(1)
+        expect(copyMarkdownToClipboardMock).toHaveBeenCalledTimes(1)
+        expect(copyMarkdownToClipboardMock).toHaveBeenCalledWith([])
         expect(event.preventDefault).toHaveBeenCalledTimes(1)
         expect(event.stopPropagation).toHaveBeenCalledTimes(1)
         expect(harness.dispatchEvent).toHaveBeenCalledTimes(1)
@@ -142,7 +155,7 @@ describe('export copy shortcut runtime', () => {
     })
 
     it('does not run export while editable element is active', async () => {
-        exportToTextMock.mockResolvedValue(true)
+        copyMarkdownToClipboardMock.mockResolvedValue(true)
         await setupRuntimeHarness('Win32')
 
         Object.defineProperty(document, 'activeElement', {
@@ -158,12 +171,12 @@ describe('export copy shortcut runtime', () => {
         keydownHandler(event)
         await flushMicrotasks()
 
-        expect(exportToTextMock).not.toHaveBeenCalled()
+        expect(copyMarkdownToClipboardMock).not.toHaveBeenCalled()
         expect(event.preventDefault).not.toHaveBeenCalled()
     })
 
     it('applies settings subscription updates without re-registering', async () => {
-        exportToTextMock.mockResolvedValue(true)
+        copyMarkdownToClipboardMock.mockResolvedValue(true)
         const harness = await setupRuntimeHarness('Win32')
 
         harness.updateSettings({ enableCopyTextShortcut: false, copyTextShortcut: 'Mod+Shift+E' })
@@ -175,22 +188,38 @@ describe('export copy shortcut runtime', () => {
         harness.keydownHandler(createKeyboardEvent({ key: 'm', ctrlKey: true, altKey: true }))
         await flushMicrotasks()
 
-        expect(exportToTextMock).toHaveBeenCalledTimes(1)
+        expect(copyMarkdownToClipboardMock).toHaveBeenCalledTimes(1)
+    })
+
+    it('passes enabled export metadata to Markdown clipboard copy', async () => {
+        copyMarkdownToClipboardMock.mockResolvedValue(true)
+        const metaList = [{ name: 'title', value: '{title}' }]
+        const harness = await setupRuntimeHarness('Win32', {
+            enableCopyTextShortcut: true,
+            copyTextShortcut: 'Mod+Shift+E',
+            enableMeta: true,
+            exportMetaList: metaList,
+        })
+
+        harness.keydownHandler(createKeyboardEvent({ ctrlKey: true }))
+        await flushMicrotasks()
+
+        expect(copyMarkdownToClipboardMock).toHaveBeenCalledWith(metaList)
     })
 
     it('does not dispatch success event when export action returns false', async () => {
-        exportToTextMock.mockResolvedValue(false)
+        copyMarkdownToClipboardMock.mockResolvedValue(false)
         const harness = await setupRuntimeHarness('Win32')
 
         harness.keydownHandler(createKeyboardEvent({ ctrlKey: true }))
         await flushMicrotasks()
 
-        expect(exportToTextMock).toHaveBeenCalledTimes(1)
+        expect(copyMarkdownToClipboardMock).toHaveBeenCalledTimes(1)
         expect(harness.dispatchEvent).not.toHaveBeenCalled()
     })
 
     it('does not run the shortcut on security export pages', async () => {
-        exportToTextMock.mockResolvedValue(true)
+        copyMarkdownToClipboardMock.mockResolvedValue(true)
         const harness = await setupRuntimeHarness('Win32')
         getExportCapabilitiesMock.mockReturnValue({
             copyShortcutEnabled: false,
@@ -200,7 +229,7 @@ describe('export copy shortcut runtime', () => {
         harness.keydownHandler(event)
         await flushMicrotasks()
 
-        expect(exportToTextMock).not.toHaveBeenCalled()
+        expect(copyMarkdownToClipboardMock).not.toHaveBeenCalled()
         expect(event.preventDefault).not.toHaveBeenCalled()
         expect(harness.dispatchEvent).not.toHaveBeenCalled()
     })
