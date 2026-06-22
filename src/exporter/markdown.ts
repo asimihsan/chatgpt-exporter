@@ -15,6 +15,7 @@ import { fromMarkdown, toMarkdown } from '../utils/markdown'
 import { ScriptStorage } from '../utils/storage'
 import { standardizeLineBreaks } from '../utils/text'
 import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
+import { collectMarkdownSourcesFromConversation, renderMarkdownSources } from './markdownSources'
 import { shouldIncludeMessageForExport } from './messageClassifier'
 import { getExportAuthorLabel } from './messageLabel'
 import { getSecurityFileNameOptions, getSecurityUnsupportedMessage, loadCurrentSecurityDocument, securityDocumentToMarkdown } from './securityDocument'
@@ -189,7 +190,10 @@ export function conversationToMarkdown(conversation: ConversationResult, metaLis
         return `#### ${author}:\n${timestampHtml}${content}`
     }).filter(Boolean).join('\n\n')
 
-    const markdown = `${frontMatter}# ${title}\n\n${content}`
+    const sources = renderMarkdownSources(collectMarkdownSourcesFromConversation(conversation))
+    const markdown = [ `${frontMatter}# ${title}\n\n${content}`, sources ]
+        .filter(Boolean)
+        .join('\n\n')
 
     return markdown
 }

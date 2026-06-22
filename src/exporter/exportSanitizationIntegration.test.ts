@@ -185,11 +185,13 @@ describe('text-like exporter sanitization integration', () => {
                             metadata: {
                                 content_references: [
                                     {
-                                        type: 'alt_text',
+                                        type: 'webpage_extended',
                                         matched_text: reportToken,
                                         start_idx: 0,
                                         end_idx: reportToken.length,
                                         alt: 'Primary Source',
+                                        title: 'Primary Source',
+                                        url: 'https://example.test/primary',
                                     },
                                 ],
                             },
@@ -211,6 +213,8 @@ describe('text-like exporter sanitization integration', () => {
         expect(markdown).toContain('#### ChatGPT:')
         expect(markdown).toContain('# Deep Research Report')
         expect(markdown).toContain('Summary Primary Source')
+        expect(markdown).toContain('## Sources')
+        expect(markdown).toContain('1. [Primary Source](<https://example.test/primary>)')
         expect(markdown).not.toContain('deep-research-session')
 
         expect(html).toContain('Deep Research Report')

@@ -116,6 +116,8 @@ interface MessageMeta {
     /** Source references that belong to generated file content. */
     content_references_by_file?: Record<string, ContentReference[]>
     n7jupd_crefs_by_file?: Record<string, ContentReference[]>
+    /** Generated text files that were actually inlined into exported content. */
+    exported_generated_file_ids?: string[]
     /** Whether this message is hidden in the UI (e.g., internal system prompts) */
     is_visually_hidden_from_conversation?: boolean
     /** Pro thinking headline, e.g. "Reasoning" */
