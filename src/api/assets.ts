@@ -110,20 +110,12 @@ function isInlineableTextFile(fileName: string, contentType: string | null): boo
         || lowerFileName.endsWith('.markdown')
 }
 
-function escapeMarkdownLinkText(input: string): string {
-    return input.replaceAll('\\', '\\\\').replaceAll('[', '\\[').replaceAll(']', '\\]')
-}
-
 function escapeMarkdownUrl(input: string): string {
     return input.replaceAll('>', '%3E').replaceAll('\n', '')
 }
 
 function getSourceKey(ref: ContentReference): string {
     return ref.url || ref.title || ref.matched_text || ''
-}
-
-function getSourceTitle(ref: ContentReference): string {
-    return (ref.title || ref.source_name || ref.attribution || ref.url || 'Source').trim()
 }
 
 function getUniqueSources(refs: ContentReference[]): ContentReference[] {
@@ -137,13 +129,6 @@ function getUniqueSources(refs: ContentReference[]): ContentReference[] {
         sources.push(ref)
     }
     return sources
-}
-
-function renderSourceLink(ref: ContentReference): string {
-    const title = escapeMarkdownLinkText(getSourceTitle(ref))
-    if (!ref.url) return title
-
-    return `[${title}](<${escapeMarkdownUrl(ref.url)}>)`
 }
 
 function isValidSourceSpan(fileText: string, ref: ContentReference): boolean {
@@ -212,7 +197,6 @@ function replaceSourceRefsByMarker(
 
 function renderFileContentWithSources(
     fileText: string,
-    fileName: string,
     sourceRefs: ContentReference[],
 ): string {
     const sources = getUniqueSources(sourceRefs.filter(ref => ref.type === 'webpage_extended' && getSourceKey(ref)))
@@ -224,11 +208,7 @@ function renderFileContentWithSources(
     const content = replaceSourceRefsBySpan(fileText, sourceRefs, sourceNumberByKey)
         ?? replaceSourceRefsByMarker(fileText, sourceRefs, sourceNumberByKey)
 
-    const sourceList = sources
-        .map((source, index) => `${index + 1}. ${renderSourceLink(source)}`)
-        .join('\n')
-
-    return `${content}\n\n### Sources for ${fileName}\n\n${sourceList}`
+    return content
 }
 
 async function fetchGeneratedTextFile(
@@ -257,7 +237,7 @@ async function fetchGeneratedTextFile(
     }
 
     const fileText = await fileResponse.text()
-    return renderFileContentWithSources(fileText, fileDetails.file_name, sourceRefs)
+    return renderFileContentWithSources(fileText, sourceRefs)
 }
 
 async function replaceGeneratedFileReferences(
@@ -284,7 +264,14 @@ async function replaceGeneratedFileReferences(
             )
             if (!fileText) continue
 
+            if (!message.content.parts.some(part => part.includes(matchedText))) continue
+
             message.content.parts = message.content.parts.map(part => part.replaceAll(matchedText, fileText))
+            message.metadata ??= {}
+            message.metadata.exported_generated_file_ids ??= []
+            if (!message.metadata.exported_generated_file_ids.includes(fileId)) {
+                message.metadata.exported_generated_file_ids.push(fileId)
+            }
         }
         catch (error) {
             console.error('Failed to inline generated file', error)

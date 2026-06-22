@@ -90,7 +90,7 @@ describe('replaceImageAssets generated file handling', () => {
         vi.unstubAllGlobals()
     })
 
-    it('inlines generated Markdown files and renders file source references', async () => {
+    it('inlines generated Markdown files and replaces file source references', async () => {
         const fetchMock = vi.fn().mockResolvedValue(
             createFetchResponse('# Report\n\nFact 【source†L1-L2】', 'text/markdown'),
         )
@@ -145,9 +145,9 @@ describe('replaceImageAssets generated file handling', () => {
         const content = getTextContent(message)
         expect(content.parts[0]).toContain('# Report')
         expect(content.parts[0]).toContain('Fact [[1]](<https://example.test/water>)')
-        expect(content.parts[0]).toContain('### Sources for report.md')
-        expect(content.parts[0]).toContain('1. [Water Safety](<https://example.test/water>)')
+        expect(content.parts[0]).not.toContain('### Sources for report.md')
         expect(content.parts[0]).not.toContain('{{file:file-report}}')
+        expect(message.metadata?.exported_generated_file_ids).toEqual(['file-report'])
     })
 
     it('leaves generated binary files as placeholders', async () => {
@@ -185,6 +185,7 @@ describe('replaceImageAssets generated file handling', () => {
         await replaceImageAssets(createConversation(message), { conversationId: 'conversation-123' })
 
         expect(getTextContent(message).parts[0]).toBe('{{file:file-chart}}')
+        expect(message.metadata?.exported_generated_file_ids).toBeUndefined()
     })
 
     it('uses source spans when identical source markers point to different URLs', async () => {
@@ -244,7 +245,6 @@ describe('replaceImageAssets generated file handling', () => {
 
         const content = getTextContent(message).parts[0]
         expect(content).toContain('First [[1]](<https://example.test/first>) and second [[2]](<https://example.test/second>)')
-        expect(content).toContain('1. [First source](<https://example.test/first>)')
-        expect(content).toContain('2. [Second source](<https://example.test/second>)')
+        expect(content).not.toContain('### Sources for report.md')
     })
 })
