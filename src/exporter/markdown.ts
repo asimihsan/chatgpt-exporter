@@ -10,6 +10,7 @@ import { KEY_TIMESTAMP_24H, KEY_TIMESTAMP_ENABLED, KEY_TIMESTAMP_MARKDOWN, baseU
 import i18n from '../i18n'
 import { checkIfConversationStarted } from '../page'
 import { getPageContext } from '../pageContext'
+import { copyToClipboard } from '../utils/clipboard'
 import { downloadFile, getFileNameWithFormat } from '../utils/download'
 import { fromMarkdown, toMarkdown } from '../utils/markdown'
 import { ScriptStorage } from '../utils/storage'
@@ -59,6 +60,39 @@ export async function exportToMarkdown(fileNameFormat: string, metaList: ExportM
     const fileName = getFileNameWithFormat(fileNameFormat, 'md', { title: conversation.title, chatId, createTime: conversation.createTime, updateTime: conversation.updateTime })
     downloadFile(fileName, 'text/markdown', standardizeLineBreaks(markdown))
 
+    return true
+}
+
+export async function copyMarkdownToClipboard(metaList: ExportMeta[] = []) {
+    const pageContext = getPageContext()
+
+    if (pageContext.kind === 'security-finding' || pageContext.kind === 'security-scan') {
+        const document = await loadCurrentSecurityDocument()
+        if (!document) {
+            alert(getSecurityUnsupportedMessage())
+            return false
+        }
+
+        await copyToClipboard(standardizeLineBreaks(securityDocumentToMarkdown(document, metaList)))
+        return true
+    }
+
+    if (pageContext.kind !== 'conversation') {
+        alert(getSecurityUnsupportedMessage())
+        return false
+    }
+
+    if (!checkIfConversationStarted()) {
+        alert(i18n.t('Please start a conversation first'))
+        return false
+    }
+
+    const chatId = await getCurrentChatId()
+    const rawConversation = await fetchConversation(chatId, true)
+    const conversation = processConversation(rawConversation)
+    const markdown = conversationToMarkdown(conversation, metaList)
+
+    await copyToClipboard(standardizeLineBreaks(markdown))
     return true
 }
 

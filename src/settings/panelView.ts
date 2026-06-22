@@ -100,13 +100,13 @@ function createPanelTemplate(): string {
 
       <section class="ce-group">
         <label class="ce-row ce-toggle-row">
-          <span>${t('Enable Copy Text Shortcut', 'Enable Copy Text Shortcut')}</span>
+          <span>${t('Enable Copy Markdown Shortcut', 'Enable Copy Markdown Shortcut')}</span>
           <input type="checkbox" data-ce-role="enable-copy-text-shortcut" />
         </label>
 
         <div class="ce-subgroup" data-ce-role="shortcut-options">
           <label class="ce-row">
-            <span>${t('Copy Text Shortcut', 'Copy Text Shortcut')}</span>
+            <span>${t('Copy Markdown Shortcut', 'Copy Markdown Shortcut')}</span>
             <input type="text" data-ce-role="copy-text-shortcut" placeholder="Mod+Shift+E" />
           </label>
           <p class="ce-help">

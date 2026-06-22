@@ -49,7 +49,7 @@ export function getExportCapabilities(context: PageContext = getPageContext()) :
                 canExportAll: true,
                 canExportMemory: false,
                 historyDisabledApplies: false,
-                copyShortcutEnabled: false,
+                copyShortcutEnabled: true,
             }
         case 'security-scan':
             return {
@@ -63,7 +63,7 @@ export function getExportCapabilities(context: PageContext = getPageContext()) :
                 canExportAll: false,
                 canExportMemory: false,
                 historyDisabledApplies: false,
-                copyShortcutEnabled: false,
+                copyShortcutEnabled: true,
             }
         case 'security-findings-list':
             return {

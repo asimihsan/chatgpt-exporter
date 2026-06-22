@@ -54,7 +54,7 @@ describe('getExportCapabilities', () => {
             canExportAll: true,
             canExportMemory: false,
             historyDisabledApplies: false,
-            copyShortcutEnabled: false,
+            copyShortcutEnabled: true,
         })
     })
 
@@ -74,7 +74,7 @@ describe('getExportCapabilities', () => {
             canExportAll: false,
             canExportMemory: false,
             historyDisabledApplies: false,
-            copyShortcutEnabled: false,
+            copyShortcutEnabled: true,
         })
     })
 

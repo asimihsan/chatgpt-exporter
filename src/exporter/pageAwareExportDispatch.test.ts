@@ -86,8 +86,7 @@ vi.mock('../i18n', () => ({
 
 import { exportToHtml } from './html'
 import { exportToJson, exportToOoba, exportToTavern } from './json'
-import { exportToMarkdown } from './markdown'
-import { exportToText } from './text'
+import { copyMarkdownToClipboard, exportToMarkdown } from './markdown'
 
 describe('page-aware exporter dispatch', () => {
     beforeEach(() => {
@@ -126,7 +125,7 @@ describe('page-aware exporter dispatch', () => {
         securityDocumentToJsonMock.mockReturnValue('{"finding":{"hid":"finding-123"}}')
     })
 
-    it('routes text export through the security document path on finding pages', async () => {
+    it('copies Markdown through the security document path on finding pages', async () => {
         getPageContextMock.mockReturnValue({
             kind: 'security-finding',
             findingId: 'finding-123',
@@ -136,15 +135,21 @@ describe('page-aware exporter dispatch', () => {
             isShareContinuePage: false,
         })
 
-        const success = await exportToText()
+        const success = await copyMarkdownToClipboard([
+            { name: 'source', value: '{source}' },
+        ])
 
         expect(success).toBe(true)
         expect(loadCurrentSecurityDocumentMock).toHaveBeenCalledTimes(1)
-        expect(copyToClipboardMock).toHaveBeenCalledWith('security text')
+        expect(securityDocumentToMarkdownMock).toHaveBeenCalledWith(
+            expect.any(Object),
+            [{ name: 'source', value: '{source}' }],
+        )
+        expect(copyToClipboardMock).toHaveBeenCalledWith('# security markdown')
         expect(fetchConversationMock).not.toHaveBeenCalled()
     })
 
-    it('uses the resolved conversation id for text export generated file inlining', async () => {
+    it('copies conversation Markdown with sources to the clipboard', async () => {
         getPageContextMock.mockReturnValue({
             kind: 'conversation',
             findingId: null,
@@ -158,15 +163,58 @@ describe('page-aware exporter dispatch', () => {
             id: 'shared-123',
             mapping: {},
         })
+        processConversationMock.mockReturnValue({
+            id: 'shared-123',
+            title: 'Conversation Title',
+            model: 'gpt-4o',
+            modelSlug: 'gpt-4o',
+            createTime: 1_700_000_000,
+            updateTime: 1_700_000_100,
+            conversationNodes: [
+                {
+                    id: 'node-1',
+                    children: [],
+                    message: {
+                        id: 'message-1',
+                        author: {
+                            role: 'assistant',
+                            metadata: {},
+                        },
+                        content: {
+                            content_type: 'text',
+                            parts: ['Here is a source turn0search0'],
+                        },
+                        recipient: 'all',
+                        status: 'finished_successfully',
+                        weight: 1,
+                        metadata: {
+                            content_references: [
+                                {
+                                    type: 'webpage',
+                                    matched_text: 'turn0search0',
+                                    start_idx: 17,
+                                    end_idx: 28,
+                                    title: 'Example Source',
+                                    url: 'https://example.test/source',
+                                },
+                            ],
+                        },
+                    },
+                },
+            ],
+        })
 
-        const success = await exportToText()
+        const success = await copyMarkdownToClipboard([
+            { name: 'title', value: '{title}' },
+        ])
 
         expect(success).toBe(true)
-        expect(fetchConversationMock).toHaveBeenCalledWith('__share__shared-123', false)
-        expect(inlineGeneratedTextFilesMock).toHaveBeenCalledWith(
-            { id: 'shared-123', mapping: {} },
-            { conversationId: 'shared-123' },
-        )
+        expect(fetchConversationMock).toHaveBeenCalledWith('__share__shared-123', true)
+        expect(copyToClipboardMock).toHaveBeenCalledWith(expect.stringContaining('# Conversation Title'))
+        expect(copyToClipboardMock).toHaveBeenCalledWith(expect.stringContaining('title: Conversation Title'))
+        expect(copyToClipboardMock).toHaveBeenCalledWith(expect.stringContaining('## Sources'))
+        expect(copyToClipboardMock).toHaveBeenCalledWith(expect.stringContaining('[Example Source](<https://example.test/source>)'))
+        expect(inlineGeneratedTextFilesMock).not.toHaveBeenCalled()
     })
 
     it('routes markdown export through the security document path and metadata filename tokens', async () => {
@@ -238,7 +286,7 @@ describe('page-aware exporter dispatch', () => {
             isShareContinuePage: false,
         })
 
-        await expect(exportToText()).resolves.toBe(false)
+        await expect(copyMarkdownToClipboard()).resolves.toBe(false)
         await expect(exportToMarkdown('{title}', [])).resolves.toBe(false)
         await expect(exportToHtml('{title}', [])).resolves.toBe(false)
         await expect(exportToJson('{title}')).resolves.toBe(false)
