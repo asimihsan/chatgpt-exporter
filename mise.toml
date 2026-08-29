@@ -3,14 +3,22 @@
 
 min_version = "2024.9.5"
 
+# Every tool spec is an exact version, never `latest`, `lts`, `prefix:` or a
+# partial version. Under a locked install mise re-resolves a floating spec
+# against upstream and then demands a lockfile URL for whatever it resolved, so
+# a floating spec breaks the moment upstream publishes a release newer than
+# mise.lock. Each version below is the one mise.lock already records, so pinning
+# removes the float without changing what gets installed. Bump a version by
+# editing this file and re-running `mise lock <tool>`, never by letting a spec
+# float.
 [tools]
-actionlint = "latest"
-bun = "latest"
-"go:github.com/google/addlicense" = "latest"
-jujutsu = "latest"
-node = "lts"
-ripgrep = "latest"
-shellcheck = "latest"
+actionlint = "1.7.12"
+bun = "1.3.14"
+"go:github.com/google/addlicense" = "1.2.0"
+jujutsu = "0.41.0"
+node = "24.15.0"
+ripgrep = "15.1.0"
+shellcheck = "0.11.0"
 
 [env]
 _.path = ["{{config_root}}/node_modules/.bin"]
