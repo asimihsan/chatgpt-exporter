@@ -3,23 +3,23 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-import { isAnalysisCodeMessage, isAnalysisExecutionOutput, isThinkingMessage } from './messageClassifier'
+import { getMessageExportKind } from './messageClassifier'
+import { formatToolActivityLabel } from './toolActivity'
 import type { ConversationNodeMessage } from '../api'
 
 export function getExportAuthorLabel(message: ConversationNodeMessage): string {
-    if (isThinkingMessage(message)) {
-        return 'ChatGPT (Thinking)'
-    }
-
-    if (isAnalysisCodeMessage(message)) {
-        return 'ChatGPT (Analysis)'
-    }
-
-    if (isAnalysisExecutionOutput(message)) {
-        if (message.author.name === 'python') {
+    switch (getMessageExportKind(message)) {
+        case 'thinking':
+            return 'ChatGPT (Thinking)'
+        case 'analysis-code':
+            return 'ChatGPT (Analysis)'
+        case 'analysis-output':
             return 'Python (Analysis)'
-        }
-        return `Plugin${message.author.name ? ` (${message.author.name})` : ''} (Analysis)`
+        case 'tool-call':
+        case 'tool-result':
+            return formatToolActivityLabel(message)
+        default:
+            break
     }
 
     switch (message.author.role) {
@@ -31,5 +31,17 @@ export function getExportAuthorLabel(message: ConversationNodeMessage): string {
             return `Plugin${message.author.name ? ` (${message.author.name})` : ''}`
         default:
             return message.author.role
+    }
+}
+
+/** Labels worth showing inline in HTML, where user/assistant turns are identified by avatar. */
+export function getVisibleHtmlLabel(message: ConversationNodeMessage): string | null {
+    switch (getMessageExportKind(message)) {
+        case 'user':
+        case 'assistant':
+        case 'preamble':
+            return null
+        default:
+            return getExportAuthorLabel(message)
     }
 }

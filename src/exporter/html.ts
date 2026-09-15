@@ -14,10 +14,11 @@ import templateHtml from '../template.html?raw'
 import { downloadFile, getFileNameWithFormat } from '../utils/download'
 import { fromMarkdown, toHtml } from '../utils/markdown'
 import { ScriptStorage } from '../utils/storage'
-import { standardizeLineBreaks } from '../utils/text'
+import { escapeHtml, standardizeLineBreaks } from '../utils/text'
 import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
-import { shouldIncludeMessageForExport } from './messageClassifier'
-import { getExportAuthorLabel } from './messageLabel'
+import { isTextOnlyToolActivity, shouldIncludeMessageForExport } from './messageClassifier'
+import { getExportAuthorLabel, getVisibleHtmlLabel } from './messageLabel'
+import { renderToolActivityHtml } from './toolActivity'
 import { getSecurityFileNameOptions, getSecurityUnsupportedMessage, loadCurrentSecurityDocument, securityDocumentToHtml } from './securityDocument'
 import { dateStr, getColorScheme, timestamp, unixTimestampToISOString } from '../utils/utils'
 import { normalizeReferenceText, replaceReferenceTokens, resolveExportMessage, stripUiTokens } from './shared'
@@ -182,7 +183,11 @@ export function conversationToHtml(
             postSteps = [...postSteps, input => `<p class="no-katex">${escapeHtml(input)}</p>`]
         }
         const postProcess = (input: string) => postSteps.reduce((acc, fn) => fn(acc), input)
-        const content = sanitizeLLMText(transformContent(exportMessage.content, exportMessage.metadata, postProcess))
+        const toolActivityHtml = isTextOnlyToolActivity(exportMessage) ? renderToolActivityHtml(exportMessage) : undefined
+        if (toolActivityHtml === null) return null
+        const content = toolActivityHtml ?? sanitizeLLMText(transformContent(exportMessage.content, exportMessage.metadata, postProcess))
+        const visibleLabel = getVisibleHtmlLabel(exportMessage)
+        const labelHtml = visibleLabel ? `<div class="author-label">${escapeHtml(visibleLabel)}</div>\n            ` : ''
 
         const timestamp = exportMessage.create_time ?? ''
         const showTimestamp = enableTimestamp && timeStampHtml && timestamp
@@ -202,7 +207,7 @@ export function conversationToHtml(
     </div>
     <div class="conversation-content-wrapper">
         <div class="conversation-content">
-            ${content}
+            ${labelHtml}${content}
         </div>
     </div>
     ${timestampHtml}
@@ -366,11 +371,3 @@ function transformContent(
     }
 }
 
-function escapeHtml(html: string) {
-    return html
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;')
-}

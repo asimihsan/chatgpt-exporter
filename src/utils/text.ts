@@ -8,3 +8,12 @@ export function standardizeLineBreaks(text: string): string {
         .replace(/\r\n/g, '\n')
         .replace(/\r/g, '\n')
 }
+
+export function escapeHtml(input: string): string {
+    return input
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;')
+}

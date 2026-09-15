@@ -150,6 +150,13 @@ export function hasRenderableToolAssets(message?: ConversationNodeMessage): bool
     return hasMultimodalImage(message) || hasExecutionOutputImage(message)
 }
 
+/** Tool activity that has no image the UI would show, so it renders as an escaped text payload. */
+export function isTextOnlyToolActivity(message?: ConversationNodeMessage): boolean {
+    const kind = getMessageExportKind(message)
+    if (kind === 'tool-call') return true
+    return kind === 'tool-result' && !hasRenderableToolAssets(message)
+}
+
 export function getMessageExportKind(message?: ConversationNodeMessage): MessageExportKind {
     if (!message?.content) return 'internal'
     if (shouldSkipAsInternal(message)) return 'internal'

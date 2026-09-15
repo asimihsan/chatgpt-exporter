@@ -13,8 +13,9 @@ import { flatMap, fromMarkdown, toMarkdown } from '../utils/markdown'
 import { standardizeLineBreaks } from '../utils/text'
 import { getSecurityUnsupportedMessage, loadCurrentSecurityDocument, securityDocumentToText } from './securityDocument'
 import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
-import { shouldIncludeMessageForExport } from './messageClassifier'
+import { isTextOnlyToolActivity, shouldIncludeMessageForExport } from './messageClassifier'
 import { getExportAuthorLabel } from './messageLabel'
+import { renderToolActivityText } from './toolActivity'
 import { normalizeReferenceText, replaceReferenceTokens, resolveExportMessage, stripUiTokens } from './shared'
 import { sanitizeLLMText } from './textSanitizer'
 import type { ConversationNodeMessage } from '../api'
@@ -69,6 +70,11 @@ export function transformMessageForTextExport(message?: ConversationNodeMessage)
     if (!shouldIncludeMessageForExport(exportMessage)) return null
 
     const author = getExportAuthorLabel(exportMessage)
+    if (isTextOnlyToolActivity(exportMessage)) {
+        const payload = renderToolActivityText(exportMessage)
+        return payload === null ? null : `${author}:\n${sanitizeLLMText(payload)}`
+    }
+
     let content = transformContent(exportMessage.content, exportMessage.metadata)
 
     const matches = content.match(LatexRegex)
