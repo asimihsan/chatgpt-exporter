@@ -19,6 +19,8 @@ export interface ExporterSettings {
     exportAllLimit: number
     enableCopyTextShortcut: boolean
     copyTextShortcut: string
+    /** Export app/connector tool calls and their text-only results. */
+    includeToolActivity: boolean
 }
 
 export const DEFAULT_FILENAME_FORMAT = 'ChatGPT-{title}'
@@ -41,4 +43,5 @@ export const DEFAULT_EXPORTER_SETTINGS: ExporterSettings = {
     exportAllLimit: DEFAULT_EXPORT_ALL_LIMIT,
     enableCopyTextShortcut: true,
     copyTextShortcut: DEFAULT_COPY_TEXT_SHORTCUT,
+    includeToolActivity: false,
 }

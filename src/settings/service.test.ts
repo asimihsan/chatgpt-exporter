@@ -9,6 +9,7 @@ import {
     KEY_COPY_TEXT_SHORTCUT_ENABLED,
     KEY_EXPORT_ALL_LIMIT,
     KEY_FILENAME_FORMAT,
+    KEY_INCLUDE_TOOL_ACTIVITY,
     KEY_META_ENABLED,
     KEY_META_LIST,
     KEY_TIMESTAMP_24H,
@@ -28,6 +29,7 @@ import {
 
 const SETTING_KEYS = [
     KEY_FILENAME_FORMAT,
+    KEY_INCLUDE_TOOL_ACTIVITY,
     KEY_TIMESTAMP_ENABLED,
     KEY_TIMESTAMP_24H,
     KEY_TIMESTAMP_HTML,
@@ -37,6 +39,7 @@ const SETTING_KEYS = [
     KEY_EXPORT_ALL_LIMIT,
     KEY_COPY_TEXT_SHORTCUT_ENABLED,
     KEY_COPY_TEXT_SHORTCUT,
+    KEY_INCLUDE_TOOL_ACTIVITY,
 ]
 
 function clearSettingsStorage(): void {
@@ -58,6 +61,7 @@ describe('settings service', () => {
         ScriptStorage.set(KEY_EXPORT_ALL_LIMIT, 55)
         ScriptStorage.set(KEY_COPY_TEXT_SHORTCUT_ENABLED, 'nope')
         ScriptStorage.set(KEY_COPY_TEXT_SHORTCUT, 'Ctrl+?')
+        ScriptStorage.set(KEY_INCLUDE_TOOL_ACTIVITY, 'yes')
 
         const settings = reloadSettingsFromStorage()
 
@@ -67,6 +71,16 @@ describe('settings service', () => {
         expect(settings.exportAllLimit).toBe(100)
         expect(settings.enableCopyTextShortcut).toBe(DEFAULT_EXPORTER_SETTINGS.enableCopyTextShortcut)
         expect(settings.copyTextShortcut).toBe(DEFAULT_EXPORTER_SETTINGS.copyTextShortcut)
+        expect(settings.includeToolActivity).toBe(false)
+    })
+
+    it('persists the include tool activity toggle and reads it back', () => {
+        expect(getSettings().includeToolActivity).toBe(false)
+
+        const updated = setSetting('includeToolActivity', true)
+        expect(updated.includeToolActivity).toBe(true)
+        expect(ScriptStorage.get<boolean>(KEY_INCLUDE_TOOL_ACTIVITY)).toBe(true)
+        expect(reloadSettingsFromStorage().includeToolActivity).toBe(true)
     })
 
     it('persists updates and normalizes range-based values', () => {

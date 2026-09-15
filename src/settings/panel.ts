@@ -109,6 +109,7 @@ function applyStateToForm(elements: PanelElements, state: PanelState): void {
     elements.timeStamp24HInput.checked = state.settings.timeStamp24H
     elements.enableTimestampHTMLInput.checked = state.settings.enableTimestampHTML
     elements.enableTimestampMarkdownInput.checked = state.settings.enableTimestampMarkdown
+    elements.includeToolActivityInput.checked = state.settings.includeToolActivity
     elements.enableMetaInput.checked = state.settings.enableMeta
     elements.enableCopyTextShortcutInput.checked = state.settings.enableCopyTextShortcut
     elements.copyTextShortcutInput.value = state.settings.copyTextShortcut
@@ -159,6 +160,10 @@ function wirePanelEvents(elements: PanelElements, state: PanelState): void {
 
     elements.enableTimestampMarkdownInput.addEventListener('change', () => {
         state.settings.enableTimestampMarkdown = elements.enableTimestampMarkdownInput.checked
+    })
+
+    elements.includeToolActivityInput.addEventListener('change', () => {
+        state.settings.includeToolActivity = elements.includeToolActivityInput.checked
     })
 
     elements.enableMetaInput.addEventListener('change', () => {

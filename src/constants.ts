@@ -36,6 +36,7 @@ export const KEY_META_LIST = 'exporter:meta_list'
 export const KEY_EXPORT_ALL_LIMIT = 'exporter:export_all_limit'
 export const KEY_COPY_TEXT_SHORTCUT_ENABLED = 'exporter:enable_copy_text_shortcut'
 export const KEY_COPY_TEXT_SHORTCUT = 'exporter:copy_text_shortcut'
+export const KEY_INCLUDE_TOOL_ACTIVITY = 'exporter:include_tool_activity'
 
 export const KEY_OAI_LOCALE = 'oai/apps/locale'
 export const KEY_OAI_HISTORY_DISABLED = 'oai/apps/historyDisabled'

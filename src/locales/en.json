@@ -32,6 +32,7 @@
   "Conversation Timestamp Description": "Will show on the page.",
   "Enable on HTML": "Enable on HTML files",
   "Enable on Markdown": "Enable on Markdown files",
+  "Include Tool Activity": "Include tool activity (app and connector calls)",
   "Use 24-hour format": "Use 24-hour format (eg. 23:59)",
   "Export Format": "Export Format",
   "Export Metadata": "Export Metadata",

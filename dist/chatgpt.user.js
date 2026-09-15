@@ -535,6 +535,7 @@
 	var KEY_EXPORT_ALL_LIMIT = "exporter:export_all_limit";
 	var KEY_COPY_TEXT_SHORTCUT_ENABLED = "exporter:enable_copy_text_shortcut";
 	var KEY_COPY_TEXT_SHORTCUT = "exporter:copy_text_shortcut";
+	var KEY_INCLUDE_TOOL_ACTIVITY = "exporter:include_tool_activity";
 	var KEY_OAI_HISTORY_DISABLED = "oai/apps/historyDisabled";
 	function getBase64FromImg(el) {
 		const canvas = document.createElement("canvas");
@@ -4611,6 +4612,7 @@
 		"Conversation Timestamp Description": "Will show on the page.",
 		"Enable on HTML": "Enable on HTML files",
 		"Enable on Markdown": "Enable on Markdown files",
+		"Include Tool Activity": "Include tool activity (app and connector calls)",
 		"Use 24-hour format": "Use 24-hour format (eg. 23:59)",
 		"Export Format": "Export Format",
 		"Export Metadata": "Export Metadata",
@@ -17430,7 +17432,8 @@
 		exportMetaList: DEFAULT_EXPORT_META_LIST,
 		exportAllLimit: DEFAULT_EXPORT_ALL_LIMIT,
 		enableCopyTextShortcut: true,
-		copyTextShortcut: DEFAULT_COPY_TEXT_SHORTCUT
+		copyTextShortcut: DEFAULT_COPY_TEXT_SHORTCUT,
+		includeToolActivity: false
 	};
 	var listeners = new Set();
 	function cloneExportMetaList(exportMetaList) {
@@ -17478,7 +17481,8 @@
 			exportMetaList: sanitizeExportMetaList(input.exportMetaList),
 			exportAllLimit: sanitizeExportAllLimit(input.exportAllLimit),
 			enableCopyTextShortcut: sanitizeBoolean(input.enableCopyTextShortcut, DEFAULT_EXPORTER_SETTINGS.enableCopyTextShortcut),
-			copyTextShortcut: sanitizeCopyTextShortcut(input.copyTextShortcut)
+			copyTextShortcut: sanitizeCopyTextShortcut(input.copyTextShortcut),
+			includeToolActivity: sanitizeBoolean(input.includeToolActivity, DEFAULT_EXPORTER_SETTINGS.includeToolActivity)
 		};
 	}
 	function readStoredSettings() {
@@ -17492,7 +17496,8 @@
 			exportMetaList: ScriptStorage.get(KEY_META_LIST),
 			exportAllLimit: ScriptStorage.get(KEY_EXPORT_ALL_LIMIT),
 			enableCopyTextShortcut: ScriptStorage.get(KEY_COPY_TEXT_SHORTCUT_ENABLED),
-			copyTextShortcut: ScriptStorage.get(KEY_COPY_TEXT_SHORTCUT)
+			copyTextShortcut: ScriptStorage.get(KEY_COPY_TEXT_SHORTCUT),
+			includeToolActivity: ScriptStorage.get(KEY_INCLUDE_TOOL_ACTIVITY)
 		});
 	}
 	function writeStoredSettings(settings) {
@@ -17506,6 +17511,7 @@
 		ScriptStorage.set(KEY_EXPORT_ALL_LIMIT, settings.exportAllLimit);
 		ScriptStorage.set(KEY_COPY_TEXT_SHORTCUT_ENABLED, settings.enableCopyTextShortcut);
 		ScriptStorage.set(KEY_COPY_TEXT_SHORTCUT, settings.copyTextShortcut);
+		ScriptStorage.set(KEY_INCLUDE_TOOL_ACTIVITY, settings.includeToolActivity);
 	}
 	function notifyListeners(settings) {
 		const snapshot = cloneSettings(settings);
@@ -17694,6 +17700,13 @@
             <input type="checkbox" data-ce-role="timestamp-markdown" />
           </label>
         </div>
+      </section>
+
+      <section class="ce-group">
+        <label class="ce-row ce-toggle-row">
+          <span>${t$2("Include Tool Activity", "Include tool activity (app and connector calls)")}</span>
+          <input type="checkbox" data-ce-role="include-tool-activity" />
+        </label>
       </section>
 
       <section class="ce-group">
@@ -17961,6 +17974,7 @@
 			timeStamp24HInput: query("[data-ce-role=\"timestamp-24h\"]"),
 			enableTimestampHTMLInput: query("[data-ce-role=\"timestamp-html\"]"),
 			enableTimestampMarkdownInput: query("[data-ce-role=\"timestamp-markdown\"]"),
+			includeToolActivityInput: query("[data-ce-role=\"include-tool-activity\"]"),
 			enableMetaInput: query("[data-ce-role=\"enable-meta\"]"),
 			enableCopyTextShortcutInput: query("[data-ce-role=\"enable-copy-text-shortcut\"]"),
 			copyTextShortcutInput: query("[data-ce-role=\"copy-text-shortcut\"]"),
@@ -18047,6 +18061,7 @@
 		elements.timeStamp24HInput.checked = state.settings.timeStamp24H;
 		elements.enableTimestampHTMLInput.checked = state.settings.enableTimestampHTML;
 		elements.enableTimestampMarkdownInput.checked = state.settings.enableTimestampMarkdown;
+		elements.includeToolActivityInput.checked = state.settings.includeToolActivity;
 		elements.enableMetaInput.checked = state.settings.enableMeta;
 		elements.enableCopyTextShortcutInput.checked = state.settings.enableCopyTextShortcut;
 		elements.copyTextShortcutInput.value = state.settings.copyTextShortcut;
@@ -18085,6 +18100,9 @@
 		});
 		elements.enableTimestampMarkdownInput.addEventListener("change", () => {
 			state.settings.enableTimestampMarkdown = elements.enableTimestampMarkdownInput.checked;
+		});
+		elements.includeToolActivityInput.addEventListener("change", () => {
+			state.settings.includeToolActivity = elements.includeToolActivityInput.checked;
 		});
 		elements.enableMetaInput.addEventListener("change", () => {
 			state.settings.enableMeta = elements.enableMetaInput.checked;

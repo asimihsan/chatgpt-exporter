@@ -18,6 +18,7 @@ export interface PanelElements {
     timeStamp24HInput: HTMLInputElement
     enableTimestampHTMLInput: HTMLInputElement
     enableTimestampMarkdownInput: HTMLInputElement
+    includeToolActivityInput: HTMLInputElement
     enableMetaInput: HTMLInputElement
     enableCopyTextShortcutInput: HTMLInputElement
     copyTextShortcutInput: HTMLInputElement
@@ -84,6 +85,13 @@ function createPanelTemplate(): string {
             <input type="checkbox" data-ce-role="timestamp-markdown" />
           </label>
         </div>
+      </section>
+
+      <section class="ce-group">
+        <label class="ce-row ce-toggle-row">
+          <span>${t('Include Tool Activity', 'Include tool activity (app and connector calls)')}</span>
+          <input type="checkbox" data-ce-role="include-tool-activity" />
+        </label>
       </section>
 
       <section class="ce-group">
@@ -354,6 +362,7 @@ function getPanelElements(shadow: ShadowRoot): PanelElements {
         timeStamp24HInput: query<HTMLInputElement>('[data-ce-role="timestamp-24h"]'),
         enableTimestampHTMLInput: query<HTMLInputElement>('[data-ce-role="timestamp-html"]'),
         enableTimestampMarkdownInput: query<HTMLInputElement>('[data-ce-role="timestamp-markdown"]'),
+        includeToolActivityInput: query<HTMLInputElement>('[data-ce-role="include-tool-activity"]'),
         enableMetaInput: query<HTMLInputElement>('[data-ce-role="enable-meta"]'),
         enableCopyTextShortcutInput: query<HTMLInputElement>('[data-ce-role="enable-copy-text-shortcut"]'),
         copyTextShortcutInput: query<HTMLInputElement>('[data-ce-role="copy-text-shortcut"]'),

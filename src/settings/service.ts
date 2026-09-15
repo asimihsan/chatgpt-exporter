@@ -8,6 +8,7 @@ import {
     KEY_COPY_TEXT_SHORTCUT_ENABLED,
     KEY_EXPORT_ALL_LIMIT,
     KEY_FILENAME_FORMAT,
+    KEY_INCLUDE_TOOL_ACTIVITY,
     KEY_LANGUAGE,
     KEY_META_ENABLED,
     KEY_META_LIST,
@@ -96,6 +97,7 @@ function sanitizeSettings(input: SettingsInput): ExporterSettings {
         exportAllLimit: sanitizeExportAllLimit(input.exportAllLimit),
         enableCopyTextShortcut: sanitizeBoolean(input.enableCopyTextShortcut, DEFAULT_EXPORTER_SETTINGS.enableCopyTextShortcut),
         copyTextShortcut: sanitizeCopyTextShortcut(input.copyTextShortcut),
+        includeToolActivity: sanitizeBoolean(input.includeToolActivity, DEFAULT_EXPORTER_SETTINGS.includeToolActivity),
     }
 }
 
@@ -111,6 +113,7 @@ function readStoredSettings(): ExporterSettings {
         exportAllLimit: ScriptStorage.get<number>(KEY_EXPORT_ALL_LIMIT),
         enableCopyTextShortcut: ScriptStorage.get<boolean>(KEY_COPY_TEXT_SHORTCUT_ENABLED),
         copyTextShortcut: ScriptStorage.get<string>(KEY_COPY_TEXT_SHORTCUT),
+        includeToolActivity: ScriptStorage.get<boolean>(KEY_INCLUDE_TOOL_ACTIVITY),
     })
 }
 
@@ -125,6 +128,7 @@ function writeStoredSettings(settings: ExporterSettings): void {
     ScriptStorage.set(KEY_EXPORT_ALL_LIMIT, settings.exportAllLimit)
     ScriptStorage.set(KEY_COPY_TEXT_SHORTCUT_ENABLED, settings.enableCopyTextShortcut)
     ScriptStorage.set(KEY_COPY_TEXT_SHORTCUT, settings.copyTextShortcut)
+    ScriptStorage.set(KEY_INCLUDE_TOOL_ACTIVITY, settings.includeToolActivity)
 }
 
 function notifyListeners(settings: ExporterSettings): void {
