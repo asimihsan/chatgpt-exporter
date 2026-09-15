@@ -4459,6 +4459,95 @@
 		}
 		return ret;
 	};
+	var runtime = globalThis;
+	var GMStorage = class {
+		static get supported() {
+			return typeof runtime.GM_getValue === "function" && typeof runtime.GM_setValue === "function" && typeof runtime.GM_deleteValue === "function";
+		}
+		static get(key) {
+			if (!this.supported) return null;
+			const item = runtime.GM_getValue?.(key, "");
+			if (item) try {
+				return JSON.parse(item);
+			} catch {
+				return null;
+			}
+			return null;
+		}
+		static set(key, value) {
+			if (!this.supported) return;
+			const item = JSON.stringify(value);
+			runtime.GM_setValue?.(key, item);
+		}
+		static delete(key) {
+			if (!this.supported) return;
+			runtime.GM_deleteValue?.(key);
+		}
+	};
+	var LocalStorage = class {
+		static get supported() {
+			return typeof localStorage === "object";
+		}
+		static get(key) {
+			const item = localStorage.getItem(key);
+			if (item) try {
+				return JSON.parse(item);
+			} catch {
+				return null;
+			}
+			return null;
+		}
+		static set(key, value) {
+			const item = JSON.stringify(value);
+			localStorage.setItem(key, item);
+		}
+		static delete(key) {
+			localStorage.removeItem(key);
+		}
+	};
+	var MemoryStorage = class {
+		static map = new Map();
+		static supported = true;
+		static get(key) {
+			if (!this.map.has(key)) return null;
+			return this.map.get(key);
+		}
+		static set(key, value) {
+			this.map.set(key, value);
+		}
+		static delete(key) {
+			this.map.delete(key);
+		}
+	};
+	var ScriptStorage = class {
+		static get(key) {
+			if (GMStorage.supported) try {
+				return GMStorage.get(key);
+			} catch {}
+			if (LocalStorage.supported) try {
+				return LocalStorage.get(key);
+			} catch {}
+			return MemoryStorage.get(key);
+		}
+		static set(key, value) {
+			if (GMStorage.supported) try {
+				return GMStorage.set(key, value);
+			} catch {}
+			if (LocalStorage.supported) try {
+				return LocalStorage.set(key, value);
+			} catch {}
+			return MemoryStorage.set(key, value);
+		}
+		static delete(key) {
+			if (GMStorage.supported) try {
+				return GMStorage.delete(key);
+			} catch {}
+			if (LocalStorage.supported) try {
+				return LocalStorage.delete(key);
+			} catch {}
+			return MemoryStorage.delete(key);
+		}
+	};
 	function isExecutionOutputImage(value) {
 		if (typeof value !== "object" || value === null) return false;
 		const maybeImage = value;
@@ -4572,15 +4661,22 @@
 		if (message.author.role === "assistant") return "assistant";
 		return "other";
 	}
-	function isThinkingToolTextMessage(message) {
-		return isThinkingMessage(message) && message.author.role === "tool" && message.content.content_type === "text";
+	function readMessageInclusionOptions() {
+		return { includeToolActivity: ScriptStorage.get(KEY_INCLUDE_TOOL_ACTIVITY) === true };
 	}
-	function shouldIncludeMessageForExport(message) {
+	function shouldIncludeMessageForExport(message, options = {}) {
 		if (!message?.content) return false;
-		if (shouldSkipAsInternal(message)) return false;
-		if (isAnalysisCodeMessage(message)) return true;
-		if (isAnalysisExecutionOutput(message)) return true;
-		if (isThinkingToolTextMessage(message)) return true;
+		switch (getMessageExportKind(message)) {
+			case "internal": return false;
+			case "analysis-code":
+			case "analysis-output": return true;
+			case "thinking": return message.author.role === "tool" && message.content.content_type === "text";
+			case "tool-call": return options.includeToolActivity === true;
+			case "tool-result": return hasRenderableToolAssets(message) || options.includeToolActivity === true;
+			case "user":
+			case "assistant":
+			case "preamble": return message.recipient === "all";
+		}
 		if (message.recipient !== "all") return false;
 		if (message.author.role !== "tool") return true;
 		return message.content.content_type === "multimodal_text" || hasExecutionOutputImage(message);
@@ -5098,95 +5194,6 @@
 		"Copy failed": "複製失敗",
 		"Markdown excerpt picker": "Markdown 摘錄選擇器",
 		Cancel: "取消"
-	};
-	var runtime = globalThis;
-	var GMStorage = class {
-		static get supported() {
-			return typeof runtime.GM_getValue === "function" && typeof runtime.GM_setValue === "function" && typeof runtime.GM_deleteValue === "function";
-		}
-		static get(key) {
-			if (!this.supported) return null;
-			const item = runtime.GM_getValue?.(key, "");
-			if (item) try {
-				return JSON.parse(item);
-			} catch {
-				return null;
-			}
-			return null;
-		}
-		static set(key, value) {
-			if (!this.supported) return;
-			const item = JSON.stringify(value);
-			runtime.GM_setValue?.(key, item);
-		}
-		static delete(key) {
-			if (!this.supported) return;
-			runtime.GM_deleteValue?.(key);
-		}
-	};
-	var LocalStorage = class {
-		static get supported() {
-			return typeof localStorage === "object";
-		}
-		static get(key) {
-			const item = localStorage.getItem(key);
-			if (item) try {
-				return JSON.parse(item);
-			} catch {
-				return null;
-			}
-			return null;
-		}
-		static set(key, value) {
-			const item = JSON.stringify(value);
-			localStorage.setItem(key, item);
-		}
-		static delete(key) {
-			localStorage.removeItem(key);
-		}
-	};
-	var MemoryStorage = class {
-		static map = new Map();
-		static supported = true;
-		static get(key) {
-			if (!this.map.has(key)) return null;
-			return this.map.get(key);
-		}
-		static set(key, value) {
-			this.map.set(key, value);
-		}
-		static delete(key) {
-			this.map.delete(key);
-		}
-	};
-	var ScriptStorage = class {
-		static get(key) {
-			if (GMStorage.supported) try {
-				return GMStorage.get(key);
-			} catch {}
-			if (LocalStorage.supported) try {
-				return LocalStorage.get(key);
-			} catch {}
-			return MemoryStorage.get(key);
-		}
-		static set(key, value) {
-			if (GMStorage.supported) try {
-				return GMStorage.set(key, value);
-			} catch {}
-			if (LocalStorage.supported) try {
-				return LocalStorage.set(key, value);
-			} catch {}
-			return MemoryStorage.set(key, value);
-		}
-		static delete(key) {
-			if (GMStorage.supported) try {
-				return GMStorage.delete(key);
-			} catch {}
-			if (LocalStorage.supported) try {
-				return LocalStorage.delete(key);
-			} catch {}
-			return MemoryStorage.delete(key);
-		}
 	};
 	var EN_US = {
 		name: "English",
@@ -15875,12 +15882,12 @@
 			for (const ref of sourceRefs) addContentReferenceSource(collector, ref);
 		}
 	}
-	function collectMarkdownSourcesFromConversation(conversation) {
+	function collectMarkdownSourcesFromConversation(conversation, inclusion = {}) {
 		const collector = new MarkdownSourceCollector();
 		for (const { message } of conversation.conversationNodes) {
 			const exportMessage = resolveExportMessage(message);
 			if (!exportMessage?.content) continue;
-			if (!shouldIncludeMessageForExport(exportMessage)) continue;
+			if (!shouldIncludeMessageForExport(exportMessage, inclusion)) continue;
 			for (const ref of exportMessage.metadata?.content_references ?? []) addContentReferenceSource(collector, ref);
 			for (const citation of exportMessage.metadata?.citations ?? []) addCitationSource(collector, citation);
 			addBrowsingDisplaySources(collector, exportMessage.metadata);
@@ -16661,23 +16668,25 @@
 		const enableTimestamp = ScriptStorage.get("exporter:enable_timestamp") ?? false;
 		const timeStampMarkdown = ScriptStorage.get("exporter:timestamp_markdown") ?? false;
 		const timeStamp24H = ScriptStorage.get("exporter:timestamp_24h") ?? false;
+		const inclusion = readMessageInclusionOptions();
 		const content = conversationNodes.map(({ message }) => transformMessageForMarkdownExport(message, {
 			enableTimestamp: Boolean(enableTimestamp && timeStampMarkdown),
-			timeStamp24H
+			timeStamp24H,
+			inclusion
 		})).filter(Boolean).join("\n\n");
-		const sources = renderMarkdownSources(collectMarkdownSourcesFromConversation(conversation));
+		const sources = renderMarkdownSources(collectMarkdownSourcesFromConversation(conversation, inclusion));
 		return [`${frontMatter}# ${title}\n\n${content}`, sources].filter(Boolean).join("\n\n");
 	}
 	function transformMessageForMarkdownExport(message, options = {}) {
 		const exportMessage = resolveExportMessage(message);
-		const content = transformMessageContentForMarkdownExport(exportMessage);
+		const content = transformMessageContentForMarkdownExport(exportMessage, options.inclusion);
 		if (!exportMessage || content === null) return null;
 		const timestampHtml = renderMarkdownTimestamp(exportMessage, options);
 		return `#### ${getExportAuthorLabel(exportMessage)}:\n${timestampHtml}${content}`;
 	}
-	function transformMessageContentForMarkdownExport(message) {
+	function transformMessageContentForMarkdownExport(message, inclusion = {}) {
 		if (!message?.content) return null;
-		if (!shouldIncludeMessageForExport(message)) return null;
+		if (!shouldIncludeMessageForExport(message, inclusion)) return null;
 		if (isTextOnlyToolActivity(message)) {
 			const rendered = renderToolActivityMarkdown(message);
 			return rendered === null ? null : sanitizeLLMText(rendered);
@@ -16787,7 +16796,7 @@
 		}
 	}
 	var FENCED_CODE_BLOCK_REGEX = /```([^\n`]*)\n([\s\S]*?)\n```/g;
-	function conversationToMarkdownExcerpt(conversation, selection) {
+	function conversationToMarkdownExcerpt(conversation, selection, inclusion = readMessageInclusionOptions()) {
 		const selectedMessages = new Set(selection.messageIds);
 		const blocksByMessage = groupBlocksByMessage(selection.blocks);
 		const rejectedBlocks = [];
@@ -16799,13 +16808,13 @@
 			turnIndex += 1;
 			const selectionKeys = [message.id, `turn:${turnIndex}`];
 			if (selectionKeys.some((key) => selectedMessages.has(key))) {
-				const rendered = transformMessageForMarkdownExport(message);
+				const rendered = transformMessageForMarkdownExport(message, { inclusion });
 				if (rendered) parts.push(rendered);
 				continue;
 			}
 			const blocks = selectionKeys.flatMap((key) => blocksByMessage.get(key) ?? []);
 			if (!blocks?.length) continue;
-			const renderableBlocks = getRenderableBlockSet(message);
+			const renderableBlocks = getRenderableBlockSet(message, inclusion);
 			const renderedBlocks = blocks.map((block) => renderSelectedBlock(renderableBlocks, block, rejectedBlocks)).filter((block) => Boolean(block));
 			if (renderedBlocks.length > 0) parts.push(`#### ${getExportAuthorLabel(message)}:\n${renderedBlocks.join("\n\n")}`);
 		}
@@ -16848,8 +16857,8 @@
 		}
 		return matches[0]?.markdown ?? null;
 	}
-	function getRenderableBlockSet(message) {
-		const content = transformMessageContentForMarkdownExport(message);
+	function getRenderableBlockSet(message, inclusion) {
+		const content = transformMessageContentForMarkdownExport(message, inclusion);
 		if (content === null) return {
 			blocks: [],
 			rejectionReason: "missing-content"
@@ -22538,11 +22547,12 @@
 		const enableTimestamp = ScriptStorage.get("exporter:enable_timestamp") ?? false;
 		const timeStampHtml = ScriptStorage.get("exporter:timestamp_html") ?? false;
 		const timeStamp24H = ScriptStorage.get("exporter:timestamp_24h") ?? false;
+		const inclusion = readMessageInclusionOptions();
 		const LatexRegex = /(\s\$\$.+?\$\$\s|\s\$.+?\$\s|\\\[.+?\\\]|\\\(.+?\\\))|(^\$$[\S\s]+?^\$$)|(^\$\$[\S\s]+?^\$\$\$)/gm;
 		const conversationHtml = conversationNodes.map(({ message }) => {
 			const exportMessage = resolveExportMessage(message);
 			if (!exportMessage?.content) return null;
-			if (!shouldIncludeMessageForExport(exportMessage)) return null;
+			if (!shouldIncludeMessageForExport(exportMessage, inclusion)) return null;
 			const author = getExportAuthorLabel(exportMessage);
 			const model = exportMessage.metadata?.model_slug === "gpt-4" ? "GPT-4" : "GPT-3";
 			const authorType = exportMessage.author.role === "user" ? "user" : model;

@@ -13,12 +13,13 @@ import { flatMap, fromMarkdown, toMarkdown } from '../utils/markdown'
 import { standardizeLineBreaks } from '../utils/text'
 import { getSecurityUnsupportedMessage, loadCurrentSecurityDocument, securityDocumentToText } from './securityDocument'
 import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
-import { isTextOnlyToolActivity, shouldIncludeMessageForExport } from './messageClassifier'
+import { isTextOnlyToolActivity, readMessageInclusionOptions, shouldIncludeMessageForExport } from './messageClassifier'
 import { getExportAuthorLabel } from './messageLabel'
 import { renderToolActivityText } from './toolActivity'
 import { normalizeReferenceText, replaceReferenceTokens, resolveExportMessage, stripUiTokens } from './shared'
 import { sanitizeLLMText } from './textSanitizer'
 import type { ConversationNodeMessage } from '../api'
+import type { MessageInclusionOptions } from './messageClassifier'
 import type { Emphasis, Strong } from 'mdast'
 
 export async function exportToText() {
@@ -52,8 +53,9 @@ export async function exportToText() {
     await inlineGeneratedTextFiles(rawConversation, { conversationId: rawConversation.conversation_id ?? rawConversation.id ?? chatId })
 
     const { conversationNodes } = processConversation(rawConversation)
+    const inclusion = readMessageInclusionOptions()
     const text = conversationNodes
-        .map(({ message }) => transformMessageForTextExport(message))
+        .map(({ message }) => transformMessageForTextExport(message, inclusion))
         .filter(Boolean)
         .join('\n\n')
 
@@ -64,10 +66,10 @@ export async function exportToText() {
 
 const LatexRegex = /(\s\$\$.+\$\$\s|\s\$.+\$\s|\\\[.+\\\]|\\\(.+\\\))|(^\$$[\S\s]+^\$$)|(^\$\$[\S\s]+^\$\$$)/gm
 
-export function transformMessageForTextExport(message?: ConversationNodeMessage) {
+export function transformMessageForTextExport(message?: ConversationNodeMessage, inclusion: MessageInclusionOptions = {}) {
     const exportMessage = resolveExportMessage(message)
     if (!exportMessage?.content) return null
-    if (!shouldIncludeMessageForExport(exportMessage)) return null
+    if (!shouldIncludeMessageForExport(exportMessage, inclusion)) return null
 
     const author = getExportAuthorLabel(exportMessage)
     if (isTextOnlyToolActivity(exportMessage)) {

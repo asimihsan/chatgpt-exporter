@@ -16,7 +16,7 @@ import { fromMarkdown, toHtml } from '../utils/markdown'
 import { ScriptStorage } from '../utils/storage'
 import { escapeHtml, standardizeLineBreaks } from '../utils/text'
 import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
-import { isTextOnlyToolActivity, shouldIncludeMessageForExport } from './messageClassifier'
+import { isTextOnlyToolActivity, readMessageInclusionOptions, shouldIncludeMessageForExport } from './messageClassifier'
 import { getExportAuthorLabel, getVisibleHtmlLabel } from './messageLabel'
 import { renderToolActivityHtml } from './toolActivity'
 import { getSecurityFileNameOptions, getSecurityUnsupportedMessage, loadCurrentSecurityDocument, securityDocumentToHtml } from './securityDocument'
@@ -126,13 +126,14 @@ export function conversationToHtml(
     const enableTimestamp = ScriptStorage.get<boolean>(KEY_TIMESTAMP_ENABLED) ?? false
     const timeStampHtml = ScriptStorage.get<boolean>(KEY_TIMESTAMP_HTML) ?? false
     const timeStamp24H = ScriptStorage.get<boolean>(KEY_TIMESTAMP_24H) ?? false
+    const inclusion = readMessageInclusionOptions()
 
     const LatexRegex = /(\s\$\$.+?\$\$\s|\s\$.+?\$\s|\\\[.+?\\\]|\\\(.+?\\\))|(^\$$[\S\s]+?^\$$)|(^\$\$[\S\s]+?^\$\$\$)/gm
 
     const conversationHtml = conversationNodes.map(({ message }) => {
         const exportMessage = resolveExportMessage(message)
         if (!exportMessage?.content) return null
-        if (!shouldIncludeMessageForExport(exportMessage)) return null
+        if (!shouldIncludeMessageForExport(exportMessage, inclusion)) return null
 
         const author = getExportAuthorLabel(exportMessage)
         const model = exportMessage.metadata?.model_slug === 'gpt-4' ? 'GPT-4' : 'GPT-3'

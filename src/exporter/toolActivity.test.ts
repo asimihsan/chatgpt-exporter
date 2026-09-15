@@ -28,6 +28,8 @@ import {
     fixtureToolActivityConversation,
     fixtureTruncatedResult,
 } from './toolActivityFixture'
+import { KEY_INCLUDE_TOOL_ACTIVITY } from '../constants'
+import { ScriptStorage } from '../utils/storage'
 import type { ConversationNodeMessage } from '../api'
 
 vi.mock('../page', () => ({
@@ -121,20 +123,23 @@ describe('payload rendering', () => {
     })
 })
 
-describe('exporter integration (current inclusion rules)', () => {
+describe('exporter integration with tool activity enabled', () => {
+    const on = { includeToolActivity: true }
+
     it('renders a populated result as a fenced block in markdown and suppresses empty results', () => {
-        const rendered = transformMessageForMarkdownExport(fixturePopulatedResult())
+        const rendered = transformMessageForMarkdownExport(fixturePopulatedResult(), { inclusion: on })
         expect(rendered).toBe('#### Tool result (Forgejo · find_files):\n```\n[L1] {"call_id":"fmcp-1","files":[{"kind":"file","path":"README.md","size":12}]}\n```')
-        expect(transformMessageContentForMarkdownExport(fixtureEmptyCodeResult())).toBeNull()
-        expect(transformMessageContentForMarkdownExport(fixtureEmptyTextResult())).toBeNull()
+        expect(transformMessageContentForMarkdownExport(fixtureEmptyCodeResult(), on)).toBeNull()
+        expect(transformMessageContentForMarkdownExport(fixtureEmptyTextResult(), on)).toBeNull()
     })
 
     it('renders text export with the label and raw payload', () => {
-        expect(transformMessageForTextExport(fixturePopulatedResult())).toBe('Tool result (Forgejo · find_files):\n[L1] {"call_id":"fmcp-1","files":[{"kind":"file","path":"README.md","size":12}]}')
-        expect(transformMessageForTextExport(fixtureEmptyCodeResult())).toBeNull()
+        expect(transformMessageForTextExport(fixturePopulatedResult(), on)).toBe('Tool result (Forgejo · find_files):\n[L1] {"call_id":"fmcp-1","files":[{"kind":"file","path":"README.md","size":12}]}')
+        expect(transformMessageForTextExport(fixtureEmptyCodeResult(), on)).toBeNull()
     })
 
     it('renders html with an escaped visible label and escaped payload', () => {
+        ScriptStorage.set(KEY_INCLUDE_TOOL_ACTIVITY, true)
         const hostile = fixturePopulatedResult('r', 'find_files', '{"html":"<img src=x onerror=alert(1)>"}')
         const html = conversationToHtml(fixtureToolActivityConversation([hostile]), 'data:,avatar', undefined, { lang: 'en' })
         expect(html).toContain('<div class="author-label">Tool result (Forgejo · find_files)</div>')

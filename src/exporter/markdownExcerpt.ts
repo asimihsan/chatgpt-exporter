@@ -5,9 +5,11 @@
 
 import { resolveExportMessage } from './shared'
 import { transformMessageContentForMarkdownExport, transformMessageForMarkdownExport } from './markdown'
+import { readMessageInclusionOptions } from './messageClassifier'
 import { getExportAuthorLabel } from './messageLabel'
 import { normalizeBlockFingerprint } from '../messageMarkdown/fingerprint'
 import type { ConversationNodeMessage, ConversationResult } from '../api'
+import type { MessageInclusionOptions } from './messageClassifier'
 import type { MessageMarkdownSelection, SelectableBlockDescriptor } from '../messageMarkdown/types'
 
 export interface RejectedMarkdownBlock {
@@ -36,6 +38,7 @@ const FENCED_CODE_BLOCK_REGEX = /```([^\n`]*)\n([\s\S]*?)\n```/g
 export function conversationToMarkdownExcerpt(
     conversation: ConversationResult,
     selection: MessageMarkdownSelection,
+    inclusion: MessageInclusionOptions = readMessageInclusionOptions(),
 ): MarkdownExcerptResult {
     const selectedMessages = new Set(selection.messageIds)
     const blocksByMessage = groupBlocksByMessage(selection.blocks)
@@ -50,7 +53,7 @@ export function conversationToMarkdownExcerpt(
 
         const selectionKeys = [message.id, `turn:${turnIndex}`]
         if (selectionKeys.some(key => selectedMessages.has(key))) {
-            const rendered = transformMessageForMarkdownExport(message)
+            const rendered = transformMessageForMarkdownExport(message, { inclusion })
             if (rendered) parts.push(rendered)
             continue
         }
@@ -58,7 +61,7 @@ export function conversationToMarkdownExcerpt(
         const blocks = selectionKeys.flatMap(key => blocksByMessage.get(key) ?? [])
         if (!blocks?.length) continue
 
-        const renderableBlocks = getRenderableBlockSet(message)
+        const renderableBlocks = getRenderableBlockSet(message, inclusion)
         const renderedBlocks = blocks
             .map(block => renderSelectedBlock(renderableBlocks, block, rejectedBlocks))
             .filter((block): block is string => Boolean(block))
@@ -108,8 +111,8 @@ function renderSelectedBlock(
     return matches[0]?.markdown ?? null
 }
 
-function getRenderableBlockSet(message: ConversationNodeMessage): RenderableBlockSet {
-    const content = transformMessageContentForMarkdownExport(message)
+function getRenderableBlockSet(message: ConversationNodeMessage, inclusion: MessageInclusionOptions): RenderableBlockSet {
+    const content = transformMessageContentForMarkdownExport(message, inclusion)
     if (content === null) return { blocks: [], rejectionReason: 'missing-content' }
 
     const blocks = getRenderableBlocks(message, content)

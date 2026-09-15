@@ -17,7 +17,7 @@ import { ScriptStorage } from '../utils/storage'
 import { standardizeLineBreaks } from '../utils/text'
 import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
 import { collectMarkdownSourcesFromConversation, renderMarkdownSources } from './markdownSources'
-import { isTextOnlyToolActivity, shouldIncludeMessageForExport } from './messageClassifier'
+import { isTextOnlyToolActivity, readMessageInclusionOptions, shouldIncludeMessageForExport } from './messageClassifier'
 import { getExportAuthorLabel } from './messageLabel'
 import { renderToolActivityMarkdown } from './toolActivity'
 import { getSecurityFileNameOptions, getSecurityUnsupportedMessage, loadCurrentSecurityDocument, securityDocumentToMarkdown } from './securityDocument'
@@ -25,6 +25,7 @@ import { dateStr, timestamp, unixTimestampToISOString } from '../utils/utils'
 import { normalizeReferenceText, replaceReferenceTokens, resolveExportMessage, stripUiTokens } from './shared'
 import { sanitizeLLMText } from './textSanitizer'
 import type { ApiConversationWithId, Citation, ConversationNodeMessage, ConversationResult } from '../api'
+import type { MessageInclusionOptions } from './messageClassifier'
 import type { ExportMeta } from '../ui/SettingContext'
 
 export async function exportToMarkdown(fileNameFormat: string, metaList: ExportMeta[]) {
@@ -161,13 +162,15 @@ export function conversationToMarkdown(conversation: ConversationResult, metaLis
     const enableTimestamp = ScriptStorage.get<boolean>(KEY_TIMESTAMP_ENABLED) ?? false
     const timeStampMarkdown = ScriptStorage.get<boolean>(KEY_TIMESTAMP_MARKDOWN) ?? false
     const timeStamp24H = ScriptStorage.get<boolean>(KEY_TIMESTAMP_24H) ?? false
+    const inclusion = readMessageInclusionOptions()
 
     const content = conversationNodes.map(({ message }) => transformMessageForMarkdownExport(message, {
         enableTimestamp: Boolean(enableTimestamp && timeStampMarkdown),
         timeStamp24H,
+        inclusion,
     })).filter(Boolean).join('\n\n')
 
-    const sources = renderMarkdownSources(collectMarkdownSourcesFromConversation(conversation))
+    const sources = renderMarkdownSources(collectMarkdownSourcesFromConversation(conversation, inclusion))
     const markdown = [ `${frontMatter}# ${title}\n\n${content}`, sources ]
         .filter(Boolean)
         .join('\n\n')
@@ -178,6 +181,7 @@ export function conversationToMarkdown(conversation: ConversationResult, metaLis
 export interface MarkdownMessageRenderOptions {
     enableTimestamp?: boolean
     timeStamp24H?: boolean
+    inclusion?: MessageInclusionOptions
 }
 
 export function transformMessageForMarkdownExport(
@@ -185,7 +189,7 @@ export function transformMessageForMarkdownExport(
     options: MarkdownMessageRenderOptions = {},
 ): string | null {
     const exportMessage = resolveExportMessage(message)
-    const content = transformMessageContentForMarkdownExport(exportMessage)
+    const content = transformMessageContentForMarkdownExport(exportMessage, options.inclusion)
     if (!exportMessage || content === null) return null
 
     const timestampHtml = renderMarkdownTimestamp(exportMessage, options)
@@ -194,9 +198,12 @@ export function transformMessageForMarkdownExport(
     return `#### ${author}:\n${timestampHtml}${content}`
 }
 
-export function transformMessageContentForMarkdownExport(message?: ConversationNodeMessage | null): string | null {
+export function transformMessageContentForMarkdownExport(
+    message?: ConversationNodeMessage | null,
+    inclusion: MessageInclusionOptions = {},
+): string | null {
     if (!message?.content) return null
-    if (!shouldIncludeMessageForExport(message)) return null
+    if (!shouldIncludeMessageForExport(message, inclusion)) return null
 
     if (isTextOnlyToolActivity(message)) {
         const rendered = renderToolActivityMarkdown(message)

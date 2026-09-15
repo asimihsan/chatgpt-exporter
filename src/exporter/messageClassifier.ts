@@ -4,6 +4,8 @@
  */
 
 import type { ConversationNodeMessage } from '../api'
+import { KEY_INCLUDE_TOOL_ACTIVITY } from '../constants'
+import { ScriptStorage } from '../utils/storage'
 import { getExecutionOutputImages } from './executionOutput'
 
 const INTERNAL_CONTENT_TYPES = new Set<ConversationNodeMessage['content']['content_type']>([
@@ -171,19 +173,38 @@ export function getMessageExportKind(message?: ConversationNodeMessage): Message
     return 'other'
 }
 
-function isThinkingToolTextMessage(message: ConversationNodeMessage): boolean {
-    return isThinkingMessage(message)
-        && message.author.role === 'tool'
-        && message.content.content_type === 'text'
+/** Inclusion options as persisted in the settings panel. */
+export function readMessageInclusionOptions(): MessageInclusionOptions {
+    return {
+        includeToolActivity: ScriptStorage.get<boolean>(KEY_INCLUDE_TOOL_ACTIVITY) === true,
+    }
 }
 
-export function shouldIncludeMessageForExport(message?: ConversationNodeMessage): boolean {
+export function shouldIncludeMessageForExport(
+    message?: ConversationNodeMessage,
+    options: MessageInclusionOptions = {},
+): boolean {
     if (!message?.content) return false
-    if (shouldSkipAsInternal(message)) return false
 
-    if (isAnalysisCodeMessage(message)) return true
-    if (isAnalysisExecutionOutput(message)) return true
-    if (isThinkingToolTextMessage(message)) return true
+    switch (getMessageExportKind(message)) {
+        case 'internal':
+            return false
+        case 'analysis-code':
+        case 'analysis-output':
+            return true
+        case 'thinking':
+            return message.author.role === 'tool' && message.content.content_type === 'text'
+        case 'tool-call':
+            return options.includeToolActivity === true
+        case 'tool-result':
+            return hasRenderableToolAssets(message) || options.includeToolActivity === true
+        case 'user':
+        case 'assistant':
+        case 'preamble':
+            return message.recipient === 'all'
+        case 'other':
+            break
+    }
 
     if (message.recipient !== 'all') return false
     if (message.author.role !== 'tool') return true

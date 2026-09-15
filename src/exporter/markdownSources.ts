@@ -4,6 +4,7 @@
  */
 
 import { shouldIncludeMessageForExport } from './messageClassifier'
+import type { MessageInclusionOptions } from './messageClassifier'
 import { resolveExportMessage } from './shared'
 import type { Citation, ContentReference, ConversationNodeMessage, ConversationResult } from '../api'
 
@@ -88,13 +89,16 @@ function addGeneratedFileSources(
     }
 }
 
-export function collectMarkdownSourcesFromConversation(conversation: ConversationResult): MarkdownSource[] {
+export function collectMarkdownSourcesFromConversation(
+    conversation: ConversationResult,
+    inclusion: MessageInclusionOptions = {},
+): MarkdownSource[] {
     const collector = new MarkdownSourceCollector()
 
     for (const { message } of conversation.conversationNodes) {
         const exportMessage = resolveExportMessage(message)
         if (!exportMessage?.content) continue
-        if (!shouldIncludeMessageForExport(exportMessage)) continue
+        if (!shouldIncludeMessageForExport(exportMessage, inclusion)) continue
 
         for (const ref of exportMessage.metadata?.content_references ?? []) {
             addContentReferenceSource(collector, ref)
