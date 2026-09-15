@@ -128,6 +128,15 @@ interface MessageMeta {
     async_task_type?: 'pro_mode' | (string & {})
     /** Duration of pro thinking in seconds */
     finished_duration_sec?: number
+    /** App/connector that produced a tool result, e.g. `{ app_name: 'Forgejo', resource_uri: '/asdk_app_…/link_…/find_files' }` */
+    invoked_resource?: {
+        resource_uri?: string
+        app_name?: string
+        publish_status?: string
+    }
+    invoked_plugin?: Record<string, unknown>
+    /** Short assistant status line shown while reasoning, e.g. "I'll assess the role's fit…" */
+    is_thinking_preamble_message?: boolean
 }
 
 export type AuthorRole = 'system' | 'assistant' | 'user' | 'tool'
@@ -212,7 +221,7 @@ export interface ConversationNodeMessage {
     } | {
         // plugin response
         content_type: 'code'
-        language: 'unknown' & (string & {})
+        language: 'unknown' | 'json' | 'python3' | (string & {})
         text: string
     } | {
         content_type: 'execution_output'
@@ -260,7 +269,7 @@ export interface ConversationNodeMessage {
     // end_turn: boolean
     id: string
     metadata?: MessageMeta
-    recipient: 'all' | 'browser' | 'python' | 'dalle.text2im' & (string & {})
+    recipient: 'all' | 'browser' | 'python' | 'dalle.text2im' | (string & {})
     status: string
     channel?: 'commentary' | 'final' | null | (string & {})
     end_turn?: boolean

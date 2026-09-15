@@ -4474,6 +4474,7 @@
 		"model_editable_context"
 	]);
 	var THINKING_CONTENT_TYPES = new Set(["thoughts", "reasoning_recap"]);
+	var PYTHON_RECIPIENT = "python";
 	function isProThinkingMeta(message) {
 		const initialText = message.metadata?.initial_text?.toLowerCase() || "";
 		const finishedText = message.metadata?.finished_text?.toLowerCase() || "";
@@ -4491,13 +4492,13 @@
 		if (!message?.content) return false;
 		if (message.author.role !== "assistant") return false;
 		if (message.content.content_type !== "code") return false;
-		return message.recipient === "python" || message.channel === "commentary";
+		return message.recipient === PYTHON_RECIPIENT;
 	}
 	function isAnalysisExecutionOutput(message) {
 		if (!message?.content) return false;
 		if (message.author.role !== "tool") return false;
 		if (message.content.content_type !== "execution_output") return false;
-		return message.author.name === "python" || message.channel === "commentary";
+		return message.author.name === PYTHON_RECIPIENT;
 	}
 	function isThinkingMessage(message) {
 		if (!message?.content) return false;
