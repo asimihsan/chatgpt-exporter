@@ -16,7 +16,7 @@ import { fromMarkdown, toHtml } from '../utils/markdown'
 import { ScriptStorage } from '../utils/storage'
 import { escapeHtml, standardizeLineBreaks } from '../utils/text'
 import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
-import { isTextOnlyToolActivity, readMessageInclusionOptions, shouldIncludeMessageForExport } from './messageClassifier'
+import { isToolActivityMessage, readMessageInclusionOptions, shouldIncludeMessageForExport } from './messageClassifier'
 import { getExportAuthorLabel, getVisibleHtmlLabel } from './messageLabel'
 import { renderToolActivityHtml } from './toolActivity'
 import { getSecurityFileNameOptions, getSecurityUnsupportedMessage, loadCurrentSecurityDocument, securityDocumentToHtml } from './securityDocument'
@@ -184,7 +184,7 @@ export function conversationToHtml(
             postSteps = [...postSteps, input => `<p class="no-katex">${escapeHtml(input)}</p>`]
         }
         const postProcess = (input: string) => postSteps.reduce((acc, fn) => fn(acc), input)
-        const toolActivityHtml = isTextOnlyToolActivity(exportMessage) ? renderToolActivityHtml(exportMessage) : undefined
+        const toolActivityHtml = isToolActivityMessage(exportMessage) ? renderToolActivityHtml(exportMessage) : undefined
         if (toolActivityHtml === null) return null
         const content = toolActivityHtml ?? sanitizeLLMText(transformContent(exportMessage.content, exportMessage.metadata, postProcess))
         const visibleLabel = getVisibleHtmlLabel(exportMessage)

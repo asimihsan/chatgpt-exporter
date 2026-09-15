@@ -17,7 +17,7 @@ import { ScriptStorage } from '../utils/storage'
 import { standardizeLineBreaks } from '../utils/text'
 import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
 import { collectMarkdownSourcesFromConversation, renderMarkdownSources } from './markdownSources'
-import { isTextOnlyToolActivity, readMessageInclusionOptions, shouldIncludeMessageForExport } from './messageClassifier'
+import { isToolActivityMessage, readMessageInclusionOptions, shouldIncludeMessageForExport } from './messageClassifier'
 import { getExportAuthorLabel } from './messageLabel'
 import { renderToolActivityMarkdown } from './toolActivity'
 import { getSecurityFileNameOptions, getSecurityUnsupportedMessage, loadCurrentSecurityDocument, securityDocumentToMarkdown } from './securityDocument'
@@ -205,9 +205,8 @@ export function transformMessageContentForMarkdownExport(
     if (!message?.content) return null
     if (!shouldIncludeMessageForExport(message, inclusion)) return null
 
-    if (isTextOnlyToolActivity(message)) {
-        const rendered = renderToolActivityMarkdown(message)
-        return rendered === null ? null : sanitizeLLMText(rendered)
+    if (isToolActivityMessage(message)) {
+        return renderToolActivityMarkdown(message)
     }
 
     const postProcess = createMarkdownPostProcessor(message)

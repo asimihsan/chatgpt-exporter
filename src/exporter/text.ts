@@ -13,7 +13,7 @@ import { flatMap, fromMarkdown, toMarkdown } from '../utils/markdown'
 import { standardizeLineBreaks } from '../utils/text'
 import { getSecurityUnsupportedMessage, loadCurrentSecurityDocument, securityDocumentToText } from './securityDocument'
 import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
-import { isTextOnlyToolActivity, readMessageInclusionOptions, shouldIncludeMessageForExport } from './messageClassifier'
+import { isToolActivityMessage, readMessageInclusionOptions, shouldIncludeMessageForExport } from './messageClassifier'
 import { getExportAuthorLabel } from './messageLabel'
 import { renderToolActivityText } from './toolActivity'
 import { normalizeReferenceText, replaceReferenceTokens, resolveExportMessage, stripUiTokens } from './shared'
@@ -72,9 +72,9 @@ export function transformMessageForTextExport(message?: ConversationNodeMessage,
     if (!shouldIncludeMessageForExport(exportMessage, inclusion)) return null
 
     const author = getExportAuthorLabel(exportMessage)
-    if (isTextOnlyToolActivity(exportMessage)) {
+    if (isToolActivityMessage(exportMessage)) {
         const payload = renderToolActivityText(exportMessage)
-        return payload === null ? null : `${author}:\n${sanitizeLLMText(payload)}`
+        return payload === null ? null : `${author}:\n${payload}`
     }
 
     let content = transformContent(exportMessage.content, exportMessage.metadata)

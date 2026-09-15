@@ -3,15 +3,22 @@
  * SPDX-License-Identifier: MPL-2.0
  */
 
-import { getExecutionOutputText } from './executionOutput'
+import { getExecutionOutputImages, getExecutionOutputText } from './executionOutput'
 import { getMessageExportKind, MEMORY_SEARCH_RECIPIENT } from './messageClassifier'
 import { stripUiTokens } from './shared'
+import { sanitizeLLMText } from './textSanitizer'
 import { escapeHtml } from '../utils/text'
 import type { ConversationNodeMessage } from '../api'
 
 export interface ToolActivityDescriptor {
     appName?: string
     toolName?: string
+}
+
+export interface ToolActivityImage {
+    url: string
+    width?: number
+    height?: number
 }
 
 const CONNECTOR_RECIPIENT_PREFIX = 'api_tool.'
@@ -104,6 +111,21 @@ export function renderToolCallPayload(message: ConversationNodeMessage): string 
     return JSON.stringify(body, null, 2)
 }
 
+/** Images the ChatGPT UI shows for a tool result (multimodal image parts or execution output images). */
+export function getToolResultImages(message: ConversationNodeMessage): ToolActivityImage[] {
+    const { content } = message
+    if (content.content_type === 'multimodal_text') {
+        return (content.parts ?? []).flatMap((part) => {
+            if (typeof part === 'string' || part.content_type !== 'image_asset_pointer') return []
+            return [{ url: part.asset_pointer, width: part.width, height: part.height }]
+        })
+    }
+    if (content.content_type === 'execution_output') {
+        return getExecutionOutputImages(message.metadata).map(image => ({ url: image.image_url, width: image.width, height: image.height }))
+    }
+    return []
+}
+
 function resultParts(message: ConversationNodeMessage): string[] {
     const { content } = message
     switch (content.content_type) {
@@ -131,37 +153,81 @@ export function renderToolResultPayload(message: ConversationNodeMessage): strin
     return text ? text : null
 }
 
+/**
+ * Sanitized text of a tool call or result. Sanitizing here, before any fence
+ * or escaping is chosen, keeps later normalization from creating a closing fence.
+ */
 export function renderToolActivityPayload(message: ConversationNodeMessage): string | null {
+    let payload: string | null
     switch (getMessageExportKind(message)) {
         case 'tool-call':
-            return renderToolCallPayload(message)
+            payload = renderToolCallPayload(message)
+            break
         case 'tool-result':
-            return renderToolResultPayload(message)
+            payload = renderToolResultPayload(message)
+            break
         default:
             return null
     }
+    if (payload === null) return null
+    const sanitized = sanitizeLLMText(payload).trim()
+    return sanitized ? sanitized : null
+}
+
+function longestBacktickRun(text: string): number {
+    let longest = 0
+    for (const match of text.matchAll(/`+/g)) {
+        if (match[0].length > longest) longest = match[0].length
+    }
+    return longest
 }
 
 /** A code fence longer than any backtick run inside the payload, so embedded fences cannot close it. */
 export function fenceMarkdown(text: string, language = ''): string {
-    const longestRun = Math.max(2, ...Array.from(text.matchAll(/`+/g), match => match[0].length))
-    const fence = '`'.repeat(longestRun + 1)
+    const fence = '`'.repeat(Math.max(2, longestBacktickRun(text)) + 1)
     return `${fence}${language}\n${text}\n${fence}`
 }
 
-export function renderToolActivityMarkdown(message: ConversationNodeMessage): string | null {
+interface ToolActivityParts {
+    images: ToolActivityImage[]
+    payload: string | null
+}
+
+function getToolActivityParts(message: ConversationNodeMessage): ToolActivityParts | null {
+    const images = getMessageExportKind(message) === 'tool-result' ? getToolResultImages(message) : []
     const payload = renderToolActivityPayload(message)
-    if (payload === null) return null
+    if (payload === null && images.length === 0) return null
+    return { images, payload }
+}
+
+export function renderToolActivityMarkdown(message: ConversationNodeMessage): string | null {
+    const parts = getToolActivityParts(message)
+    if (!parts) return null
     const language = getMessageExportKind(message) === 'tool-call' ? 'json' : ''
-    return fenceMarkdown(payload, language)
+    return [
+        ...parts.images.map(image => `![image](${image.url})`),
+        ...(parts.payload === null ? [] : [fenceMarkdown(parts.payload, language)]),
+    ].join('\n')
+}
+
+function imageAttribute(name: string, value: number | undefined): string {
+    return typeof value === 'number' ? ` ${name}="${value}"` : ''
 }
 
 export function renderToolActivityHtml(message: ConversationNodeMessage): string | null {
-    const payload = renderToolActivityPayload(message)
-    if (payload === null) return null
-    return `<pre class="tool-activity"><code>${escapeHtml(payload)}</code></pre>`
+    const parts = getToolActivityParts(message)
+    if (!parts) return null
+    return [
+        ...parts.images.map(image => `<img src="${escapeHtml(image.url)}"${imageAttribute('height', image.height)}${imageAttribute('width', image.width)} />`),
+        ...(parts.payload === null ? [] : [`<pre class="tool-activity"><code>${escapeHtml(parts.payload)}</code></pre>`]),
+    ].join('\n')
 }
 
 export function renderToolActivityText(message: ConversationNodeMessage): string | null {
-    return renderToolActivityPayload(message)
+    const parts = getToolActivityParts(message)
+    if (!parts) return null
+    return [
+        ...parts.images.map(() => '[image]'),
+        ...(parts.payload === null ? [] : [parts.payload]),
+    ].join('\n')
 }

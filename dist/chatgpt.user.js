@@ -4643,10 +4643,9 @@
 		if (!message?.content) return false;
 		return hasMultimodalImage(message) || hasExecutionOutputImage(message);
 	}
-	function isTextOnlyToolActivity(message) {
+	function isToolActivityMessage(message) {
 		const kind = getMessageExportKind(message);
-		if (kind === "tool-call") return true;
-		return kind === "tool-result" && !hasRenderableToolAssets(message);
+		return kind === "tool-call" || kind === "tool-result";
 	}
 	function getMessageExportKind(message) {
 		if (!message?.content) return "internal";
@@ -15903,6 +15902,92 @@
 			return `${index + 1}. [${title}](<${url}>)`;
 		}).join("\n")}`;
 	}
+	var DEFAULT_SANITIZE_TEXT_OPTIONS = {
+		normalization: "NFKC",
+		replaceQuotes: true,
+		replaceDashes: true,
+		replaceEllipsis: true,
+		normalizeLineBreaks: true,
+		normalizeSpaces: true,
+		collapseSpaces: false,
+		removeSoftHyphen: true,
+		removeZeroWidth: true,
+		preserveEmojiZWJ: true,
+		removeBidiControls: true,
+		removeC0Controls: false,
+		stripChatGptUtmSourceFromMarkdownLinks: true
+	};
+	var ODD_LINE_BREAKS_REGEX = /[\u0085\u2028\u2029]/gu;
+	var ELLIPSIS_REGEX = /\u2026/gu;
+	var DASHES_REGEX = /[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/gu;
+	var SINGLE_QUOTES_REGEX = /[\u2018\u2019\u201A\u201B\u2032\u02BC\uFF07]/gu;
+	var DOUBLE_QUOTES_REGEX = /[\u201C\u201D\u201E\u201F\u2033\u00AB\u00BB\u301D-\u301F\uFF02]/gu;
+	var ODD_SPACES_REGEX = /[\u00A0\u202F\u2000-\u200A\u205F\u3000]/gu;
+	var SPACE_RUNS_REGEX = / {2,}/gu;
+	var SOFT_HYPHEN_REGEX = /\u00AD/gu;
+	var ZERO_WIDTH_REGEX = /(?:\u200B|\u200C|\u200D|\u2060|\uFEFF)/gu;
+	var ZERO_WIDTH_NO_ZWJ_REGEX = /(?:\u200B|\u200C|\u2060|\uFEFF)/gu;
+	var BIDI_CONTROLS_REGEX = /[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/gu;
+	var MARKDOWN_LINK_URL_REGEX = /(\[[^\]]+\]\(\s*<?)([^>\s)]+)(>?(?:\s+(?:"[^"]*"|'[^']*'|\([^)]+\)))?\s*\))/gu;
+	var CHATGPT_UTM_SOURCE_AT_END_REGEX = /(?:\?|&)utm_source=chatgpt\.com$/;
+	function resolveSanitizeTextOptions(options = {}) {
+		return {
+			...DEFAULT_SANITIZE_TEXT_OPTIONS,
+			...options
+		};
+	}
+	function isRemovableC0Control(codeUnit) {
+		if (codeUnit === 9 || codeUnit === 10 || codeUnit === 13) return false;
+		return codeUnit >= 0 && codeUnit <= 31 || codeUnit === 127;
+	}
+	function removeC0ControlCharacters(input) {
+		let segments;
+		let segmentStart = 0;
+		for (let index = 0; index < input.length; index++) {
+			if (!isRemovableC0Control(input.charCodeAt(index))) continue;
+			if (segments === void 0) segments = [];
+			if (segmentStart < index) segments.push(input.slice(segmentStart, index));
+			segmentStart = index + 1;
+		}
+		if (segments === void 0) return input;
+		if (segmentStart < input.length) segments.push(input.slice(segmentStart));
+		return segments.join("");
+	}
+	function stripChatGptUtmSourceFromMarkdownLinks(input) {
+		return input.replaceAll(MARKDOWN_LINK_URL_REGEX, (match, prefix, urlText, suffix) => {
+			if (!CHATGPT_UTM_SOURCE_AT_END_REGEX.test(urlText)) return match;
+			try {
+				const parsed = new URL(urlText);
+				if (parsed.searchParams.get("utm_source") !== "chatgpt.com") return match;
+				parsed.searchParams.delete("utm_source");
+				const serialized = parsed.toString();
+				if (!serialized) return match;
+				return `${prefix}${serialized}${suffix}`;
+			} catch {
+				return match;
+			}
+		});
+	}
+	function sanitizeLLMText(input, options = {}) {
+		const resolved = resolveSanitizeTextOptions(options);
+		let output = input;
+		if (resolved.normalization !== "none") output = output.normalize(resolved.normalization);
+		if (resolved.normalizeLineBreaks) {
+			output = standardizeLineBreaks(output);
+			output = output.replaceAll(ODD_LINE_BREAKS_REGEX, "\n");
+		}
+		if (resolved.replaceEllipsis) output = output.replaceAll(ELLIPSIS_REGEX, "...");
+		if (resolved.replaceDashes) output = output.replaceAll(DASHES_REGEX, "-");
+		if (resolved.replaceQuotes) output = output.replaceAll(SINGLE_QUOTES_REGEX, "'").replaceAll(DOUBLE_QUOTES_REGEX, "\"");
+		if (resolved.normalizeSpaces) output = output.replaceAll(ODD_SPACES_REGEX, " ");
+		if (resolved.collapseSpaces) output = output.replaceAll(SPACE_RUNS_REGEX, " ");
+		if (resolved.removeSoftHyphen) output = output.replaceAll(SOFT_HYPHEN_REGEX, "");
+		if (resolved.removeZeroWidth) output = output.replaceAll(resolved.preserveEmojiZWJ ? ZERO_WIDTH_NO_ZWJ_REGEX : ZERO_WIDTH_REGEX, "");
+		if (resolved.removeBidiControls) output = output.replaceAll(BIDI_CONTROLS_REGEX, "");
+		if (resolved.removeC0Controls) output = removeC0ControlCharacters(output);
+		if (resolved.stripChatGptUtmSourceFromMarkdownLinks) output = stripChatGptUtmSourceFromMarkdownLinks(output);
+		return output;
+	}
 	var CONNECTOR_RECIPIENT_PREFIX = "api_tool.";
 	var RESULT_BOILERPLATE_LINE = /^(?:Resource uri: |Showing \d+ of \d+ lines\.|Citation Marker:)/u;
 	function parseJsonObject(text) {
@@ -15966,6 +16051,23 @@
 		const body = payload.args && typeof payload.args === "object" ? payload.args : payload;
 		return JSON.stringify(body, null, 2);
 	}
+	function getToolResultImages(message) {
+		const { content } = message;
+		if (content.content_type === "multimodal_text") return (content.parts ?? []).flatMap((part) => {
+			if (typeof part === "string" || part.content_type !== "image_asset_pointer") return [];
+			return [{
+				url: part.asset_pointer,
+				width: part.width,
+				height: part.height
+			}];
+		});
+		if (content.content_type === "execution_output") return getExecutionOutputImages(message.metadata).map((image) => ({
+			url: image.image_url,
+			width: image.width,
+			height: image.height
+		}));
+		return [];
+	}
 	function resultParts(message) {
 		const { content } = message;
 		switch (content.content_type) {
@@ -15981,26 +16083,51 @@
 		return text ? text : null;
 	}
 	function renderToolActivityPayload(message) {
+		let payload;
 		switch (getMessageExportKind(message)) {
-			case "tool-call": return renderToolCallPayload(message);
-			case "tool-result": return renderToolResultPayload(message);
+			case "tool-call":
+				payload = renderToolCallPayload(message);
+				break;
+			case "tool-result":
+				payload = renderToolResultPayload(message);
+				break;
 			default: return null;
 		}
+		if (payload === null) return null;
+		const sanitized = sanitizeLLMText(payload).trim();
+		return sanitized ? sanitized : null;
+	}
+	function longestBacktickRun(text) {
+		let longest = 0;
+		for (const match of text.matchAll(/`+/g)) if (match[0].length > longest) longest = match[0].length;
+		return longest;
 	}
 	function fenceMarkdown(text, language = "") {
-		const longestRun = Math.max(2, ...Array.from(text.matchAll(/`+/g), (match) => match[0].length));
-		const fence = "`".repeat(longestRun + 1);
+		const fence = "`".repeat(Math.max(2, longestBacktickRun(text)) + 1);
 		return `${fence}${language}\n${text}\n${fence}`;
 	}
-	function renderToolActivityMarkdown(message) {
+	function getToolActivityParts(message) {
+		const images = getMessageExportKind(message) === "tool-result" ? getToolResultImages(message) : [];
 		const payload = renderToolActivityPayload(message);
-		if (payload === null) return null;
-		return fenceMarkdown(payload, getMessageExportKind(message) === "tool-call" ? "json" : "");
+		if (payload === null && images.length === 0) return null;
+		return {
+			images,
+			payload
+		};
+	}
+	function renderToolActivityMarkdown(message) {
+		const parts = getToolActivityParts(message);
+		if (!parts) return null;
+		const language = getMessageExportKind(message) === "tool-call" ? "json" : "";
+		return [...parts.images.map((image) => `![image](${image.url})`), ...parts.payload === null ? [] : [fenceMarkdown(parts.payload, language)]].join("\n");
+	}
+	function imageAttribute(name, value) {
+		return typeof value === "number" ? ` ${name}="${value}"` : "";
 	}
 	function renderToolActivityHtml(message) {
-		const payload = renderToolActivityPayload(message);
-		if (payload === null) return null;
-		return `<pre class="tool-activity"><code>${escapeHtml$1(payload)}</code></pre>`;
+		const parts = getToolActivityParts(message);
+		if (!parts) return null;
+		return [...parts.images.map((image) => `<img src="${escapeHtml$1(image.url)}"${imageAttribute("height", image.height)}${imageAttribute("width", image.width)} />`), ...parts.payload === null ? [] : [`<pre class="tool-activity"><code>${escapeHtml$1(parts.payload)}</code></pre>`]].join("\n");
 	}
 	function getExportAuthorLabel(message) {
 		switch (getMessageExportKind(message)) {
@@ -16493,92 +16620,6 @@
 		if (getPageContext().kind === "security-findings-list") return "Security findings list export is not supported yet.";
 		return `Export is not supported on ${baseUrl}${location.pathname}.`;
 	}
-	var DEFAULT_SANITIZE_TEXT_OPTIONS = {
-		normalization: "NFKC",
-		replaceQuotes: true,
-		replaceDashes: true,
-		replaceEllipsis: true,
-		normalizeLineBreaks: true,
-		normalizeSpaces: true,
-		collapseSpaces: false,
-		removeSoftHyphen: true,
-		removeZeroWidth: true,
-		preserveEmojiZWJ: true,
-		removeBidiControls: true,
-		removeC0Controls: false,
-		stripChatGptUtmSourceFromMarkdownLinks: true
-	};
-	var ODD_LINE_BREAKS_REGEX = /[\u0085\u2028\u2029]/gu;
-	var ELLIPSIS_REGEX = /\u2026/gu;
-	var DASHES_REGEX = /[\u2010-\u2015\u2212\uFE58\uFE63\uFF0D]/gu;
-	var SINGLE_QUOTES_REGEX = /[\u2018\u2019\u201A\u201B\u2032\u02BC\uFF07]/gu;
-	var DOUBLE_QUOTES_REGEX = /[\u201C\u201D\u201E\u201F\u2033\u00AB\u00BB\u301D-\u301F\uFF02]/gu;
-	var ODD_SPACES_REGEX = /[\u00A0\u202F\u2000-\u200A\u205F\u3000]/gu;
-	var SPACE_RUNS_REGEX = / {2,}/gu;
-	var SOFT_HYPHEN_REGEX = /\u00AD/gu;
-	var ZERO_WIDTH_REGEX = /(?:\u200B|\u200C|\u200D|\u2060|\uFEFF)/gu;
-	var ZERO_WIDTH_NO_ZWJ_REGEX = /(?:\u200B|\u200C|\u2060|\uFEFF)/gu;
-	var BIDI_CONTROLS_REGEX = /[\u061C\u200E\u200F\u202A-\u202E\u2066-\u2069]/gu;
-	var MARKDOWN_LINK_URL_REGEX = /(\[[^\]]+\]\(\s*<?)([^>\s)]+)(>?(?:\s+(?:"[^"]*"|'[^']*'|\([^)]+\)))?\s*\))/gu;
-	var CHATGPT_UTM_SOURCE_AT_END_REGEX = /(?:\?|&)utm_source=chatgpt\.com$/;
-	function resolveSanitizeTextOptions(options = {}) {
-		return {
-			...DEFAULT_SANITIZE_TEXT_OPTIONS,
-			...options
-		};
-	}
-	function isRemovableC0Control(codeUnit) {
-		if (codeUnit === 9 || codeUnit === 10 || codeUnit === 13) return false;
-		return codeUnit >= 0 && codeUnit <= 31 || codeUnit === 127;
-	}
-	function removeC0ControlCharacters(input) {
-		let segments;
-		let segmentStart = 0;
-		for (let index = 0; index < input.length; index++) {
-			if (!isRemovableC0Control(input.charCodeAt(index))) continue;
-			if (segments === void 0) segments = [];
-			if (segmentStart < index) segments.push(input.slice(segmentStart, index));
-			segmentStart = index + 1;
-		}
-		if (segments === void 0) return input;
-		if (segmentStart < input.length) segments.push(input.slice(segmentStart));
-		return segments.join("");
-	}
-	function stripChatGptUtmSourceFromMarkdownLinks(input) {
-		return input.replaceAll(MARKDOWN_LINK_URL_REGEX, (match, prefix, urlText, suffix) => {
-			if (!CHATGPT_UTM_SOURCE_AT_END_REGEX.test(urlText)) return match;
-			try {
-				const parsed = new URL(urlText);
-				if (parsed.searchParams.get("utm_source") !== "chatgpt.com") return match;
-				parsed.searchParams.delete("utm_source");
-				const serialized = parsed.toString();
-				if (!serialized) return match;
-				return `${prefix}${serialized}${suffix}`;
-			} catch {
-				return match;
-			}
-		});
-	}
-	function sanitizeLLMText(input, options = {}) {
-		const resolved = resolveSanitizeTextOptions(options);
-		let output = input;
-		if (resolved.normalization !== "none") output = output.normalize(resolved.normalization);
-		if (resolved.normalizeLineBreaks) {
-			output = standardizeLineBreaks(output);
-			output = output.replaceAll(ODD_LINE_BREAKS_REGEX, "\n");
-		}
-		if (resolved.replaceEllipsis) output = output.replaceAll(ELLIPSIS_REGEX, "...");
-		if (resolved.replaceDashes) output = output.replaceAll(DASHES_REGEX, "-");
-		if (resolved.replaceQuotes) output = output.replaceAll(SINGLE_QUOTES_REGEX, "'").replaceAll(DOUBLE_QUOTES_REGEX, "\"");
-		if (resolved.normalizeSpaces) output = output.replaceAll(ODD_SPACES_REGEX, " ");
-		if (resolved.collapseSpaces) output = output.replaceAll(SPACE_RUNS_REGEX, " ");
-		if (resolved.removeSoftHyphen) output = output.replaceAll(SOFT_HYPHEN_REGEX, "");
-		if (resolved.removeZeroWidth) output = output.replaceAll(resolved.preserveEmojiZWJ ? ZERO_WIDTH_NO_ZWJ_REGEX : ZERO_WIDTH_REGEX, "");
-		if (resolved.removeBidiControls) output = output.replaceAll(BIDI_CONTROLS_REGEX, "");
-		if (resolved.removeC0Controls) output = removeC0ControlCharacters(output);
-		if (resolved.stripChatGptUtmSourceFromMarkdownLinks) output = stripChatGptUtmSourceFromMarkdownLinks(output);
-		return output;
-	}
 	async function exportToMarkdown(fileNameFormat, metaList) {
 		const pageContext = getPageContext();
 		if (pageContext.kind === "security-finding" || pageContext.kind === "security-scan") {
@@ -16687,10 +16728,7 @@
 	function transformMessageContentForMarkdownExport(message, inclusion = {}) {
 		if (!message?.content) return null;
 		if (!shouldIncludeMessageForExport(message, inclusion)) return null;
-		if (isTextOnlyToolActivity(message)) {
-			const rendered = renderToolActivityMarkdown(message);
-			return rendered === null ? null : sanitizeLLMText(rendered);
-		}
+		if (isToolActivityMessage(message)) return renderToolActivityMarkdown(message);
 		const postProcess = createMarkdownPostProcessor(message);
 		return sanitizeLLMText(transformContent$1(message.content, message.metadata, postProcess));
 	}
@@ -22580,7 +22618,7 @@
 			}
 			if (exportMessage.author.role === "user") postSteps = [...postSteps, (input) => `<p class="no-katex">${escapeHtml$1(input)}</p>`];
 			const postProcess = (input) => postSteps.reduce((acc, fn) => fn(acc), input);
-			const toolActivityHtml = isTextOnlyToolActivity(exportMessage) ? renderToolActivityHtml(exportMessage) : void 0;
+			const toolActivityHtml = isToolActivityMessage(exportMessage) ? renderToolActivityHtml(exportMessage) : void 0;
 			if (toolActivityHtml === null) return null;
 			const content = toolActivityHtml ?? sanitizeLLMText(transformContent(exportMessage.content, exportMessage.metadata, postProcess));
 			const visibleLabel = getVisibleHtmlLabel(exportMessage);

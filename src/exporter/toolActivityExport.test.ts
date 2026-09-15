@@ -10,6 +10,7 @@ import { conversationToMarkdownExcerpt } from './markdownExcerpt'
 import { collectMarkdownSourcesFromConversation } from './markdownSources'
 import { shouldIncludeMessageForExport } from './messageClassifier'
 import { transformMessageForTextExport } from './text'
+import { renderToolActivityMarkdown } from './toolActivity'
 import {
     fixtureCallToolCall,
     fixturePopulatedResult,
@@ -154,6 +155,51 @@ describe('markdown export', () => {
         const markdown = conversationToMarkdown(conversation)
         expect(markdown).toContain('# Deep Research Report')
         expect(collectMarkdownSourcesFromConversation(conversation, OFF).map(source => source.url)).toEqual(['https://example.com/a'])
+    })
+})
+
+describe('review regressions', () => {
+    it('escapes text that accompanies an image-bearing tool result even with the toggle off', () => {
+        const hostile: ConversationNodeMessage = {
+            ...imageResult(),
+            content: {
+                content_type: 'multimodal_text',
+                parts: [
+                    'Resource uri: /response/turn3\nShowing 1 of 1 lines.',
+                    { content_type: 'image_asset_pointer', asset_pointer: 'file-service://chart', size_bytes: 10, width: 4, height: 3, fovea: 0 },
+                    '[L1] <script>alert(1)</script>',
+                ],
+            },
+        }
+        const conversation = fixtureToolActivityConversation([hostile])
+        const off = conversationToHtml(conversation, 'data:,avatar', undefined, { lang: 'en' })
+        expect(off).toContain('<img src="file-service://chart" height="3" width="4" />')
+        expect(off).toContain('&lt;script&gt;alert(1)&lt;/script&gt;')
+        expect(off).not.toContain('<script>alert(1)</script>')
+        expect(off).not.toContain('Resource uri:')
+
+        const markdown = conversationToMarkdown(conversation)
+        expect(markdown).toContain('![image](file-service://chart)')
+        expect(markdown).toContain('```\n[L1] <script>alert(1)</script>\n```')
+        expect(transformMessageForTextExport(hostile)).toBe('Tool result (Forgejo · render_chart):\n[image]\n[L1] <script>alert(1)</script>')
+    })
+
+    it('keeps a payload with fullwidth backticks inside a single fence after sanitization', () => {
+        ScriptStorage.set(KEY_INCLUDE_TOOL_ACTIVITY, true)
+        const payload = 'line one\n\uFF40\uFF40\uFF40\nline three'
+        const markdown = conversationToMarkdown(fixtureToolActivityConversation([fixturePopulatedResult('r', 'find_files', payload)]))
+        const start = markdown.indexOf('#### Tool result')
+        expect(start).toBeGreaterThan(-1)
+        const body = markdown.slice(start)
+        const lines = body.split('\n')
+        expect(lines.filter(line => line === '````')).toHaveLength(2)
+        expect(lines.filter(line => line === '```')).toHaveLength(1)
+        expect(body).toContain('[L1] line one\n```\nline three')
+    })
+
+    it('handles a large backtick-heavy payload without throwing', () => {
+        const payload = Array.from({ length: 150000 }, () => '`').join(' ')
+        expect(() => renderToolActivityMarkdown(fixturePopulatedResult('big', 'find_files', payload))).not.toThrow()
     })
 })
 
