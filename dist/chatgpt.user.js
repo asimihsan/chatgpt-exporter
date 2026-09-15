@@ -4660,6 +4660,10 @@
 		if (message.author.role === "assistant") return "assistant";
 		return "other";
 	}
+	function hasThinkingText(message) {
+		if (message.author.role !== "tool" || message.content.content_type !== "text") return false;
+		return (message.content.parts ?? []).some((part) => part.trim().length > 0);
+	}
 	function readMessageInclusionOptions() {
 		return { includeToolActivity: ScriptStorage.get(KEY_INCLUDE_TOOL_ACTIVITY) === true };
 	}
@@ -4669,7 +4673,7 @@
 			case "internal": return false;
 			case "analysis-code":
 			case "analysis-output": return true;
-			case "thinking": return message.author.role === "tool" && message.content.content_type === "text";
+			case "thinking": return hasThinkingText(message);
 			case "tool-call": return options.includeToolActivity === true;
 			case "tool-result": return hasRenderableToolAssets(message) || options.includeToolActivity === true;
 			case "user":

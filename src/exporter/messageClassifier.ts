@@ -172,6 +172,12 @@ export function getMessageExportKind(message?: ConversationNodeMessage): Message
     return 'other'
 }
 
+/** Pro reasoning placeholders arrive as tool text with empty parts; only text-bearing ones are worth a heading. */
+function hasThinkingText(message: ConversationNodeMessage): boolean {
+    if (message.author.role !== 'tool' || message.content.content_type !== 'text') return false
+    return (message.content.parts ?? []).some(part => part.trim().length > 0)
+}
+
 /** Inclusion options as persisted in the settings panel. */
 export function readMessageInclusionOptions(): MessageInclusionOptions {
     return {
@@ -192,7 +198,7 @@ export function shouldIncludeMessageForExport(
         case 'analysis-output':
             return true
         case 'thinking':
-            return message.author.role === 'tool' && message.content.content_type === 'text'
+            return hasThinkingText(message)
         case 'tool-call':
             return options.includeToolActivity === true
         case 'tool-result':

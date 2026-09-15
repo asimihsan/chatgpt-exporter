@@ -14,6 +14,7 @@ import { renderToolActivityHtml, renderToolActivityMarkdown, renderToolActivityT
 import {
     fixtureCallToolCall,
     fixturePopulatedResult,
+    fixtureProThinkingPlaceholder,
     fixtureToolActivityConversation,
     fixtureToolActivityMessages,
 } from './toolActivityFixture'
@@ -94,20 +95,27 @@ describe('classifier counts on the live-shaped fixture', () => {
         const includedOff = messages.filter(message => shouldIncludeMessageForExport(message, OFF)).map(message => message.id)
         const includedOn = messages.filter(message => shouldIncludeMessageForExport(message, ON)).map(message => message.id)
 
-        expect(includedOff).toEqual(['user-1', 'preamble-1', 'pro-1', 'final-1'])
+        expect(includedOff).toEqual(['user-1', 'preamble-1', 'final-1'])
         expect(includedOn).toEqual([
             'user-1', 'preamble-1', 'memory-1', 'list-1',
             'call-1', 'result-1', 'call-2', 'result-empty-code', 'call-3', 'result-2', 'result-empty-text',
-            'pro-1', 'final-1',
+            'final-1',
         ])
+    })
+
+    it('drops empty Pro reasoning placeholders but keeps text-bearing thinking', () => {
+        expect(shouldIncludeMessageForExport(fixtureProThinkingPlaceholder('empty', ['']), OFF)).toBe(false)
+        expect(shouldIncludeMessageForExport(fixtureProThinkingPlaceholder('blank', ['  ', '\n']), OFF)).toBe(false)
+        expect(shouldIncludeMessageForExport(fixtureProThinkingPlaceholder('text', ['Reasoned about the role']), OFF)).toBe(true)
+        expect(transformMessageForTextExport(fixtureProThinkingPlaceholder('text', ['Reasoned about the role']))).toBe('ChatGPT (Thinking):\nReasoned about the role')
+        expect(transformMessageForTextExport(fixtureProThinkingPlaceholder('empty', ['']))).toBeNull()
     })
 })
 
 describe('markdown export', () => {
     it('omits tool activity by default and keeps the visible conversation', () => {
         const markdown = conversationToMarkdown(fixtureToolActivityConversation())
-        // 'ChatGPT (Thinking)' is the pre-existing Pro reasoning placeholder (plan-005), untouched here.
-        expect(headings(markdown)).toEqual(['You', 'ChatGPT', 'ChatGPT (Thinking)', 'ChatGPT'])
+        expect(headings(markdown)).toEqual(['You', 'ChatGPT', 'ChatGPT'])
         expect(markdown).toContain('Yes, apply.')
         expect(markdown).not.toContain('find_files')
         expect(markdown).not.toContain('Tool call')
@@ -126,7 +134,6 @@ describe('markdown export', () => {
             'Tool call (Forgejo · get_file)',
             'Tool call (Forgejo · find_files)',
             'Tool result (Forgejo · find_files)',
-            'ChatGPT (Thinking)',
             'ChatGPT',
         ])
         expect(markdown).toContain('"query": "prior career constraints and backend stack"')
@@ -220,7 +227,7 @@ describe('html and text export', () => {
     it('html omits tool activity by default and labels it when enabled', () => {
         const conversation = fixtureToolActivityConversation()
         const off = conversationToHtml(conversation, 'data:,avatar', undefined, { lang: 'en' })
-        expect(htmlLabels(off)).toEqual(['ChatGPT (Thinking)'])
+        expect(htmlLabels(off)).toEqual([])
         expect(off).not.toContain('find_files')
 
         ScriptStorage.set(KEY_INCLUDE_TOOL_ACTIVITY, true)
@@ -233,7 +240,6 @@ describe('html and text export', () => {
             'Tool call (Forgejo · get_file)',
             'Tool call (Forgejo · find_files)',
             'Tool result (Forgejo · find_files)',
-            'ChatGPT (Thinking)',
         ])
         expect(on).toContain('<pre class="tool-activity"><code>[L1] {&quot;call_id&quot;:&quot;fmcp-1&quot;')
     })
