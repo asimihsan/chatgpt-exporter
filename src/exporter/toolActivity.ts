@@ -111,67 +111,102 @@ export function renderToolCallPayload(message: ConversationNodeMessage): string 
     return JSON.stringify(body, null, 2)
 }
 
-/** Images the ChatGPT UI shows for a tool result (multimodal image parts or execution output images). */
-export function getToolResultImages(message: ConversationNodeMessage): ToolActivityImage[] {
-    const { content } = message
-    if (content.content_type === 'multimodal_text') {
-        return (content.parts ?? []).flatMap((part) => {
-            if (typeof part === 'string' || part.content_type !== 'image_asset_pointer') return []
-            return [{ url: part.asset_pointer, width: part.width, height: part.height }]
-        })
-    }
-    if (content.content_type === 'execution_output') {
-        return getExecutionOutputImages(message.metadata).map(image => ({ url: image.image_url, width: image.width, height: image.height }))
-    }
-    return []
+/** One ordered piece of a tool result: text or an image, as the ChatGPT UI orders them. */
+export type ToolActivitySegment =
+    | { kind: 'text', text: string }
+    | { kind: 'image', image: ToolActivityImage }
+
+function imageSegment(image: ToolActivityImage): ToolActivitySegment {
+    return { kind: 'image', image }
 }
 
-function resultParts(message: ConversationNodeMessage): string[] {
+function textSegment(text: string): ToolActivitySegment {
+    return { kind: 'text', text }
+}
+
+/** Raw text and image pieces of a tool result in source order, before cleaning. */
+function rawResultSegments(message: ConversationNodeMessage): ToolActivitySegment[] {
     const { content } = message
     switch (content.content_type) {
         case 'multimodal_text':
-            return (content.parts ?? []).filter((part): part is string => typeof part === 'string')
+            return (content.parts ?? []).flatMap((part) => {
+                if (typeof part === 'string') return [textSegment(part)]
+                if (part.content_type === 'image_asset_pointer') {
+                    return [imageSegment({ url: part.asset_pointer, width: part.width, height: part.height })]
+                }
+                return []
+            })
         case 'text':
-            return content.parts ?? []
+            return (content.parts ?? []).map(textSegment)
         case 'code':
-            return [content.text || '']
+            return [textSegment(content.text || '')]
         case 'execution_output':
-            return [getExecutionOutputText(content)]
+            return [
+                ...getExecutionOutputImages(message.metadata).map(image => imageSegment({ url: image.image_url, width: image.width, height: image.height })),
+                textSegment(getExecutionOutputText(content)),
+            ]
         default:
             return []
     }
 }
 
-/** Text of a tool result with connector boilerplate removed; null when nothing readable remains. */
-export function renderToolResultPayload(message: ConversationNodeMessage): string | null {
-    const lines = resultParts(message)
-        .flatMap(part => stripUiTokens(part).split('\n'))
+/** Connector boilerplate removed, UI tokens stripped, text sanitized; empty when nothing readable remains. */
+function cleanResultText(text: string): string {
+    const lines = stripUiTokens(text)
+        .split('\n')
         .map(line => line.trimEnd())
         .filter(line => line && !RESULT_BOILERPLATE_LINE.test(line))
-
-    const text = lines.join('\n').trim()
-    return text ? text : null
+    return sanitizeLLMText(lines.join('\n')).trim()
 }
 
 /**
- * Sanitized text of a tool call or result. Sanitizing here, before any fence
- * or escaping is chosen, keeps later normalization from creating a closing fence.
+ * Ordered, cleaned segments of a tool result. Adjacent text parts merge into
+ * one segment so the common no-image result renders as a single block; text
+ * is sanitized here, before any fence or escaping is chosen, so later
+ * normalization cannot open a fence.
  */
+export function getToolResultSegments(message: ConversationNodeMessage): ToolActivitySegment[] {
+    const segments: ToolActivitySegment[] = []
+    for (const raw of rawResultSegments(message)) {
+        if (raw.kind === 'image') {
+            segments.push(raw)
+            continue
+        }
+        const text = cleanResultText(raw.text)
+        if (!text) continue
+        const previous = segments[segments.length - 1]
+        if (previous?.kind === 'text') {
+            previous.text = `${previous.text}\n${text}`
+        }
+        else {
+            segments.push(textSegment(text))
+        }
+    }
+    return segments
+}
+
+/** Text of a tool result with connector boilerplate removed; null when nothing readable remains. */
+export function renderToolResultPayload(message: ConversationNodeMessage): string | null {
+    const text = getToolResultSegments(message)
+        .flatMap(segment => segment.kind === 'text' ? [segment.text] : [])
+        .join('\n')
+    return text ? text : null
+}
+
+/** Sanitized text of a tool call, or of a tool result with images omitted. */
 export function renderToolActivityPayload(message: ConversationNodeMessage): string | null {
-    let payload: string | null
     switch (getMessageExportKind(message)) {
-        case 'tool-call':
-            payload = renderToolCallPayload(message)
-            break
+        case 'tool-call': {
+            const payload = renderToolCallPayload(message)
+            if (payload === null) return null
+            const sanitized = sanitizeLLMText(payload).trim()
+            return sanitized ? sanitized : null
+        }
         case 'tool-result':
-            payload = renderToolResultPayload(message)
-            break
+            return renderToolResultPayload(message)
         default:
             return null
     }
-    if (payload === null) return null
-    const sanitized = sanitizeLLMText(payload).trim()
-    return sanitized ? sanitized : null
 }
 
 function longestBacktickRun(text: string): number {
@@ -188,26 +223,30 @@ export function fenceMarkdown(text: string, language = ''): string {
     return `${fence}${language}\n${text}\n${fence}`
 }
 
-interface ToolActivityParts {
-    images: ToolActivityImage[]
-    payload: string | null
+function getToolActivitySegments(message: ConversationNodeMessage): ToolActivitySegment[] {
+    switch (getMessageExportKind(message)) {
+        case 'tool-call': {
+            const payload = renderToolActivityPayload(message)
+            return payload === null ? [] : [textSegment(payload)]
+        }
+        case 'tool-result':
+            return getToolResultSegments(message)
+        default:
+            return []
+    }
 }
 
-function getToolActivityParts(message: ConversationNodeMessage): ToolActivityParts | null {
-    const images = getMessageExportKind(message) === 'tool-result' ? getToolResultImages(message) : []
-    const payload = renderToolActivityPayload(message)
-    if (payload === null && images.length === 0) return null
-    return { images, payload }
+function renderSegments(message: ConversationNodeMessage, render: (segment: ToolActivitySegment) => string): string | null {
+    const segments = getToolActivitySegments(message)
+    if (segments.length === 0) return null
+    return segments.map(render).join('\n')
 }
 
 export function renderToolActivityMarkdown(message: ConversationNodeMessage): string | null {
-    const parts = getToolActivityParts(message)
-    if (!parts) return null
     const language = getMessageExportKind(message) === 'tool-call' ? 'json' : ''
-    return [
-        ...parts.images.map(image => `![image](${image.url})`),
-        ...(parts.payload === null ? [] : [fenceMarkdown(parts.payload, language)]),
-    ].join('\n')
+    return renderSegments(message, segment => (
+        segment.kind === 'image' ? `![image](${segment.image.url})` : fenceMarkdown(segment.text, language)
+    ))
 }
 
 function imageAttribute(name: string, value: number | undefined): string {
@@ -215,19 +254,13 @@ function imageAttribute(name: string, value: number | undefined): string {
 }
 
 export function renderToolActivityHtml(message: ConversationNodeMessage): string | null {
-    const parts = getToolActivityParts(message)
-    if (!parts) return null
-    return [
-        ...parts.images.map(image => `<img src="${escapeHtml(image.url)}"${imageAttribute('height', image.height)}${imageAttribute('width', image.width)} />`),
-        ...(parts.payload === null ? [] : [`<pre class="tool-activity"><code>${escapeHtml(parts.payload)}</code></pre>`]),
-    ].join('\n')
+    return renderSegments(message, segment => (
+        segment.kind === 'image'
+            ? `<img src="${escapeHtml(segment.image.url)}"${imageAttribute('height', segment.image.height)}${imageAttribute('width', segment.image.width)} />`
+            : `<pre class="tool-activity"><code>${escapeHtml(segment.text)}</code></pre>`
+    ))
 }
 
 export function renderToolActivityText(message: ConversationNodeMessage): string | null {
-    const parts = getToolActivityParts(message)
-    if (!parts) return null
-    return [
-        ...parts.images.map(() => '[image]'),
-        ...(parts.payload === null ? [] : [parts.payload]),
-    ].join('\n')
+    return renderSegments(message, segment => (segment.kind === 'image' ? '[image]' : segment.text))
 }

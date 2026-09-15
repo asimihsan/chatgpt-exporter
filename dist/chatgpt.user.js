@@ -16051,51 +16051,73 @@
 		const body = payload.args && typeof payload.args === "object" ? payload.args : payload;
 		return JSON.stringify(body, null, 2);
 	}
-	function getToolResultImages(message) {
-		const { content } = message;
-		if (content.content_type === "multimodal_text") return (content.parts ?? []).flatMap((part) => {
-			if (typeof part === "string" || part.content_type !== "image_asset_pointer") return [];
-			return [{
-				url: part.asset_pointer,
-				width: part.width,
-				height: part.height
-			}];
-		});
-		if (content.content_type === "execution_output") return getExecutionOutputImages(message.metadata).map((image) => ({
-			url: image.image_url,
-			width: image.width,
-			height: image.height
-		}));
-		return [];
+	function imageSegment(image) {
+		return {
+			kind: "image",
+			image
+		};
 	}
-	function resultParts(message) {
+	function textSegment(text) {
+		return {
+			kind: "text",
+			text
+		};
+	}
+	function rawResultSegments(message) {
 		const { content } = message;
 		switch (content.content_type) {
-			case "multimodal_text": return (content.parts ?? []).filter((part) => typeof part === "string");
-			case "text": return content.parts ?? [];
-			case "code": return [content.text || ""];
-			case "execution_output": return [getExecutionOutputText(content)];
+			case "multimodal_text": return (content.parts ?? []).flatMap((part) => {
+				if (typeof part === "string") return [textSegment(part)];
+				if (part.content_type === "image_asset_pointer") return [imageSegment({
+					url: part.asset_pointer,
+					width: part.width,
+					height: part.height
+				})];
+				return [];
+			});
+			case "text": return (content.parts ?? []).map(textSegment);
+			case "code": return [textSegment(content.text || "")];
+			case "execution_output": return [...getExecutionOutputImages(message.metadata).map((image) => imageSegment({
+				url: image.image_url,
+				width: image.width,
+				height: image.height
+			})), textSegment(getExecutionOutputText(content))];
 			default: return [];
 		}
 	}
+	function cleanResultText(text) {
+		return sanitizeLLMText(stripUiTokens(text).split("\n").map((line) => line.trimEnd()).filter((line) => line && !RESULT_BOILERPLATE_LINE.test(line)).join("\n")).trim();
+	}
+	function getToolResultSegments(message) {
+		const segments = [];
+		for (const raw of rawResultSegments(message)) {
+			if (raw.kind === "image") {
+				segments.push(raw);
+				continue;
+			}
+			const text = cleanResultText(raw.text);
+			if (!text) continue;
+			const previous = segments[segments.length - 1];
+			if (previous?.kind === "text") previous.text = `${previous.text}\n${text}`;
+			else segments.push(textSegment(text));
+		}
+		return segments;
+	}
 	function renderToolResultPayload(message) {
-		const text = resultParts(message).flatMap((part) => stripUiTokens(part).split("\n")).map((line) => line.trimEnd()).filter((line) => line && !RESULT_BOILERPLATE_LINE.test(line)).join("\n").trim();
+		const text = getToolResultSegments(message).flatMap((segment) => segment.kind === "text" ? [segment.text] : []).join("\n");
 		return text ? text : null;
 	}
 	function renderToolActivityPayload(message) {
-		let payload;
 		switch (getMessageExportKind(message)) {
-			case "tool-call":
-				payload = renderToolCallPayload(message);
-				break;
-			case "tool-result":
-				payload = renderToolResultPayload(message);
-				break;
+			case "tool-call": {
+				const payload = renderToolCallPayload(message);
+				if (payload === null) return null;
+				const sanitized = sanitizeLLMText(payload).trim();
+				return sanitized ? sanitized : null;
+			}
+			case "tool-result": return renderToolResultPayload(message);
 			default: return null;
 		}
-		if (payload === null) return null;
-		const sanitized = sanitizeLLMText(payload).trim();
-		return sanitized ? sanitized : null;
 	}
 	function longestBacktickRun(text) {
 		let longest = 0;
@@ -16106,28 +16128,30 @@
 		const fence = "`".repeat(Math.max(2, longestBacktickRun(text)) + 1);
 		return `${fence}${language}\n${text}\n${fence}`;
 	}
-	function getToolActivityParts(message) {
-		const images = getMessageExportKind(message) === "tool-result" ? getToolResultImages(message) : [];
-		const payload = renderToolActivityPayload(message);
-		if (payload === null && images.length === 0) return null;
-		return {
-			images,
-			payload
-		};
+	function getToolActivitySegments(message) {
+		switch (getMessageExportKind(message)) {
+			case "tool-call": {
+				const payload = renderToolActivityPayload(message);
+				return payload === null ? [] : [textSegment(payload)];
+			}
+			case "tool-result": return getToolResultSegments(message);
+			default: return [];
+		}
+	}
+	function renderSegments(message, render) {
+		const segments = getToolActivitySegments(message);
+		if (segments.length === 0) return null;
+		return segments.map(render).join("\n");
 	}
 	function renderToolActivityMarkdown(message) {
-		const parts = getToolActivityParts(message);
-		if (!parts) return null;
 		const language = getMessageExportKind(message) === "tool-call" ? "json" : "";
-		return [...parts.images.map((image) => `![image](${image.url})`), ...parts.payload === null ? [] : [fenceMarkdown(parts.payload, language)]].join("\n");
+		return renderSegments(message, (segment) => segment.kind === "image" ? `![image](${segment.image.url})` : fenceMarkdown(segment.text, language));
 	}
 	function imageAttribute(name, value) {
 		return typeof value === "number" ? ` ${name}="${value}"` : "";
 	}
 	function renderToolActivityHtml(message) {
-		const parts = getToolActivityParts(message);
-		if (!parts) return null;
-		return [...parts.images.map((image) => `<img src="${escapeHtml$1(image.url)}"${imageAttribute("height", image.height)}${imageAttribute("width", image.width)} />`), ...parts.payload === null ? [] : [`<pre class="tool-activity"><code>${escapeHtml$1(parts.payload)}</code></pre>`]].join("\n");
+		return renderSegments(message, (segment) => segment.kind === "image" ? `<img src="${escapeHtml$1(segment.image.url)}"${imageAttribute("height", segment.image.height)}${imageAttribute("width", segment.image.width)} />` : `<pre class="tool-activity"><code>${escapeHtml$1(segment.text)}</code></pre>`);
 	}
 	function getExportAuthorLabel(message) {
 		switch (getMessageExportKind(message)) {

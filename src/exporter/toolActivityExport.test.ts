@@ -10,7 +10,7 @@ import { conversationToMarkdownExcerpt } from './markdownExcerpt'
 import { collectMarkdownSourcesFromConversation } from './markdownSources'
 import { shouldIncludeMessageForExport } from './messageClassifier'
 import { transformMessageForTextExport } from './text'
-import { renderToolActivityMarkdown } from './toolActivity'
+import { renderToolActivityHtml, renderToolActivityMarkdown, renderToolActivityText } from './toolActivity'
 import {
     fixtureCallToolCall,
     fixturePopulatedResult,
@@ -195,6 +195,19 @@ describe('review regressions', () => {
         expect(lines.filter(line => line === '````')).toHaveLength(2)
         expect(lines.filter(line => line === '```')).toHaveLength(1)
         expect(body).toContain('[L1] line one\n```\nline three')
+    })
+
+    it('preserves caption and image order in mixed-content results', () => {
+        const image = (name: string) => ({ content_type: 'image_asset_pointer' as const, asset_pointer: `file-service://${name}`, size_bytes: 1, width: 2, height: 1, fovea: 0 })
+        const mixed: ConversationNodeMessage = {
+            ...imageResult(),
+            content: { content_type: 'multimodal_text', parts: ['Before:', image('a'), 'After:', image('b')] },
+        }
+        expect(renderToolActivityMarkdown(mixed)).toBe('```\nBefore:\n```\n![image](file-service://a)\n```\nAfter:\n```\n![image](file-service://b)')
+        expect(renderToolActivityHtml(mixed)).toBe(
+            '<pre class="tool-activity"><code>Before:</code></pre>\n<img src="file-service://a" height="1" width="2" />\n<pre class="tool-activity"><code>After:</code></pre>\n<img src="file-service://b" height="1" width="2" />',
+        )
+        expect(renderToolActivityText(mixed)).toBe('Before:\n[image]\nAfter:\n[image]')
     })
 
     it('handles a large backtick-heavy payload without throwing', () => {
