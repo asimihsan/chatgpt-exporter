@@ -9,7 +9,7 @@ on:
       - '**'
   pull_request:
     branches:
-      - master
+      - main
 
 jobs:
   check:
@@ -42,17 +42,17 @@ jobs:
         run: mise run ci
 
   release:
-    if: "github.event_name == 'push' && github.ref == 'refs/heads/master' && !startsWith(github.event.head_commit.message, 'chore: release v')"
+    if: "github.event_name == 'push' && github.ref == 'refs/heads/main' && !startsWith(github.event.head_commit.message, 'chore: release v')"
     needs: check
     runs-on: ubuntu-latest
     permissions:
       contents: write
     concurrency:
-      group: release-master-${{ github.ref }}
+      group: release-main-${{ github.ref }}
       cancel-in-progress: false
     env:
       USERSCRIPT_GITHUB_REPO: ${{ github.repository }}
-      USERSCRIPT_GITHUB_BRANCH: master
+      USERSCRIPT_GITHUB_BRANCH: main
     defaults:
       run:
         shell: bash
@@ -71,11 +71,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-bun-cache-
 
-      - name: Release master userscript
+      - name: Release main userscript
         env:
           EVENT_SHA: ${{ github.sha }}
           MAX_ATTEMPTS: "8"
-          RELEASE_BRANCH: master
+          RELEASE_BRANCH: main
           TAG_PREFIX: userscript-v
           TAG_REMOTE: origin
-        run: bash scripts/release/run-master-release.sh
+        run: bash scripts/release/run-main-release.sh

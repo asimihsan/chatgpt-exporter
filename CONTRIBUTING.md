@@ -6,7 +6,7 @@ We're excited that you're interested in contributing to this project! Before sub
 
 This project uses [PNPM](https://pnpm.js.org/) for package management. Please make sure you have it installed before proceeding.
 
-1. Fork the repo and create your branch from `master`.
+1. Fork the repo and create your branch from `main`.
 2. Run `pnpm install` in the repository root.
 3. Run `pnpm dev` to start the development server.
 4. Click "Install" on the popup to install the development script.

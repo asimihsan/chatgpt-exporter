@@ -9,7 +9,7 @@
 [![GreasyFork][GreasyFork-image]][GreasyFork-url]
 
 [license-image]: https://img.shields.io/github/license/asimihsan/chatgpt-exporter?color=red
-[license-url]: https://github.com/asimihsan/chatgpt-exporter/blob/master/LICENSE
+[license-url]: https://github.com/asimihsan/chatgpt-exporter/blob/main/LICENSE
 [release-image]: https://img.shields.io/github/v/release/asimihsan/chatgpt-exporter?color=blue
 [release-url]: https://github.com/asimihsan/chatgpt-exporter/releases/latest
 [GreasyFork-image]: https://img.shields.io/static/v1?label=%20&message=GreasyFork&style=flat-square&labelColor=7B0000&color=960000&logo=data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAABmJLR0QA/wD/AP+gvaeTAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAB3RJTUUH3ggEBCQHM3fXsAAAAVdJREFUOMudkz2qwkAUhc/goBaGJBgUtBCZyj0ILkpwAW7Bws4yO3AHLiCtEFD8KVREkoiFxZzX5A2KGfN4F04zMN+ce+5c4LMUgDmANYBnrnV+plBSi+FwyHq9TgA2LQpvCiEiABwMBtzv95RSfoNEHy8DYBzHrNVqVEr9BWKcqNFoxF6vx3a7zc1mYyC73a4MogBg7vs+z+czO50OW60Wt9stK5UKp9Mpj8cjq9WqDTBHnjAdxzGQZrPJw+HA31oulzbAWgLoA0CWZVBKIY5jzGYzdLtdE9DlcrFNrY98zobqOA6TJKHW2jg4nU5sNBpFDp6mhVe5rsvVasUwDHm9Xqm15u12o+/7Hy0gD8KatOd5vN/v1FozTVN6nkchxFuI6hsAAIMg4OPxMJCXdtTbR7JJCMEgCJhlGUlyPB4XfumozInrupxMJpRSRtZlKoNYl+m/6/wDuWAjtPfsQuwAAAAASUVORK5CYII=
@@ -40,9 +40,9 @@
 [Install-1-image]: https://img.shields.io/badge/-Installer-blue
 [Install-1-url]: https://greasyfork.org/scripts/456055-chatgpt-exporter
 [Install-2-image]: https://img.shields.io/badge/-Installer-blue
-[Install-2-url]: https://raw.githubusercontent.com/asimihsan/chatgpt-exporter/master/dist/chatgpt.user.js
+[Install-2-url]: https://raw.githubusercontent.com/asimihsan/chatgpt-exporter/main/dist/chatgpt.user.js
 
-L'URL d'installation GitHub ci-dessus est l'URL stable de mise a jour automatique et suit la derniere build de release sur `master`.
+L'URL d'installation GitHub ci-dessus est l'URL stable de mise a jour automatique et suit la derniere build de release sur `main`.
 
 #
 

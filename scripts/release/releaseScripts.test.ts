@@ -30,7 +30,7 @@ function createRepo(initialVersion = '2.29.3') {
     const dir = mkdtempSync(path.join(tmpdir(), 'chatgpt-exporter-release-'))
     tempDirs.push(dir)
 
-    run('git init --initial-branch=master', dir)
+    run('git init --initial-branch=main', dir)
     run('git config user.name "Codex"', dir)
     run('git config user.email "codex@example.com"', dir)
 

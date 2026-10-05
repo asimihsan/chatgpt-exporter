@@ -7,7 +7,7 @@ set -euo pipefail
 event_sha="${EVENT_SHA:-}"
 tag_prefix="${TAG_PREFIX:-userscript-v}"
 tag_remote="${TAG_REMOTE:-origin}"
-release_branch="${RELEASE_BRANCH:-master}"
+release_branch="${RELEASE_BRANCH:-main}"
 max_attempts="${MAX_ATTEMPTS:-5}"
 js_runtime="$(command -v node || command -v bun || true)"
 
@@ -78,5 +78,5 @@ while (( attempt < max_attempts )); do
     sleep 2
 done
 
-echo "Failed to publish master release after ${max_attempts} attempts." >&2
+echo "Failed to publish main release after ${max_attempts} attempts." >&2
 exit 1

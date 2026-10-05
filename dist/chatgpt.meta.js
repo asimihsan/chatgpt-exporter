@@ -14,8 +14,8 @@
 // @homepageURL        https://github.com/asimihsan/chatgpt-exporter
 // @source             https://github.com/asimihsan/chatgpt-exporter.git
 // @supportURL         https://github.com/asimihsan/chatgpt-exporter/issues
-// @downloadURL        https://raw.githubusercontent.com/asimihsan/chatgpt-exporter/master/dist/chatgpt.user.js
-// @updateURL          https://raw.githubusercontent.com/asimihsan/chatgpt-exporter/master/dist/chatgpt.meta.js
+// @downloadURL        https://raw.githubusercontent.com/asimihsan/chatgpt-exporter/main/dist/chatgpt.user.js
+// @updateURL          https://raw.githubusercontent.com/asimihsan/chatgpt-exporter/main/dist/chatgpt.meta.js
 // @match              https://chat.openai.com/
 // @match              https://chat.openai.com/?model=*
 // @match              https://chat.openai.com/c/*

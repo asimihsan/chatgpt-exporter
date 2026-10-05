@@ -13,7 +13,7 @@ const defaultUserscriptRepo = process.env.GITHUB_REPOSITORY ?? 'asimihsan/chatgp
 const defaultUserscriptBranch = process.env.GITHUB_REF_NAME
     ?? process.env.GITHUB_BASE_REF
     ?? process.env.GITHUB_HEAD_REF
-    ?? 'master'
+    ?? 'main'
 const userscriptRepo = process.env.USERSCRIPT_GITHUB_REPO ?? defaultUserscriptRepo
 const userscriptBranch = process.env.USERSCRIPT_GITHUB_BRANCH ?? defaultUserscriptBranch
 const userscriptDistBaseUrl = `https://raw.githubusercontent.com/${userscriptRepo}/${userscriptBranch}/dist`
