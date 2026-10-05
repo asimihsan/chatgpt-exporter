@@ -537,6 +537,20 @@
 	var KEY_COPY_TEXT_SHORTCUT = "exporter:copy_text_shortcut";
 	var KEY_INCLUDE_TOOL_ACTIVITY = "exporter:include_tool_activity";
 	var KEY_OAI_HISTORY_DISABLED = "oai/apps/historyDisabled";
+	var CONVERSATION_MESSAGE_SELECTOR = "[data-message-id], [data-chatgpt-search-message-ids]";
+	function hasConversationMessages(root = document) {
+		return Boolean(root.querySelector("[data-testid^=\"conversation-turn-\"], main [data-chatgpt-search-message-ids]"));
+	}
+	function findConversationCaptureTarget(root = document) {
+		const legacy = root.querySelector("#thread div:has(> [data-testid=\"conversation-turn-1\"])");
+		if (legacy) return legacy;
+		const turns = Array.from(root.querySelectorAll("main [data-turn-key]"));
+		if (!turns.length) return null;
+		let target = turns[0].parentElement;
+		while (target && !turns.every((turn) => target?.contains(turn))) target = target.parentElement;
+		if (!target || target.tagName === "MAIN" || target.querySelector("textarea, [contenteditable=\"true\"]")) return null;
+		return target;
+	}
 	function getBase64FromImg(el) {
 		const canvas = document.createElement("canvas");
 		canvas.width = el.naturalWidth;
@@ -607,7 +621,7 @@
 		return defaultAvatar;
 	}
 	function checkIfConversationStarted() {
-		return !!document.querySelector("[data-testid^=\"conversation-turn-\"]");
+		return hasConversationMessages();
 	}
 	var generateKey = (args) => JSON.stringify(args);
 	function memorize(fn) {
@@ -1300,17 +1314,62 @@
 	}
 	var TURN_SELECTOR = "main [data-testid^=\"conversation-turn-\"], [data-testid^=\"conversation-turn-\"]";
 	var MESSAGE_SELECTOR = "[data-message-id]";
+	var SEARCH_MESSAGE_SELECTOR = "[data-chatgpt-search-message-ids]";
 	var ACTION_BUTTON_SELECTOR = [
 		"[data-testid=\"copy-turn-action-button\"]",
 		"button[aria-label=\"Copy message\" i]",
-		"button[aria-label=\"Copy response\" i]"
+		"button[aria-label=\"Copy response\" i]",
+		".turn-action-controls button[aria-label=\"Copy\" i]"
 	].join(", ");
 	var BLOCK_SELECTOR = "pre";
 	var MIN_TRIGGER_TARGET_PX = 28;
 	var MIN_ROW_WIDTH_PX = 32;
 	function discoverMessageMarkdownCandidates(root = document) {
 		const viewport = getViewportBounds();
-		return Array.from(root.querySelectorAll(TURN_SELECTOR)).map((turn) => buildCandidate(turn, viewport)).filter((candidate) => Boolean(candidate));
+		const legacy = Array.from(root.querySelectorAll(TURN_SELECTOR)).map((turn) => buildCandidate(turn, viewport)).filter((candidate) => Boolean(candidate));
+		const candidates = new Map(legacy.map((candidate) => [candidate.messageId, candidate]));
+		const modernElements = Array.from(root.querySelectorAll(SEARCH_MESSAGE_SELECTOR)).sort((left, right) => Number(left.hasAttribute("data-content-search-unit-key")) - Number(right.hasAttribute("data-content-search-unit-key")));
+		for (const messageElement of modernElements) {
+			const messageId = getSearchMessageId(messageElement);
+			if (!messageId || messageElement.closest(TURN_SELECTOR)) continue;
+			const scope = getModernMessageScope(messageElement, messageId);
+			const actionButton = findActionButton(messageElement, messageId) ?? findActionButton(scope, messageId);
+			const visible = isElementVisibleInViewport(messageElement, viewport);
+			candidates.set(messageId, {
+				messageId,
+				messageElement,
+				turnElement: messageElement,
+				mountTarget: getMountTarget(messageElement, getActionRow(actionButton, scope)),
+				visible,
+				blocks: visible ? collectVisibleBlocks(messageElement, messageId, viewport) : []
+			});
+		}
+		return Array.from(candidates.values());
+	}
+	function getSearchMessageId(element) {
+		const ids = element.getAttribute("data-chatgpt-search-message-ids")?.trim().split(/\s+/) ?? [];
+		return Array.from(new Set(ids.filter((id) => /^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/i.test(id)))).at(-1) ?? null;
+	}
+	function getModernMessageScope(message, messageId) {
+		const turn = message.closest("[data-content-search-turn-key], [data-turn-key]");
+		if (turn) return turn;
+		let scope = message;
+		while (scope.parentElement && !scope.parentElement.matches("main, body, html")) {
+			const parent = scope.parentElement;
+			if (Array.from(parent.querySelectorAll(SEARCH_MESSAGE_SELECTOR)).some((unit) => getSearchMessageId(unit) !== messageId)) break;
+			scope = parent;
+			if (findActionButton(scope)) break;
+		}
+		return scope;
+	}
+	function getActionRow(button, scope) {
+		let row = button?.parentElement ?? null;
+		while (row && scope.contains(row)) {
+			if (isMountGeometrySupported(row)) return row;
+			if (row === scope) break;
+			row = row.parentElement;
+		}
+		return null;
 	}
 	function buildPickerItemsForMessage(candidates, clickedMessageId) {
 		return candidates.filter((candidate) => candidate.visible || candidate.messageId === clickedMessageId).map((candidate) => ({
@@ -1333,7 +1392,7 @@
 		const messageElement = getPrimaryMessageElement(turn, viewport);
 		const messageId = getMessageId(turn, messageElement);
 		if (!messageId) return null;
-		const mountTarget = getMountTarget(messageElement, (findActionButton(messageElement) ?? findActionButton(turn))?.parentElement ?? null);
+		const mountTarget = getMountTarget(messageElement, getActionRow(findActionButton(messageElement) ?? findActionButton(turn), turn));
 		const visible = isElementVisibleInViewport(messageElement, viewport);
 		return {
 			messageId,
@@ -1359,13 +1418,20 @@
 		const turnId = turn.dataset.testid?.match(/^conversation-turn-(\d+)$/)?.[1];
 		return turnId ? `turn:${turnId}` : null;
 	}
-	function findActionButton(messageElement) {
-		const direct = findHostActionButton(messageElement, ACTION_BUTTON_SELECTOR);
+	function findActionButton(messageElement, messageId) {
+		const direct = findHostActionButton(messageElement, ACTION_BUTTON_SELECTOR, messageId);
 		if (direct) return direct;
-		return findHostActionButton(messageElement, "[data-testid*=\"copy\" i]");
+		return findHostActionButton(messageElement, "[data-testid*=\"copy\" i]", messageId);
 	}
-	function findHostActionButton(root, selector) {
-		return Array.from(root.querySelectorAll(selector)).find((candidate) => !candidate.closest("[data-ce-message-markdown-root]")) ?? null;
+	function findHostActionButton(root, selector, messageId) {
+		return Array.from(root.querySelectorAll(selector)).find((candidate) => {
+			if (candidate.closest("[data-ce-message-markdown-root], pre")) return false;
+			const owner = candidate.closest(SEARCH_MESSAGE_SELECTOR);
+			if (!messageId) return true;
+			if (owner) return getSearchMessageId(owner) === messageId;
+			const finalUnit = Array.from(root.querySelectorAll(SEARCH_MESSAGE_SELECTOR)).at(-1);
+			return finalUnit !== void 0 && getSearchMessageId(finalUnit) === messageId;
+		}) ?? null;
 	}
 	function isMountGeometrySupported(actionRow) {
 		if (!isElementRenderable(actionRow)) return false;
@@ -17484,10 +17550,41 @@
 			}
 		});
 	}
+	function isAvailableNav(nav) {
+		return !nav.matches("[data-app-navigation-rail=\"true\"]") && !nav.closest("[hidden], [aria-hidden=\"true\"], [inert]");
+	}
+	function findConversationSidebarMountTarget(root = document) {
+		const navs = Array.from(root.querySelectorAll("nav")).filter(isAvailableNav);
+		const modernSidebar = navs.find((nav) => nav.querySelector("[data-app-action-sidebar-scroll]"));
+		if (modernSidebar) return modernSidebar;
+		return navs.find((nav) => nav.querySelector("a[href^=\"/c/\"]") && nav.querySelector(":scope > div.sticky.bottom-0")) ?? null;
+	}
+	function mountConversationSidebarMenu(target, container) {
+		if (target !== findConversationSidebarMountTarget() || target.querySelector("[data-ce-conversation-menu]")) return false;
+		container.setAttribute("data-ce-conversation-menu", "");
+		container.classList.add("ce-conversation-menu");
+		const legacyFooter = target.querySelector(":scope > div.sticky.bottom-0");
+		if (!target.querySelector("[data-app-action-sidebar-scroll]") && legacyFooter) legacyFooter.prepend(container);
+		else target.append(container);
+		return true;
+	}
+	function hasSecuritySidebarMarker(element) {
+		return element.style.getPropertyValue("--codex-security-left-pane-width") !== "" || element.getAttribute("style")?.includes("--codex-security-left-pane-width") === true;
+	}
+	function isLikelySecuritySidebar(element) {
+		return element instanceof HTMLElement && element.tagName === "ASIDE" && hasSecuritySidebarMarker(element);
+	}
+	function findSecuritySidebarMountTarget(root = document) {
+		const siblingSidebar = root.querySelector("[role=\"separator\"][aria-label=\"Resize repository pane\"]")?.previousElementSibling ?? null;
+		if (isLikelySecuritySidebar(siblingSidebar)) return siblingSidebar;
+		const markedSidebar = Array.from(root.querySelectorAll("aside")).find(isLikelySecuritySidebar);
+		if (markedSidebar) return markedSidebar;
+		return null;
+	}
 	function shouldKeepInjectedContainer(target, record, pageContext) {
 		if (!target.isConnected || !record.container.isConnected || !target.contains(record.container)) return false;
 		switch (record.kind) {
-			case "conversation-nav": return pageContext.kind === "conversation" && !pageContext.isSharePage && !pageContext.isShareContinuePage;
+			case "conversation-nav": return pageContext.kind === "conversation" && !pageContext.isSharePage && !pageContext.isShareContinuePage && target === findConversationSidebarMountTarget();
 			case "share-wrapper": return pageContext.isSharePage;
 			case "security-sidebar": return pageContext.kind === "security-finding" || pageContext.kind === "security-scan" || pageContext.kind === "security-findings-list";
 			case "memory-modal": return true;
@@ -17507,18 +17604,37 @@
 		}
 		return null;
 	}
-	function hasSecuritySidebarMarker(element) {
-		return element.style.getPropertyValue("--codex-security-left-pane-width") !== "" || element.getAttribute("style")?.includes("--codex-security-left-pane-width") === true;
-	}
-	function isLikelySecuritySidebar(element) {
-		return element instanceof HTMLElement && element.tagName === "ASIDE" && hasSecuritySidebarMarker(element);
-	}
-	function findSecuritySidebarMountTarget(root = document) {
-		const siblingSidebar = root.querySelector("[role=\"separator\"][aria-label=\"Resize repository pane\"]")?.previousElementSibling ?? null;
-		if (isLikelySecuritySidebar(siblingSidebar)) return siblingSidebar;
-		const markedSidebar = Array.from(root.querySelectorAll("aside")).find(isLikelySecuritySidebar);
-		if (markedSidebar) return markedSidebar;
-		return null;
+	function appendMessageTimestamps(nodes, root = document) {
+		const times = new Map(nodes.flatMap((node) => node.message?.id && node.message.create_time ? [[node.message.id, node.message.create_time]] : []));
+		let count = 0;
+		const canonical = new Map();
+		for (const thread of root.querySelectorAll(`main :is(${CONVERSATION_MESSAGE_SELECTOR})`)) {
+			const id = (thread.dataset.messageId ? [thread.dataset.messageId] : thread.dataset.chatgptSearchMessageIds?.trim().split(/\s+/) ?? []).at(-1);
+			if (id) canonical.set(id, thread);
+		}
+		for (const [id, thread] of canonical) {
+			const createTime = times.get(id);
+			if (!createTime || thread.querySelector("[data-ce-message-timestamp]")) continue;
+			const date = new Date(createTime * 1e3);
+			const timestamp = document.createElement("time");
+			timestamp.dataset.ceMessageTimestamp = "true";
+			timestamp.className = "w-full text-gray-500 dark:text-gray-400 text-sm text-right";
+			timestamp.dateTime = date.toISOString();
+			timestamp.title = date.toLocaleString();
+			for (const format of ["12", "24"]) {
+				const span = document.createElement("span");
+				span.dataset.timeFormat = format;
+				span.textContent = date.toLocaleTimeString("en-US", {
+					hour: "2-digit",
+					minute: "2-digit",
+					hour12: format === "12"
+				});
+				timestamp.append(span);
+			}
+			thread.append(timestamp);
+			count += 1;
+		}
+		return count;
 	}
 	function getExportCapabilities(context = getPageContext()) {
 		switch (context.kind) {
@@ -22778,9 +22894,6 @@
 	function fnIgnoreElements(el) {
 		return typeof el.shadowRoot === "object" && el.shadowRoot !== null;
 	}
-	function getConversationCaptureTarget() {
-		return document.querySelector("#thread div:has(> [data-testid=\"conversation-turn-1\"])");
-	}
 	function getSecurityDetailPane() {
 		const separator = document.querySelector("[role=\"separator\"][aria-label=\"Resize repository pane\"]");
 		if (!(separator instanceof HTMLElement)) return null;
@@ -22799,7 +22912,7 @@
 	function resolvePngCaptureSpec() {
 		const pageContext = getPageContext();
 		if (pageContext.kind === "conversation") {
-			const thread = getConversationCaptureTarget();
+			const thread = findConversationCaptureTarget();
 			if (!thread || thread.children.length === 0 || thread.scrollHeight < 50) return null;
 			return {
 				mode: "conversation",
@@ -22819,12 +22932,21 @@
 		return null;
 	}
 	function applyConversationPngEffect(effect, target) {
-		const isDarkMode = document.documentElement.classList.contains("dark");
+		const isDarkMode = document.documentElement.classList.contains("dark") || document.documentElement.dataset.theme === "dark";
+		effect.add(() => {
+			const previous = target.getAttribute("data-ce-conversation-png-target");
+			target.setAttribute("data-ce-conversation-png-target", "");
+			return () => {
+				if (previous === null) target.removeAttribute("data-ce-conversation-png-target");
+				else target.setAttribute("data-ce-conversation-png-target", previous);
+			};
+		});
 		effect.add(() => {
 			const style = document.createElement("style");
 			style.textContent = `
             #thread div:has(> [data-testid="conversation-turn-1"]),
-            #thread [data-testid^="conversation-turn-"] {
+            #thread [data-testid^="conversation-turn-"],
+            [data-ce-conversation-png-target] {
                 color: ${isDarkMode ? "#ececec" : "#0d0d0d"};
                 background-color: ${isDarkMode ? "#212121" : "#fff"};
             }
@@ -22842,6 +22964,8 @@
                 padding-bottom: 2px;
             }
 
+            [data-ce-conversation-png-target] .turn-action-controls,
+            [data-ce-conversation-png-target] [data-ce-message-markdown-root],
             #page-header,
             #thread-bottom-container,
             #thread div:has(> [data-testid="conversation-turn-1"]) > :not([data-testid^="conversation-turn-"]),
@@ -22860,7 +22984,7 @@
 		});
 	}
 	function applySecurityPngEffect(effect, target) {
-		const isDarkMode = document.documentElement.classList.contains("dark");
+		const isDarkMode = document.documentElement.classList.contains("dark") || document.documentElement.dataset.theme === "dark";
 		effect.add(() => {
 			const style = document.createElement("style");
 			style.textContent = `
@@ -23330,7 +23454,7 @@
 			this.eventEmitter.emit("done", this.results);
 		}
 	};
-	_css("/**\n * Copyright 2022-Present Pionxzh\n * SPDX-License-Identifier: MPL-2.0\n */\n\n.CheckBoxLabel {\n    position: relative;\n    display: flex;\n    font-size: 16px;\n    vertical-align: middle;\n}\n\n.CheckBoxLabel * {\n    cursor: pointer;\n}\n\n.CheckBoxLabel[disabled] {\n    opacity: 0.7;\n}\n\n.CheckBoxLabel[disabled] * {\n    cursor: not-allowed;\n}\n\n.CheckBoxLabel input {\n    position: absolute;\n    opacity: 0;\n    width: 100%;\n    height: 100%;\n    top: 0;\n    left: 0;\n    margin: 0;\n    padding: 0;\n}\n\n.CheckBoxLabel .IconWrapper {\n    display: inline-flex;\n    align-items: center;\n    position: relative;\n    vertical-align: middle;\n    font-size: 1.5rem;\n}\n\n.CheckBoxLabel input:checked ~ svg {\n    color: rgb(28 100 242);\n}\n\n.dark .CheckBoxLabel input:checked ~ svg {\n    color: rgb(144, 202, 249);\n}\n\n.CheckBoxLabel .LabelText {\n    margin-left: 0.5rem;\n    font-size: 1rem;\n    line-height: 1.5;\n}\n");
+	_css("/**\n * Copyright 2022-Present Pionxzh\n * SPDX-License-Identifier: MPL-2.0\n */\n\n.CheckBoxLabel {\n    position: relative;\n    display: flex;\n    font-size: 16px;\n    vertical-align: middle;\n}\n\n.CheckBoxLabel * {\n    cursor: pointer;\n}\n\n.CheckBoxLabel[disabled] {\n    opacity: 0.7;\n}\n\n.CheckBoxLabel[disabled] * {\n    cursor: not-allowed;\n}\n\n.CheckBoxLabel input {\n    position: absolute;\n    opacity: 0;\n    width: 100%;\n    height: 100%;\n    top: 0;\n    left: 0;\n    margin: 0;\n    padding: 0;\n}\n\n.CheckBoxLabel .IconWrapper {\n    display: inline-flex;\n    align-items: center;\n    position: relative;\n    vertical-align: middle;\n    font-size: 1.5rem;\n}\n\n.CheckBoxLabel input:checked ~ svg {\n    color: rgb(28 100 242);\n}\n\n:is(.dark, [data-theme=\"dark\"]) .CheckBoxLabel input:checked ~ svg {\n    color: rgb(144, 202, 249);\n}\n\n.CheckBoxLabel .LabelText {\n    margin-left: 0.5rem;\n    font-size: 1rem;\n    line-height: 1.5;\n}\n");
 	init_hooks_module();
 	var CheckBox = ({ className, checked = false, disabled, label, onCheckedChange }) => {
 		const [isChecked, setChecked] = d$1(checked);
@@ -24577,8 +24701,8 @@
 			})] })]
 		});
 	};
-	_css("/**\n * Copyright 2022-Present Pionxzh\n * Copyright 2026 Asim Ihsan\n * SPDX-License-Identifier: MPL-2.0\n */\n\nspan[data-time-format] {\n    display: none;\n}\n\nbody[data-time-format=\"12\"] span[data-time-format=\"12\"] {\n    display: inline;\n}\n\nbody[data-time-format=\"24\"] span[data-time-format=\"24\"] {\n    display: inline;\n}\n\n.Select {\n    padding: 0 0 0 0.5rem;\n    width: 7.5rem;\n    border-radius: 4px;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\n.dark .Select {\n    background-color: #2f2f2f;\n    color: #fff;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\nhtml {\n    --ce-text-primary: var(--text-primary, #0d0d0d);\n    --ce-menu-primary: #f7f7f8;\n    --ce-menu-secondary: #ececf1;\n    --ce-border-light: rgba(0, 0, 0, .14);\n}\n\n.dark {\n    --ce-text-primary: var(--text-primary, #ececec);\n    --ce-menu-primary: #202123;\n    --ce-menu-secondary: #2d2f34;\n    --ce-border-light: rgba(255, 255, 255, .16);\n}\n\n.ce-text-menu {\n    color: var(--ce-text-primary);\n}\n\n.ce-bg-menu {\n    background-color: var(--ce-menu-primary);\n}\n\n.ce-border-menu {\n    border-color: var(--ce-border-light);\n}\n\n.ce-menu-content,\n.ce-menu-content[data-state=\"open\"],\n.ce-menu-content[data-state=\"closed\"] {\n    display: flex !important;\n    flex-direction: column !important;\n    padding: 0.5rem 0.5rem 0.25rem !important;\n    opacity: 1 !important;\n    background-color: var(--ce-menu-primary) !important;\n    border-width: 1px !important;\n    border-style: solid !important;\n    border-radius: 0.375rem !important;\n    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18) !important;\n    backdrop-filter: none !important;\n    filter: none !important;\n    mix-blend-mode: normal !important;\n    isolation: isolate !important;\n}\n\n.ce-menu-item {\n    height: 46px;\n    width: 100%;\n    background-color: var(--ce-menu-primary) !important;\n    color: var(--ce-text-primary) !important;\n    border-width: 1px !important;\n    border-style: solid !important;\n}\n\n.ce-menu-item[aria-disabled=\"false\"]:hover {\n    background-color: var(--ce-menu-secondary) !important;\n}\n\n.ce-menu-trigger-success {\n    background-color: color-mix(in srgb, var(--ce-menu-secondary) 82%, #1f9f54 18%) !important;\n    border-color: color-mix(in srgb, var(--ce-border-light) 50%, #1f9f54 50%) !important;\n}\n\n.ce-menu-item[aria-disabled=\"true\"] {\n    filter: brightness(0.5);\n}\n\n.ce-message-markdown {\n    display: inline-flex;\n    align-items: center;\n    position: relative;\n    flex: 0 0 auto;\n}\n\n.ce-message-markdown-trigger {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    width: 32px;\n    height: 32px;\n    min-width: 32px;\n    min-height: 32px;\n    padding: 0;\n    border: 1px solid transparent;\n    border-radius: 6px;\n    color: var(--ce-text-primary);\n    background: transparent;\n    cursor: pointer;\n}\n\n.ce-message-markdown-trigger:hover,\n.ce-message-markdown-trigger:focus-visible {\n    background-color: var(--ce-menu-secondary);\n    border-color: var(--ce-border-light);\n}\n\n.ce-message-markdown-status {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    overflow: hidden;\n    clip: rect(0 0 0 0);\n    white-space: nowrap;\n}\n\n.ce-message-markdown-panel {\n    position: fixed;\n    z-index: 2147483000;\n    padding: 10px;\n    border-width: 1px;\n    border-style: solid;\n    border-radius: 8px;\n    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);\n    overflow: auto;\n}\n\n.ce-message-markdown-list {\n    display: flex;\n    flex-direction: column;\n    gap: 8px;\n    margin-bottom: 10px;\n}\n\n.ce-message-markdown-group {\n    display: flex;\n    flex-direction: column;\n    gap: 4px;\n}\n\n.ce-message-markdown-row {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    min-height: 32px;\n    font-size: 13px;\n    line-height: 1.25;\n}\n\n.ce-message-markdown-row input {\n    flex: 0 0 auto;\n}\n\n.ce-message-markdown-child {\n    padding-left: 22px;\n    color: color-mix(in srgb, var(--ce-text-primary) 78%, transparent);\n}\n\n.ce-message-markdown-actions {\n    display: flex;\n    justify-content: flex-end;\n    gap: 8px;\n    position: sticky;\n    bottom: -10px;\n    padding-top: 8px;\n    background-color: var(--ce-menu-primary);\n}\n\n.ce-message-markdown-actions button {\n    min-height: 32px;\n    padding: 0 10px;\n    border: 1px solid var(--ce-border-light);\n    border-radius: 6px;\n    background-color: var(--ce-menu-primary);\n    color: var(--ce-text-primary);\n}\n\n.ce-message-markdown-actions button:not(:disabled):hover,\n.ce-message-markdown-actions button:not(:disabled):focus-visible {\n    background-color: var(--ce-menu-secondary);\n}\n\n.ce-message-markdown-actions button:disabled {\n    opacity: 0.5;\n    cursor: not-allowed;\n}\n\n.inputFieldSet {\n    display: block;\n    border-width: 2px;\n    border-style: groove;\n}\n\n.inputFieldSet legend {\n    margin-left: 4px;\n}\n\n.inputFieldSet input {\n    background-color: transparent;\n    box-shadow: none!important;\n}\n\n.dropdown-backdrop {\n    display: block;\n    position: fixed;\n    top: 0;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    background-color: rgba(0,0,0,.5);\n    animation-name: cePointerFadeIn;\n    animation-duration: .3s;\n}\n\n@keyframes ceFadeIn {\n    from {\n        opacity: 0;\n    }\n    to {\n        opacity: 1;\n    }\n}\n\n@keyframes ceSlideUp {\n    from {\n        transform: translateY(100%);\n    }\n    to {\n        transform: translateY(0);\n    }\n}\n\n@keyframes cePointerFadeIn {\n    from {\n        opacity: 0;\n        pointer-events: none;\n    }\n    to {\n        opacity: 1;\n        pointer-events: auto;\n    }\n}\n\n@keyframes rotate {\n    from {\n        transform: rotate(0deg);\n    }\n    to {\n        transform: rotate(360deg);\n    }\n}\n\n@keyframes circularDash {\n    0% {\n        stroke-dasharray: 1px, 200px;\n        stroke-dashoffset: 0;\n    }\n    50% {\n        stroke-dasharray: 100px, 200px;\n        stroke-dashoffset: -15px;\n    }\n    100% {\n        stroke-dasharray: 100px, 200px;\n        stroke-dashoffset: -125px;\n    }\n}\n");
-	_css("/**\n * Copyright 2022-Present Pionxzh\n * Copyright 2026 Asim Ihsan\n * SPDX-License-Identifier: MPL-2.0\n */\n\n.ce-dialog-overlay {\n    background-color: rgba(0, 0, 0, 0.44);\n    position: fixed;\n    inset: 0;\n    z-index: 1000;\n    animation: fadeIn 150ms cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.ce-dialog-content {\n    background-color: #f3f3f3;\n    border-radius: 6px;\n    box-shadow: hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px;\n    position: fixed;\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%, -50%);\n    width: 90vw;\n    max-width: 560px;\n    max-height: 85vh;\n    overflow-x: hidden;\n    overflow-y: auto;\n    padding: 16px 24px;\n    z-index: 1001;\n    outline: none;\n    animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.dark .ce-dialog-content {\n    background-color: #2a2a2a;\n    border-color: #40414f;\n    border-width: 1px;\n}\n\n.ce-dialog-content input[type=\"checkbox\"] {\n    border: none;\n    outline: none;\n    box-shadow: none;\n}\n\n.ce-dialog-title {\n    margin: 0 0 16px 0;\n    font-weight: 500;\n    color: #1a1523;\n    font-size: 20px;\n}\n\n.dark .ce-dialog-title {\n    color: #fff;\n}\n\n.Button {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 4px;\n    padding: 0 15px;\n    font-size: 15px;\n    line-height: 1;\n    height: 35px;\n}\n.Button.green {\n    background-color: #ddf3e4;\n    color: #18794e;\n}\n.Button.red {\n    background-color: #f9d9d9;\n    color: #a71d2a;\n}\n.Button.green:hover {\n    background-color: #ccebd7;\n}\n.Button:disabled {\n    opacity: 0.5;\n    color: #6f6e77;\n    background-color: #e0e0e0;\n    cursor: not-allowed;\n}\n.Button:disabled:hover {\n    background-color: #e0e0e0;\n}\n\n.IconButton {\n    font-family: inherit;\n    border-radius: 100%;\n    height: 25px;\n    width: 25px;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    color: #6f6e77;\n}\n.IconButton:hover {\n    background-color: rgba(0, 0, 0, 0.06);\n}\n\n.CloseButton {\n    position: absolute;\n    top: 10px;\n    right: 10px;\n}\n\n.Fieldset {\n    display: flex;\n    gap: 20px;\n    align-items: center;\n    margin-bottom: 15px;\n}\n\n.Label {\n    font-size: 15px;\n    color: #1a1523;\n    min-width: 90px;\n    text-align: right;\n}\n\n.dark .Label {\n    color: #fff;\n}\n\n.Input {\n    width: 100%;\n    flex: 1;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 4px;\n    padding: 0 10px;\n    font-size: 15px;\n    line-height: 1;\n    color: #000;\n    background-color: #fafafa;\n    box-shadow: 0 0 0 1px #6f6e77;\n    height: 35px;\n    outline: none;\n}\n\n.dark .Input {\n    background-color: #2f2f2f;\n    color: #fff;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\n.Description {\n    font-size: 13px;\n    color: #5a5865;\n    text-align: right;\n    margin-bottom: 4px;\n}\n\n.dark .Description {\n    color: #bcbcbc;\n}\n\n.SelectToolbar {\n    display: flex;\n    align-items: center;\n    padding: 12px 16px;\n    border-radius: 4px 4px 0 0;\n    border: 1px solid #6f6e77;\n    border-bottom: none;\n}\n\n.SelectList {\n    position: relative;\n    width: 100%;\n    height: 270px;\n    padding: 12px 16px;\n    overflow-x: hidden;\n    overflow-y: auto;\n    border: 1px solid #6f6e77;\n    border-radius: 0 0 4px 4px;\n    white-space: nowrap;\n}\n\n.SelectItem {\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n\n.SelectItem label, .SelectItem input {\n    cursor: pointer;\n}\n\n.SelectItem span {\n    vertical-align: middle;\n}\n\n@keyframes contentShow {\n    from {\n        opacity: 0;\n        transform: translate(-50%, -48%) scale(0.96);\n    }\n    to {\n        opacity: 1;\n        transform: translate(-50%, -50%) scale(1);\n    }\n}\n");
+	_css("/**\n * Copyright 2022-Present Pionxzh\n * Copyright 2026 Asim Ihsan\n * SPDX-License-Identifier: MPL-2.0\n */\n\nspan[data-time-format] {\n    display: none;\n}\n\nbody[data-time-format=\"12\"] span[data-time-format=\"12\"] {\n    display: inline;\n}\n\nbody[data-time-format=\"24\"] span[data-time-format=\"24\"] {\n    display: inline;\n}\n\n.Select {\n    padding: 0 0 0 0.5rem;\n    width: 7.5rem;\n    border-radius: 4px;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\n:is(.dark, [data-theme=\"dark\"]) .Select {\n    background-color: #2f2f2f;\n    color: #fff;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\nhtml {\n    --ce-text-primary: var(--text-primary, #0d0d0d);\n    --ce-menu-primary: #f7f7f8;\n    --ce-menu-secondary: #ececf1;\n    --ce-border-light: rgba(0, 0, 0, .14);\n}\n\n:is(.dark, [data-theme=\"dark\"]) {\n    --ce-text-primary: var(--text-primary, #ececec);\n    --ce-menu-primary: #202123;\n    --ce-menu-secondary: #2d2f34;\n    --ce-border-light: rgba(255, 255, 255, .16);\n}\n\n.ce-text-menu {\n    color: var(--ce-text-primary);\n}\n\n.ce-bg-menu {\n    background-color: var(--ce-menu-primary);\n}\n\n.ce-border-menu {\n    border-color: var(--ce-border-light);\n}\n\n.ce-menu-content,\n.ce-menu-content[data-state=\"open\"],\n.ce-menu-content[data-state=\"closed\"] {\n    display: flex !important;\n    flex-direction: column !important;\n    padding: 0.5rem 0.5rem 0.25rem !important;\n    opacity: 1 !important;\n    background-color: var(--ce-menu-primary) !important;\n    border-width: 1px !important;\n    border-style: solid !important;\n    border-radius: 0.375rem !important;\n    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.18) !important;\n    backdrop-filter: none !important;\n    filter: none !important;\n    mix-blend-mode: normal !important;\n    isolation: isolate !important;\n}\n\n.ce-menu-item {\n    height: 46px;\n    width: 100%;\n    background-color: var(--ce-menu-primary) !important;\n    color: var(--ce-text-primary) !important;\n    border-width: 1px !important;\n    border-style: solid !important;\n}\n\n.ce-menu-item[aria-disabled=\"false\"]:hover {\n    background-color: var(--ce-menu-secondary) !important;\n}\n\n.ce-menu-trigger-success {\n    background-color: color-mix(in srgb, var(--ce-menu-secondary) 82%, #1f9f54 18%) !important;\n    border-color: color-mix(in srgb, var(--ce-border-light) 50%, #1f9f54 50%) !important;\n}\n\n.ce-menu-item[aria-disabled=\"true\"] {\n    filter: brightness(0.5);\n}\n\n.ce-message-markdown {\n    display: inline-flex;\n    align-items: center;\n    position: relative;\n    flex: 0 0 auto;\n}\n\n.ce-message-markdown-trigger {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    width: 32px;\n    height: 32px;\n    min-width: 32px;\n    min-height: 32px;\n    padding: 0;\n    border: 1px solid transparent;\n    border-radius: 6px;\n    color: var(--ce-text-primary);\n    background: transparent;\n    cursor: pointer;\n}\n\n.ce-message-markdown-trigger:hover,\n.ce-message-markdown-trigger:focus-visible {\n    background-color: var(--ce-menu-secondary);\n    border-color: var(--ce-border-light);\n}\n\n.ce-message-markdown-status {\n    position: absolute;\n    width: 1px;\n    height: 1px;\n    overflow: hidden;\n    clip: rect(0 0 0 0);\n    white-space: nowrap;\n}\n\n.ce-message-markdown-panel {\n    position: fixed;\n    z-index: 2147483000;\n    padding: 10px;\n    border-width: 1px;\n    border-style: solid;\n    border-radius: 8px;\n    box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);\n    overflow: auto;\n}\n\n.ce-message-markdown-list {\n    display: flex;\n    flex-direction: column;\n    gap: 8px;\n    margin-bottom: 10px;\n}\n\n.ce-message-markdown-group {\n    display: flex;\n    flex-direction: column;\n    gap: 4px;\n}\n\n.ce-message-markdown-row {\n    display: flex;\n    align-items: center;\n    gap: 8px;\n    min-height: 32px;\n    font-size: 13px;\n    line-height: 1.25;\n}\n\n.ce-message-markdown-row input {\n    flex: 0 0 auto;\n}\n\n.ce-message-markdown-child {\n    padding-left: 22px;\n    color: color-mix(in srgb, var(--ce-text-primary) 78%, transparent);\n}\n\n.ce-message-markdown-actions {\n    display: flex;\n    justify-content: flex-end;\n    gap: 8px;\n    position: sticky;\n    bottom: -10px;\n    padding-top: 8px;\n    background-color: var(--ce-menu-primary);\n}\n\n.ce-message-markdown-actions button {\n    min-height: 32px;\n    padding: 0 10px;\n    border: 1px solid var(--ce-border-light);\n    border-radius: 6px;\n    background-color: var(--ce-menu-primary);\n    color: var(--ce-text-primary);\n}\n\n.ce-message-markdown-actions button:not(:disabled):hover,\n.ce-message-markdown-actions button:not(:disabled):focus-visible {\n    background-color: var(--ce-menu-secondary);\n}\n\n.ce-message-markdown-actions button:disabled {\n    opacity: 0.5;\n    cursor: not-allowed;\n}\n\n.inputFieldSet {\n    display: block;\n    border-width: 2px;\n    border-style: groove;\n}\n\n.inputFieldSet legend {\n    margin-left: 4px;\n}\n\n.inputFieldSet input {\n    background-color: transparent;\n    box-shadow: none!important;\n}\n\n.dropdown-backdrop {\n    display: block;\n    position: fixed;\n    top: 0;\n    bottom: 0;\n    left: 0;\n    right: 0;\n    background-color: rgba(0,0,0,.5);\n    animation-name: cePointerFadeIn;\n    animation-duration: .3s;\n}\n\n@keyframes ceFadeIn {\n    from {\n        opacity: 0;\n    }\n    to {\n        opacity: 1;\n    }\n}\n\n@keyframes ceSlideUp {\n    from {\n        transform: translateY(100%);\n    }\n    to {\n        transform: translateY(0);\n    }\n}\n\n@keyframes cePointerFadeIn {\n    from {\n        opacity: 0;\n        pointer-events: none;\n    }\n    to {\n        opacity: 1;\n        pointer-events: auto;\n    }\n}\n\n@keyframes rotate {\n    from {\n        transform: rotate(0deg);\n    }\n    to {\n        transform: rotate(360deg);\n    }\n}\n\n@keyframes circularDash {\n    0% {\n        stroke-dasharray: 1px, 200px;\n        stroke-dashoffset: 0;\n    }\n    50% {\n        stroke-dasharray: 100px, 200px;\n        stroke-dashoffset: -15px;\n    }\n    100% {\n        stroke-dasharray: 100px, 200px;\n        stroke-dashoffset: -125px;\n    }\n}\n");
+	_css("/**\n * Copyright 2022-Present Pionxzh\n * Copyright 2026 Asim Ihsan\n * SPDX-License-Identifier: MPL-2.0\n */\n\n.ce-dialog-overlay {\n    background-color: rgba(0, 0, 0, 0.44);\n    position: fixed;\n    inset: 0;\n    z-index: 1000;\n    animation: fadeIn 150ms cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n.ce-dialog-content {\n    background-color: #f3f3f3;\n    border-radius: 6px;\n    box-shadow: hsl(206 22% 7% / 35%) 0px 10px 38px -10px, hsl(206 22% 7% / 20%) 0px 10px 20px -15px;\n    position: fixed;\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%, -50%);\n    width: 90vw;\n    max-width: 560px;\n    max-height: 85vh;\n    overflow-x: hidden;\n    overflow-y: auto;\n    padding: 16px 24px;\n    z-index: 1001;\n    outline: none;\n    animation: contentShow 150ms cubic-bezier(0.16, 1, 0.3, 1);\n}\n\n:is(.dark, [data-theme=\"dark\"]) .ce-dialog-content {\n    background-color: #2a2a2a;\n    border-color: #40414f;\n    border-width: 1px;\n}\n\n.ce-dialog-content input[type=\"checkbox\"] {\n    border: none;\n    outline: none;\n    box-shadow: none;\n}\n\n.ce-dialog-title {\n    margin: 0 0 16px 0;\n    font-weight: 500;\n    color: #1a1523;\n    font-size: 20px;\n}\n\n:is(.dark, [data-theme=\"dark\"]) .ce-dialog-title {\n    color: #fff;\n}\n\n.Button {\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 4px;\n    padding: 0 15px;\n    font-size: 15px;\n    line-height: 1;\n    height: 35px;\n}\n.Button.green {\n    background-color: #ddf3e4;\n    color: #18794e;\n}\n.Button.red {\n    background-color: #f9d9d9;\n    color: #a71d2a;\n}\n.Button.green:hover {\n    background-color: #ccebd7;\n}\n.Button:disabled {\n    opacity: 0.5;\n    color: #6f6e77;\n    background-color: #e0e0e0;\n    cursor: not-allowed;\n}\n.Button:disabled:hover {\n    background-color: #e0e0e0;\n}\n\n.IconButton {\n    font-family: inherit;\n    border-radius: 100%;\n    height: 25px;\n    width: 25px;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    color: #6f6e77;\n}\n.IconButton:hover {\n    background-color: rgba(0, 0, 0, 0.06);\n}\n\n.CloseButton {\n    position: absolute;\n    top: 10px;\n    right: 10px;\n}\n\n.Fieldset {\n    display: flex;\n    gap: 20px;\n    align-items: center;\n    margin-bottom: 15px;\n}\n\n.Label {\n    font-size: 15px;\n    color: #1a1523;\n    min-width: 90px;\n    text-align: right;\n}\n\n:is(.dark, [data-theme=\"dark\"]) .Label {\n    color: #fff;\n}\n\n.Input {\n    width: 100%;\n    flex: 1;\n    display: inline-flex;\n    align-items: center;\n    justify-content: center;\n    border-radius: 4px;\n    padding: 0 10px;\n    font-size: 15px;\n    line-height: 1;\n    color: #000;\n    background-color: #fafafa;\n    box-shadow: 0 0 0 1px #6f6e77;\n    height: 35px;\n    outline: none;\n}\n\n:is(.dark, [data-theme=\"dark\"]) .Input {\n    background-color: #2f2f2f;\n    color: #fff;\n    box-shadow: 0 0 0 1px #6f6e77;\n}\n\n.Description {\n    font-size: 13px;\n    color: #5a5865;\n    text-align: right;\n    margin-bottom: 4px;\n}\n\n:is(.dark, [data-theme=\"dark\"]) .Description {\n    color: #bcbcbc;\n}\n\n.SelectToolbar {\n    display: flex;\n    align-items: center;\n    padding: 12px 16px;\n    border-radius: 4px 4px 0 0;\n    border: 1px solid #6f6e77;\n    border-bottom: none;\n}\n\n.SelectList {\n    position: relative;\n    width: 100%;\n    height: 270px;\n    padding: 12px 16px;\n    overflow-x: hidden;\n    overflow-y: auto;\n    border: 1px solid #6f6e77;\n    border-radius: 0 0 4px 4px;\n    white-space: nowrap;\n}\n\n.SelectItem {\n    overflow: hidden;\n    text-overflow: ellipsis;\n}\n\n.SelectItem label, .SelectItem input {\n    cursor: pointer;\n}\n\n.SelectItem span {\n    vertical-align: middle;\n}\n\n@keyframes contentShow {\n    from {\n        opacity: 0;\n        transform: translate(-50%, -48%) scale(0.96);\n    }\n    to {\n        opacity: 1;\n        transform: translate(-50%, -50%) scale(1);\n    }\n}\n");
 	init_hooks_module();
 	function MenuInner({ container }) {
 		const { t } = useTranslation();
@@ -24900,7 +25024,8 @@
 			children: [loading ? u$1(IconLoading, { className: "w-4 h-4" }) : u$1(IconBrain, {}), u$1("span", { children: t("ExportHelper") })]
 		});
 	}
-	_css("/**\n * Copyright 2022-Present Pionxzh\n * Copyright 2026 Asim Ihsan\n * SPDX-License-Identifier: MPL-2.0\n */\n\n/* Utility fallback layer for Tailwind-like classes until a dedicated Tailwind build step is introduced. */\n.ce-animate-fade-in  {\n    animation: ceFadeIn .3s;\n}\n\n.ce-animate-slide-up  {\n    animation: ceSlideUp .3s;\n}\n\n.bg-blue-600 {\n    background-color: rgb(28 100 242);\n}\n\n.hover\\:bg-gray-500\\/10:hover {\n    background-color: hsla(0, 0%, 61%, .1)\n}\n\n.border-\\[\\#6f6e77\\] {\n    border-color: #6f6e77;\n}\n\n.cursor-help {\n    cursor: help;\n}\n\n.dark .dark\\:bg-white\\/5 {\n    background-color: rgb(255 255 255 / 5%);\n}\n\n.dark .dark\\:text-gray-200 {\n    color: rgb(229 231 235 / 1);\n}\n\n.dark .dark\\:text-gray-300 {\n    color: rgb(209 213 219 / 1);\n}\n\n.dark .dark\\:border-gray-\\[\\#86858d\\] {\n    border-color: #86858d;\n}\n\n.gap-x-1 {\n    column-gap: 0.25rem;\n}\n\n.h-2\\.5 {\n    height: 0.625rem;\n}\n\n.h-4 {\n    height: 1rem;\n}\n\n.inline-flex {\n    display: inline-flex;\n}\n\n.items-center {\n    align-items: center;\n}\n\n.ml-3 {\n    margin-left: 0.75rem;\n}\n\n.ml-4 {\n    margin-left: 1rem;\n}\n\n.mr-8 {\n    margin-right: 2rem;\n}\n\n.pb-0 {\n    padding-bottom: 0;\n}\n\n.pr-8 {\n    padding-right: 2rem;\n}\n\n.right-4 {\n    right: 1rem;\n}\n\n.rounded-full {\n    border-radius: 9999px;\n}\n\n.select-all {\n    user-select: all!important;\n}\n\n.space-y-6>:not([hidden])~:not([hidden]) {\n    --tw-space-y-reverse: 0;\n    margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));\n    margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));\n}\n\n.truncate {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n\n.whitespace-nowrap {\n    white-space: nowrap;\n}\n\n@media (min-width:768px) {\n    /* md */\n}\n\n@media (min-width:1024px) {\n    .lg\\:mt-0 {\n        margin-top: 0;\n    }\n\n    .lg\\:top-8 {\n        top: 2rem;\n    }\n}\n\n\n.toggle-switch {\n    position: relative;\n    outline: none;\n    background-color: rgb(229 231 235);\n    border: 1px solid rgb(107 114 128);\n    border-radius: 9999px;\n    cursor: pointer;\n    height: 20px;\n    width: 32px;\n}\n\n.dark .toggle-switch {\n    background-color: rgb(255 255 255 / 5%);\n    border-color: rgb(255 255 255 / 1);\n}\n\n.toggle-switch[data-state=\"checked\"] {\n    background-color: rgb(0 0 0);\n    border-color: rgb(0 0 0);\n}\n\n.dark .toggle-switch[data-state=\"checked\"] {\n    background-color: rgb(22 163 74);\n    border-color: rgb(22 163 74);\n}\n\n.toggle-switch-handle {\n    display: block;\n    background-color: rgb(255 255 255);\n    border-radius: 9999px;\n    height: 16px;\n    width: 16px;\n    transition: transform 0.1s;\n    will-change: transform;\n    transform: translateX(1px);\n}\n\n.toggle-switch-handle[data-state=\"checked\"] {\n    transform: translateX(14px);\n}\n\n.toggle-switch-handle:hover {\n    background-color: rgb(243 244 246);\n}\n\n.toggle-switch-label {\n    color: rgb(107 114 128);\n    margin-left: 0.75rem;\n    font-size: 0.875rem;\n    font-weight: 500;\n}\n\n.toggle-switch-label:hover {\n    color: rgb(71 85 105);\n}\n");
+	_css("/**\n * Copyright 2022-Present Pionxzh\n * Copyright 2026 Asim Ihsan\n * SPDX-License-Identifier: MPL-2.0\n */\n\n/* Utility fallback layer for Tailwind-like classes until a dedicated Tailwind build step is introduced. */\n.ce-animate-fade-in  {\n    animation: ceFadeIn .3s;\n}\n\n.ce-animate-slide-up  {\n    animation: ceSlideUp .3s;\n}\n\n.bg-blue-600 {\n    background-color: rgb(28 100 242);\n}\n\n.hover\\:bg-gray-500\\/10:hover {\n    background-color: hsla(0, 0%, 61%, .1)\n}\n\n.border-\\[\\#6f6e77\\] {\n    border-color: #6f6e77;\n}\n\n.cursor-help {\n    cursor: help;\n}\n\n:is(.dark, [data-theme=\"dark\"]) .dark\\:bg-white\\/5 {\n    background-color: rgb(255 255 255 / 5%);\n}\n\n:is(.dark, [data-theme=\"dark\"]) .dark\\:text-gray-200 {\n    color: rgb(229 231 235 / 1);\n}\n\n:is(.dark, [data-theme=\"dark\"]) .dark\\:text-gray-300 {\n    color: rgb(209 213 219 / 1);\n}\n\n:is(.dark, [data-theme=\"dark\"]) .dark\\:border-gray-\\[\\#86858d\\] {\n    border-color: #86858d;\n}\n\n.gap-x-1 {\n    column-gap: 0.25rem;\n}\n\n.h-2\\.5 {\n    height: 0.625rem;\n}\n\n.h-4 {\n    height: 1rem;\n}\n\n.inline-flex {\n    display: inline-flex;\n}\n\n.items-center {\n    align-items: center;\n}\n\n.ml-3 {\n    margin-left: 0.75rem;\n}\n\n.ml-4 {\n    margin-left: 1rem;\n}\n\n.mr-8 {\n    margin-right: 2rem;\n}\n\n.pb-0 {\n    padding-bottom: 0;\n}\n\n.pr-8 {\n    padding-right: 2rem;\n}\n\n.right-4 {\n    right: 1rem;\n}\n\n.rounded-full {\n    border-radius: 9999px;\n}\n\n.select-all {\n    user-select: all!important;\n}\n\n.space-y-6>:not([hidden])~:not([hidden]) {\n    --tw-space-y-reverse: 0;\n    margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));\n    margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));\n}\n\n.truncate {\n    overflow: hidden;\n    text-overflow: ellipsis;\n    white-space: nowrap;\n}\n\n.whitespace-nowrap {\n    white-space: nowrap;\n}\n\n@media (min-width:768px) {\n    /* md */\n}\n\n@media (min-width:1024px) {\n    .lg\\:mt-0 {\n        margin-top: 0;\n    }\n\n    .lg\\:top-8 {\n        top: 2rem;\n    }\n}\n\n\n.toggle-switch {\n    position: relative;\n    outline: none;\n    background-color: rgb(229 231 235);\n    border: 1px solid rgb(107 114 128);\n    border-radius: 9999px;\n    cursor: pointer;\n    height: 20px;\n    width: 32px;\n}\n\n:is(.dark, [data-theme=\"dark\"]) .toggle-switch {\n    background-color: rgb(255 255 255 / 5%);\n    border-color: rgb(255 255 255 / 1);\n}\n\n.toggle-switch[data-state=\"checked\"] {\n    background-color: rgb(0 0 0);\n    border-color: rgb(0 0 0);\n}\n\n:is(.dark, [data-theme=\"dark\"]) .toggle-switch[data-state=\"checked\"] {\n    background-color: rgb(22 163 74);\n    border-color: rgb(22 163 74);\n}\n\n.toggle-switch-handle {\n    display: block;\n    background-color: rgb(255 255 255);\n    border-radius: 9999px;\n    height: 16px;\n    width: 16px;\n    transition: transform 0.1s;\n    will-change: transform;\n    transform: translateX(1px);\n}\n\n.toggle-switch-handle[data-state=\"checked\"] {\n    transform: translateX(14px);\n}\n\n.toggle-switch-handle:hover {\n    background-color: rgb(243 244 246);\n}\n\n.toggle-switch-label {\n    color: rgb(107 114 128);\n    margin-left: 0.75rem;\n    font-size: 0.875rem;\n    font-weight: 500;\n}\n\n.toggle-switch-label:hover {\n    color: rgb(71 85 105);\n}\n");
+	_css("/**\n * Copyright 2026 Asim Ihsan\n * SPDX-License-Identifier: MPL-2.0\n */\n\n.ce-conversation-menu {\n    box-sizing: border-box;\n    flex: 0 0 auto;\n    width: 100%;\n    min-width: 0;\n    margin-top: auto;\n    padding: 8px;\n}\n\n.ce-conversation-menu > div {\n    min-width: 0;\n    width: 100%;\n}\n\n.ce-conversation-menu .ce-menu-item {\n    box-sizing: border-box;\n}\n");
 	init_preact_module();
 	main();
 	function main() {
@@ -24915,20 +25040,13 @@
 			const injectNavMenu = (nav) => {
 				const pageContext = getPageContext();
 				if (!isConversationPageContext(pageContext) || pageContext.isSharePage || pageContext.isShareContinuePage) return;
-				if (injectionMap.has(nav)) return;
+				if (nav !== findConversationSidebarMountTarget() || injectionMap.has(nav) || nav.querySelector("[data-ce-conversation-menu]")) return;
 				const container = getMenuContainer();
-				injectionMap.set(nav, {
+				if (mountConversationSidebarMenu(nav, container)) injectionMap.set(nav, {
 					container,
 					kind: "conversation-nav"
 				});
-				const chatList = nav.querySelector(":scope > div.sticky.bottom-0");
-				if (chatList) chatList.prepend(container);
-				else {
-					container.style.backgroundColor = "#171717";
-					container.style.position = "sticky";
-					container.style.bottom = "72px";
-					nav.append(container);
-				}
+				else R$1(null, container);
 			};
 			const injectShareMenu = (target) => {
 				if (!getPageContext().isSharePage || injectionMap.has(target)) return;
@@ -24977,51 +25095,45 @@
 				setInterval(() => {
 					injectionMap.forEach((record, target) => {
 						if (!shouldKeepInjection(target, record.kind)) {
+							R$1(null, record.container);
 							record.container.remove();
 							injectionMap.delete(target);
 						}
 					});
-					Array.from(document.querySelectorAll("nav")).filter((nav) => !injectionMap.has(nav)).forEach(injectNavMenu);
+					const conversationSidebar = findConversationSidebarMountTarget();
+					if (conversationSidebar) injectNavMenu(conversationSidebar);
 					if (isSharePage()) Array.from(document.querySelectorAll("div[role=\"presentation\"] > .w-full > div >.flex.w-full")).filter((target) => !injectionMap.has(target)).forEach(injectShareMenu);
 					const securityMountTarget = findSecuritySidebarMountTarget();
 					if (securityMountTarget && !injectionMap.has(securityMountTarget)) injectSecurityMenu(securityMountTarget);
 					const memoryModalMountTarget = findMemorySummaryModalMountTarget();
 					if (memoryModalMountTarget && !injectionMap.has(memoryModalMountTarget)) injectMemoryModalButton(memoryModalMountTarget);
+					addMessageTimestamps().catch((error) => console.error("Failed to add message timestamps:", error));
 					cleanupMessageMarkdownMounts(messageMarkdownMounts);
 					if (isConversationPageContext(getPageContext())) mountMessageMarkdownButtons(messageMarkdownMounts);
 				}, 300);
 				let chatId = "";
+				let timestampNodes = [];
+				let timestampRequestPending = false;
+				let timestampRetryAfter = 0;
 				const addMessageTimestamps = async () => {
 					const currentChatId = getChatIdFromUrl();
-					if (!currentChatId || currentChatId === chatId) return;
-					chatId = currentChatId;
-					const { conversationNodes } = processConversation(await fetchConversation(chatId, false));
-					const threadContents = Array.from(document.querySelectorAll("main [data-testid^=\"conversation-turn-\"] [data-message-id]"));
-					if (threadContents.length === 0) return;
-					threadContents.forEach((thread, index) => {
-						const createTime = conversationNodes[index]?.message?.create_time;
-						if (!createTime) return;
-						const date = new Date(createTime * 1e3);
-						const timestamp = document.createElement("time");
-						timestamp.className = "w-full text-gray-500 dark:text-gray-400 text-sm text-right";
-						timestamp.dateTime = date.toISOString();
-						timestamp.title = date.toLocaleString();
-						const hour12 = document.createElement("span");
-						hour12.setAttribute("data-time-format", "12");
-						hour12.textContent = date.toLocaleTimeString("en-US", {
-							hour: "2-digit",
-							minute: "2-digit"
-						});
-						const hour24 = document.createElement("span");
-						hour24.setAttribute("data-time-format", "24");
-						hour24.textContent = date.toLocaleTimeString("en-US", {
-							hour: "2-digit",
-							minute: "2-digit",
-							hour12: false
-						});
-						timestamp.append(hour12, hour24);
-						thread.append(timestamp);
-					});
+					if (!currentChatId) return;
+					if (currentChatId === chatId) {
+						appendMessageTimestamps(timestampNodes);
+						return;
+					}
+					if (timestampRequestPending || Date.now() < timestampRetryAfter) return;
+					timestampRequestPending = true;
+					try {
+						const rawConversation = await fetchConversation(currentChatId, false);
+						if (getChatIdFromUrl() !== currentChatId) return;
+						timestampNodes = processConversation(rawConversation, { mergeContinuations: false }).conversationNodes;
+						chatId = currentChatId;
+						appendMessageTimestamps(timestampNodes);
+					} finally {
+						timestampRequestPending = false;
+						timestampRetryAfter = Date.now() + 5e3;
+					}
 				};
 				import_sentinel_umd.default.on("[role=\"presentation\"]", () => {
 					addMessageTimestamps().catch((error) => {

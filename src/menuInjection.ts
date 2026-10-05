@@ -4,6 +4,7 @@
  */
 
 import type { PageContext } from './pageContext'
+import { findConversationSidebarMountTarget } from './menuMount'
 
 export type InjectionKind = 'conversation-nav' | 'share-wrapper' | 'security-sidebar' | 'memory-modal'
 
@@ -26,6 +27,7 @@ export function shouldKeepInjectedContainer(
             return pageContext.kind === 'conversation'
                 && !pageContext.isSharePage
                 && !pageContext.isShareContinuePage
+                && target === findConversationSidebarMountTarget()
         case 'share-wrapper':
             return pageContext.isSharePage
         case 'security-sidebar':

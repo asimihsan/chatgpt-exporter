@@ -6,6 +6,7 @@
 
 import html2canvas from 'html2canvas'
 import i18n from '../i18n'
+import { findConversationCaptureTarget } from '../conversationDom'
 import { checkIfConversationStarted, getChatIdFromUrl } from '../page'
 import { getPageContext, isSecurityExportPageContext } from '../pageContext'
 import { downloadUrl, getFileNameWithFormat } from '../utils/download'
@@ -33,9 +34,6 @@ function fnIgnoreElements(el: any) {
     return typeof el.shadowRoot === 'object' && el.shadowRoot !== null
 }
 
-function getConversationCaptureTarget(): HTMLElement | null {
-    return document.querySelector('#thread div:has(> [data-testid="conversation-turn-1"])')
-}
 
 export function getSecurityDetailPane(): HTMLElement | null {
     const separator = document.querySelector('[role="separator"][aria-label="Resize repository pane"]')
@@ -64,7 +62,7 @@ export function resolvePngCaptureSpec(): PngCaptureSpec | null {
     const pageContext = getPageContext()
 
     if (pageContext.kind === 'conversation') {
-        const thread = getConversationCaptureTarget()
+        const thread = findConversationCaptureTarget()
         if (!thread || thread.children.length === 0 || thread.scrollHeight < 50) {
             return null
         }
@@ -97,13 +95,23 @@ export function resolvePngCaptureSpec(): PngCaptureSpec | null {
 }
 
 function applyConversationPngEffect(effect: Effect, target: HTMLElement): void {
-    const isDarkMode = document.documentElement.classList.contains('dark')
+    const isDarkMode = document.documentElement.classList.contains('dark') || document.documentElement.dataset.theme === 'dark'
+
+    effect.add(() => {
+        const previous = target.getAttribute('data-ce-conversation-png-target')
+        target.setAttribute('data-ce-conversation-png-target', '')
+        return () => {
+            if (previous === null) target.removeAttribute('data-ce-conversation-png-target')
+            else target.setAttribute('data-ce-conversation-png-target', previous)
+        }
+    })
 
     effect.add(() => {
         const style = document.createElement('style')
         style.textContent = `
             #thread div:has(> [data-testid="conversation-turn-1"]),
-            #thread [data-testid^="conversation-turn-"] {
+            #thread [data-testid^="conversation-turn-"],
+            [data-ce-conversation-png-target] {
                 color: ${isDarkMode ? '#ececec' : '#0d0d0d'};
                 background-color: ${isDarkMode ? '#212121' : '#fff'};
             }
@@ -121,6 +129,8 @@ function applyConversationPngEffect(effect: Effect, target: HTMLElement): void {
                 padding-bottom: 2px;
             }
 
+            [data-ce-conversation-png-target] .turn-action-controls,
+            [data-ce-conversation-png-target] [data-ce-message-markdown-root],
             #page-header,
             #thread-bottom-container,
             #thread div:has(> [data-testid="conversation-turn-1"]) > :not([data-testid^="conversation-turn-"]),
@@ -140,7 +150,7 @@ function applyConversationPngEffect(effect: Effect, target: HTMLElement): void {
 }
 
 function applySecurityPngEffect(effect: Effect, target: HTMLElement): void {
-    const isDarkMode = document.documentElement.classList.contains('dark')
+    const isDarkMode = document.documentElement.classList.contains('dark') || document.documentElement.dataset.theme === 'dark'
 
     effect.add(() => {
         const style = document.createElement('style')

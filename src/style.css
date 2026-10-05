@@ -23,7 +23,7 @@ body[data-time-format="24"] span[data-time-format="24"] {
     box-shadow: 0 0 0 1px #6f6e77;
 }
 
-.dark .Select {
+:is(.dark, [data-theme="dark"]) .Select {
     background-color: #2f2f2f;
     color: #fff;
     box-shadow: 0 0 0 1px #6f6e77;
@@ -36,7 +36,7 @@ html {
     --ce-border-light: rgba(0, 0, 0, .14);
 }
 
-.dark {
+:is(.dark, [data-theme="dark"]) {
     --ce-text-primary: var(--text-primary, #ececec);
     --ce-menu-primary: #202123;
     --ce-menu-secondary: #2d2f34;

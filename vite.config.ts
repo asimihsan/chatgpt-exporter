@@ -7,7 +7,7 @@
 import preact from '@preact/preset-vite'
 import { defineConfig } from 'vite'
 import monkey, { cdn } from 'vite-plugin-monkey'
-import packageJson from './package.json'
+import packageJson from './package.json' with { type: 'json' }
 
 const defaultUserscriptRepo = process.env.GITHUB_REPOSITORY ?? 'asimihsan/chatgpt-exporter'
 const defaultUserscriptBranch = process.env.GITHUB_REF_NAME

@@ -5,6 +5,7 @@
 
 import { unsafeWindow } from 'vite-plugin-monkey/dist/client'
 import { KEY_OAI_HISTORY_DISABLED } from './constants'
+import { hasConversationMessages } from './conversationDom'
 import { getBase64FromImageUrl, getBase64FromImg } from './utils/dom'
 
 declare global {
@@ -145,5 +146,5 @@ export async function getUserAvatar(): Promise<string> {
 }
 
 export function checkIfConversationStarted() {
-    return !!document.querySelector('[data-testid^="conversation-turn-"]')
+    return hasConversationMessages()
 }

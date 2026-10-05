@@ -10,7 +10,8 @@ import { fetchConversation, processConversation } from './api'
 import { cleanupMessageMarkdownMounts, mountMessageMarkdownButtons, type MessageMarkdownMountMap } from './messageMarkdown/messageMount'
 import { type InjectionKind, type InjectionRecord, shouldKeepInjectedContainer } from './menuInjection'
 import { findMemorySummaryModalMountTarget } from './memoryModalMount'
-import { findSecuritySidebarMountTarget } from './menuMount'
+import { appendMessageTimestamps } from './messageTimestamps'
+import { CONVERSATION_MENU_SELECTOR, findConversationSidebarMountTarget, findSecuritySidebarMountTarget, mountConversationSidebarMenu } from './menuMount'
 import { getChatIdFromUrl, isSharePage } from './page'
 import { getPageContext, isConversationPageContext, isSecurityMenuPageContext } from './pageContext'
 import { registerExportCopyShortcut } from './shortcuts/exportCopyShortcut'
@@ -21,6 +22,7 @@ import { onloadSafe } from './utils/utils'
 
 import './i18n'
 import './styles/missing-tailwind.css'
+import './styles/conversation-menu.css'
 
 main()
 
@@ -39,22 +41,13 @@ function main() {
         const injectNavMenu = (nav: HTMLElement) => {
             const pageContext = getPageContext()
             if (!isConversationPageContext(pageContext) || pageContext.isSharePage || pageContext.isShareContinuePage) return
-            if (injectionMap.has(nav)) return
+            if (nav !== findConversationSidebarMountTarget() || injectionMap.has(nav) || nav.querySelector(CONVERSATION_MENU_SELECTOR)) return
 
             const container = getMenuContainer()
-            injectionMap.set(nav, { container, kind: 'conversation-nav' })
-
-            const chatList = nav.querySelector(':scope > div.sticky.bottom-0')
-            if (chatList) {
-                chatList.prepend(container)
+            if (mountConversationSidebarMenu(nav, container)) {
+                injectionMap.set(nav, { container, kind: 'conversation-nav' })
             }
-            else {
-                // fallback to the bottom of the nav
-                container.style.backgroundColor = '#171717'
-                container.style.position = 'sticky'
-                container.style.bottom = '72px'
-                nav.append(container)
-            }
+            else render(null, container)
         }
 
         const injectShareMenu = (target: HTMLElement) => {
@@ -110,13 +103,14 @@ function main() {
             setInterval(() => {
                 injectionMap.forEach((record, target) => {
                     if (!shouldKeepInjection(target, record.kind)) {
+                        render(null, record.container)
                         record.container.remove()
                         injectionMap.delete(target)
                     }
                 })
 
-                const navList = Array.from(document.querySelectorAll('nav')).filter(nav => !injectionMap.has(nav))
-                navList.forEach(injectNavMenu)
+                const conversationSidebar = findConversationSidebarMountTarget()
+                if (conversationSidebar) injectNavMenu(conversationSidebar)
 
                 if (isSharePage()) {
                     const shareWrappers = Array.from(document.querySelectorAll<HTMLElement>('div[role="presentation"] > .w-full > div >.flex.w-full'))
@@ -134,6 +128,7 @@ function main() {
                     injectMemoryModalButton(memoryModalMountTarget)
                 }
 
+                void addMessageTimestamps().catch(error => console.error('Failed to add message timestamps:', error))
                 cleanupMessageMarkdownMounts(messageMarkdownMounts)
                 if (isConversationPageContext(getPageContext())) {
                     mountMessageMarkdownButtons(messageMarkdownMounts)
@@ -142,37 +137,29 @@ function main() {
 
             /** Insert timestamp to the bottom right of each message */
             let chatId = ''
+            let timestampNodes: ReturnType<typeof processConversation>['conversationNodes'] = []
+            let timestampRequestPending = false
+            let timestampRetryAfter = 0
             const addMessageTimestamps = async () => {
                 const currentChatId = getChatIdFromUrl()
-                if (!currentChatId || currentChatId === chatId) return
-                chatId = currentChatId
-
-                const rawConversation = await fetchConversation(chatId, false)
-                const { conversationNodes } = processConversation(rawConversation)
-
-                const threadContents = Array.from(document.querySelectorAll('main [data-testid^="conversation-turn-"] [data-message-id]'))
-                if (threadContents.length === 0) return
-
-                threadContents.forEach((thread, index) => {
-                    const createTime = conversationNodes[index]?.message?.create_time
-                    if (!createTime) return
-
-                    const date = new Date(createTime * 1000)
-
-                    const timestamp = document.createElement('time')
-                    timestamp.className = 'w-full text-gray-500 dark:text-gray-400 text-sm text-right'
-                    timestamp.dateTime = date.toISOString()
-                    timestamp.title = date.toLocaleString()
-
-                    const hour12 = document.createElement('span')
-                    hour12.setAttribute('data-time-format', '12')
-                    hour12.textContent = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' })
-                    const hour24 = document.createElement('span')
-                    hour24.setAttribute('data-time-format', '24')
-                    hour24.textContent = date.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false })
-                    timestamp.append(hour12, hour24)
-                    thread.append(timestamp)
-                })
+                if (!currentChatId) return
+                if (currentChatId === chatId) {
+                    appendMessageTimestamps(timestampNodes)
+                    return
+                }
+                if (timestampRequestPending || Date.now() < timestampRetryAfter) return
+                timestampRequestPending = true
+                try {
+                    const rawConversation = await fetchConversation(currentChatId, false)
+                    if (getChatIdFromUrl() !== currentChatId) return
+                    timestampNodes = processConversation(rawConversation, { mergeContinuations: false }).conversationNodes
+                    chatId = currentChatId
+                    appendMessageTimestamps(timestampNodes)
+                }
+                finally {
+                    timestampRequestPending = false
+                    timestampRetryAfter = Date.now() + 5000
+                }
             }
 
             sentinel.on('[role="presentation"]', () => {
