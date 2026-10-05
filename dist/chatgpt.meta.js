@@ -54,5 +54,5 @@
 // @grant              GM_registerMenuCommand
 // @grant              GM_setValue
 // @grant              unsafeWindow
-// @run-at             document-end
+// @run-at             document-start
 // ==/UserScript==

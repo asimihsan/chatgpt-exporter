@@ -92,7 +92,7 @@ export default defineConfig({
                     'GM.registerMenuCommand',
                     'unsafeWindow',
                 ],
-                'run-at': 'document-end',
+                'run-at': 'document-start',
             },
             build: {
                 fileName: 'chatgpt.user.js',
@@ -104,11 +104,11 @@ export default defineConfig({
                 cssSideEffects: (css: string) => {
                     const styleElement = document.createElement('style')
                     styleElement.textContent = css
-                    document.head.append(styleElement)
+                    document.head?.append(styleElement)
 
                     setInterval(() => {
                         if (styleElement.isConnected) return
-                        document.head.append(styleElement)
+                        document.head?.append(styleElement)
                     }, 300)
                 },
             },

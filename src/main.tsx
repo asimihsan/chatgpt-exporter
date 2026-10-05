@@ -18,7 +18,7 @@ import { registerExportCopyShortcut } from './shortcuts/exportCopyShortcut'
 import { registerSettingsMenuCommand } from './settings/menuCommand'
 import { Menu } from './ui/Menu'
 import { MemoryExportButton } from './ui/MemoryExportButton'
-import { onloadSafe } from './utils/utils'
+import { onDomAvailable } from './utils/domReady'
 
 import './i18n'
 import './styles/missing-tailwind.css'
@@ -27,7 +27,7 @@ import './styles/conversation-menu.css'
 main()
 
 function main() {
-    onloadSafe(() => {
+    onDomAvailable(() => {
         registerSettingsMenuCommand()
         registerExportCopyShortcut()
 
@@ -41,6 +41,10 @@ function main() {
         const injectNavMenu = (nav: HTMLElement) => {
             const pageContext = getPageContext()
             if (!isConversationPageContext(pageContext) || pageContext.isSharePage || pageContext.isShareContinuePage) return
+            // The new shell streams SSR navigation before the client conversation is hydrated.
+            // Its search message metadata is client-only; wait for it before changing sidebar children.
+            if (nav.querySelector('[data-app-action-sidebar-scroll]')
+                && !document.querySelector('main [data-chatgpt-search-message-ids]')) return
             if (nav !== findConversationSidebarMountTarget() || injectionMap.has(nav) || nav.querySelector(CONVERSATION_MENU_SELECTOR)) return
 
             const container = getMenuContainer()
@@ -83,91 +87,90 @@ function main() {
             return shouldKeepInjectedContainer(target, record, pageContext)
         }
 
-        // Delay DOM injections until the host app has had time to hydrate.
-        setTimeout(() => {
-            sentinel.on('nav', injectNavMenu)
-            sentinel.on(`div[role="presentation"] > .w-full > div >.flex.w-full`, injectShareMenu)
-            sentinel.on('[role="separator"][aria-label="Resize repository pane"]', () => {
-                const mountTarget = findSecuritySidebarMountTarget()
-                if (mountTarget) {
-                    injectSecurityMenu(mountTarget)
+        sentinel.on('nav', injectNavMenu)
+        sentinel.on(`div[role="presentation"] > .w-full > div >.flex.w-full`, injectShareMenu)
+        sentinel.on('[role="separator"][aria-label="Resize repository pane"]', () => {
+            const mountTarget = findSecuritySidebarMountTarget()
+            if (mountTarget) {
+                injectSecurityMenu(mountTarget)
+            }
+        })
+        sentinel.on('[role="dialog"]', () => {
+            const mountTarget = findMemorySummaryModalMountTarget()
+            if (mountTarget) {
+                injectMemoryModalButton(mountTarget)
+            }
+        })
+
+        const reconcile = () => {
+            injectionMap.forEach((record, target) => {
+                if (!shouldKeepInjection(target, record.kind)) {
+                    render(null, record.container)
+                    record.container.remove()
+                    injectionMap.delete(target)
                 }
             })
-            sentinel.on('[role="dialog"]', () => {
-                const mountTarget = findMemorySummaryModalMountTarget()
-                if (mountTarget) {
-                    injectMemoryModalButton(mountTarget)
-                }
-            })
 
-            setInterval(() => {
-                injectionMap.forEach((record, target) => {
-                    if (!shouldKeepInjection(target, record.kind)) {
-                        render(null, record.container)
-                        record.container.remove()
-                        injectionMap.delete(target)
-                    }
-                })
+            const conversationSidebar = findConversationSidebarMountTarget()
+            if (conversationSidebar) injectNavMenu(conversationSidebar)
 
-                const conversationSidebar = findConversationSidebarMountTarget()
-                if (conversationSidebar) injectNavMenu(conversationSidebar)
-
-                if (isSharePage()) {
-                    const shareWrappers = Array.from(document.querySelectorAll<HTMLElement>('div[role="presentation"] > .w-full > div >.flex.w-full'))
-                        .filter(target => !injectionMap.has(target))
-                    shareWrappers.forEach(injectShareMenu)
-                }
-
-                const securityMountTarget = findSecuritySidebarMountTarget()
-                if (securityMountTarget && !injectionMap.has(securityMountTarget)) {
-                    injectSecurityMenu(securityMountTarget)
-                }
-
-                const memoryModalMountTarget = findMemorySummaryModalMountTarget()
-                if (memoryModalMountTarget && !injectionMap.has(memoryModalMountTarget)) {
-                    injectMemoryModalButton(memoryModalMountTarget)
-                }
-
-                void addMessageTimestamps().catch(error => console.error('Failed to add message timestamps:', error))
-                cleanupMessageMarkdownMounts(messageMarkdownMounts)
-                if (isConversationPageContext(getPageContext())) {
-                    mountMessageMarkdownButtons(messageMarkdownMounts)
-                }
-            }, 300)
-
-            /** Insert timestamp to the bottom right of each message */
-            let chatId = ''
-            let timestampNodes: ReturnType<typeof processConversation>['conversationNodes'] = []
-            let timestampRequestPending = false
-            let timestampRetryAfter = 0
-            const addMessageTimestamps = async () => {
-                const currentChatId = getChatIdFromUrl()
-                if (!currentChatId) return
-                if (currentChatId === chatId) {
-                    appendMessageTimestamps(timestampNodes)
-                    return
-                }
-                if (timestampRequestPending || Date.now() < timestampRetryAfter) return
-                timestampRequestPending = true
-                try {
-                    const rawConversation = await fetchConversation(currentChatId, false)
-                    if (getChatIdFromUrl() !== currentChatId) return
-                    timestampNodes = processConversation(rawConversation, { mergeContinuations: false }).conversationNodes
-                    chatId = currentChatId
-                    appendMessageTimestamps(timestampNodes)
-                }
-                finally {
-                    timestampRequestPending = false
-                    timestampRetryAfter = Date.now() + 5000
-                }
+            if (isSharePage()) {
+                const shareWrappers = Array.from(document.querySelectorAll<HTMLElement>('div[role="presentation"] > .w-full > div >.flex.w-full'))
+                    .filter(target => !injectionMap.has(target))
+                shareWrappers.forEach(injectShareMenu)
             }
 
-            sentinel.on('[role="presentation"]', () => {
-                void addMessageTimestamps().catch((error) => {
-                    console.error('Failed to add message timestamps:', error)
-                })
+            const securityMountTarget = findSecuritySidebarMountTarget()
+            if (securityMountTarget && !injectionMap.has(securityMountTarget)) {
+                injectSecurityMenu(securityMountTarget)
+            }
+
+            const memoryModalMountTarget = findMemorySummaryModalMountTarget()
+            if (memoryModalMountTarget && !injectionMap.has(memoryModalMountTarget)) {
+                injectMemoryModalButton(memoryModalMountTarget)
+            }
+
+            void addMessageTimestamps().catch(error => console.error('Failed to add message timestamps:', error))
+            cleanupMessageMarkdownMounts(messageMarkdownMounts)
+            if (isConversationPageContext(getPageContext())) {
+                mountMessageMarkdownButtons(messageMarkdownMounts)
+            }
+        }
+
+        /** Insert timestamp to the bottom right of each message */
+        let chatId = ''
+        let timestampNodes: ReturnType<typeof processConversation>['conversationNodes'] = []
+        let timestampRequestPending = false
+        let timestampRetryAfter = 0
+        const addMessageTimestamps = async () => {
+            const currentChatId = getChatIdFromUrl()
+            if (!currentChatId) return
+            if (currentChatId === chatId) {
+                appendMessageTimestamps(timestampNodes)
+                return
+            }
+            if (timestampRequestPending || Date.now() < timestampRetryAfter) return
+            timestampRequestPending = true
+            try {
+                const rawConversation = await fetchConversation(currentChatId, false)
+                if (getChatIdFromUrl() !== currentChatId) return
+                timestampNodes = processConversation(rawConversation, { mergeContinuations: false }).conversationNodes
+                chatId = currentChatId
+                appendMessageTimestamps(timestampNodes)
+            }
+            finally {
+                timestampRequestPending = false
+                timestampRetryAfter = Date.now() + 5000
+            }
+        }
+
+        sentinel.on('[role="presentation"]', () => {
+            void addMessageTimestamps().catch((error) => {
+                console.error('Failed to add message timestamps:', error)
             })
-        }, 1200)
+        })
+        reconcile()
+        setInterval(reconcile, 300)
     })
 }
 
